@@ -643,6 +643,14 @@ html{scrollbar-gutter:stable}
       <div class="headline"><h1>Spezifikation<span class="info" tabindex="0" role="note" aria-label="Der konsolidierte Entwurf aus Idee und Antworten. Annahmen und offene Entscheidungen prüfen, Antworten im Fragen-Katalog ändern, direkt bearbeiten oder eine vorhandene Spezifikation einfügen."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Der konsolidierte Entwurf aus Idee und Antworten. Annahmen und offene Entscheidungen prüfen, Antworten im Fragen-Katalog ändern, direkt bearbeiten oder eine vorhandene Spezifikation einfügen.</span></span></h1><span class="chip" id="specBadge"></span><span id="specStatus" role="status" class="status"></span></div>
     </div>
     <p class="section-lede">Dein intelligenter Produkt-Bauplan. Jede Annahme ist nachvollziehbar, jedes Feature überprüfbar und alle Details können jederzeit angepasst werden.</p>
+    <div class="studio-metrics" aria-label="Vom Gedanken zum Ergebnis">
+      <div class="studio-metric"><span class="metric-symbol" aria-hidden="true">✎</span><span><strong id="metricInput">0</strong><small>Wörter von dir</small></span></div>
+      <div class="metric-divider" aria-hidden="true">→</div>
+      <div class="studio-metric"><span class="metric-symbol" aria-hidden="true">✦</span><span><strong id="metricDecisions">0</strong><small>Festlegungen im Konzept</small></span></div>
+      <div class="metric-divider" aria-hidden="true">→</div>
+      <div class="studio-metric"><span class="metric-symbol" aria-hidden="true">▤</span><span><strong id="metricOutput">0</strong><small>Wörter im Ergebnis</small></span></div>
+      <span class="chip" id="metricSource">Entwurf</span>
+    </div>
     <div class="split">
       <div>
         <div class="namebox hidden" id="nameBox"></div>
@@ -948,7 +956,7 @@ function phasesUI(){
   $('toSpec').classList.toggle('primary',allAnswered);
   navUI();
 }
-function setPhase(i){s.phase=i;if(i===1&&s.active<0)activate(firstOpen(),false);renderAll();window.scrollTo({top:0});if(i===2)ensureFeatures()}
+function setPhase(i){s.phase=i;if(i===1&&s.active<0)activate(firstOpen(),false);renderAll();window.scrollTo({top:0});if(i===2)ensureFeatures();if(i===3)preparePlan()}
 // Je Stand der Spezifikation höchstens ein selbsttätiger Versuch, damit ein Fehler keine Schleife auslöst
 let featTried='';
 function ensureFeatures(){
@@ -979,6 +987,11 @@ function studioUI(){
     out.append(node('span','Erste Orientierung · die echten Anforderungen entstehen nach dem Start','meta'));
   }else out.append(node('span',signal.hint,'meta'));
   action.disabled=active||!s.idea.trim();
+  const e=effort(),dec=summary(s.questions);
+  $('metricInput').textContent=e.typed.toLocaleString('de-DE');
+  $('metricDecisions').textContent=(dec.decided+dec.defaults+s.extras.length).toLocaleString('de-DE');
+  $('metricOutput').textContent=e.specWords.toLocaleString('de-DE');
+  $('metricSource').textContent=s.specSource==='claude'?'Mit Claude ausgearbeitet':s.specSource==='demo'?'Generischer Demo-Entwurf':s.specSource==='manual'?'Manueller Entwurf':'Konzept in Arbeit';
   $('launchHint').textContent=statusLoaded&&!$('ai').checked
     ?'Demo-Modus: Es entsteht ein allgemeines Beispielkonzept, keine auf deine Idee zugeschnittene KI-Analyse. Aktiviere Claude für individuelle Ergebnisse.'
     :'Der Autopilot trifft Entscheidungen selbst und kennzeichnet Annahmen. Alles bleibt bearbeitbar.';
@@ -2017,8 +2030,19 @@ function setAi(on){
   aiUI();
 }
 $('ai').onchange=()=>setAi($('ai').checked);
-$('spec').oninput=e=>{revision++;change=null;s.spec=e.target.value;s.specSource='manual';s.dirty=false;statuses();$('effortSide').textContent=effortText();save()};
+$('spec').oninput=e=>{revision++;change=null;s.spec=e.target.value;s.specSource='manual';s.dirty=false;statuses();studioUI();$('effortSide').textContent=effortText();save()};
 for(const id of ['repo','agent'])$(id).oninput=e=>{revision++;s[id]=e.target.value;statuses();save()};
+// Generate implementation tasks on first entry to a complete concept.
+let preparedPlanKey='';
+function preparePlan(){
+  if(s.phase!==3||active||layoutBusy||runBusy||!s.spec.trim()||s.dirty||s.questions.some(q=>q.state==='open')||s.features.some(f=>f.on!==f.inSpec)||s.plan&&!stale())return;
+  const key=digest(s.spec+JSON.stringify(ctx()));
+  if(preparedPlanKey===key)return;
+  preparedPlanKey=key;
+  queueMicrotask(()=>{
+    if(s.phase===3&&!active&&!layoutBusy&&!runBusy&&!$('planConfig').classList.contains('hidden'))$('plan').click();
+  });
+}
 $('plan').onclick=async()=>{
   if(active)return;
   if(!s.spec.trim()||s.dirty){$('planStatus').textContent='Bitte eine aktuelle Spezifikation erzeugen oder manuell aktualisieren.';return}
