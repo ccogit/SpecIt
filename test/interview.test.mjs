@@ -1,6 +1,7 @@
 import test from 'node:test';
+import { estimate } from '../planner.mjs';
 import assert from 'node:assert/strict';
-import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant, adjustDemo } from '../interview.mjs';
+import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant, adjustDemo, cleanFeatures, demoFeatures, workPackages, suggestExtensions, featureDuration, mapAnswers } from '../interview.mjs';
 
 test('autonomy decides a share of the questions itself and gives them back when lowered', () => {
   const qs = demoQuestions(), n = qs.length;
@@ -114,4 +115,70 @@ test('demo spec marks defaults as assumptions and lists open decisions', () => {
   assert.ok(md.includes(qs[0].options[0] + ' _(Annahme – Standard)_'));
   assert.ok(md.includes('**' + qs[1].question + '** ' + qs[1].options[1] + '\n') || md.includes('**' + qs[1].question + '** ' + qs[1].options[1]));
   assert.ok(md.split('## Offene Entscheidungen')[1].includes(qs[2].question));
+});
+
+test('features form a work breakdown structure whose widest stage limits parallel agents', () => {
+  const f = cleanFeatures([
+    { id: 'F01', name: 'Gerüst', minutes: 60, core: true },
+    { id: 'F02', name: 'A', minutes: 60, dependsOn: ['F01'] },
+    { id: 'F03', name: 'B', minutes: 30, dependsOn: ['F01', 'F99', 'F03'] },
+    { name: 'C', minutes: 30, dependsOn: ['F02', 'F03'] },
+  ]);
+  assert.deepEqual(f.map(x => x.id), ['F01', 'F02', 'F03', 'F04']);
+  assert.deepEqual(f[2].dependsOn, ['F01'], 'unknown and self references are dropped');
+  const w = workPackages(f);
+  assert.deepEqual(w.waves, [['F01'], ['F02', 'F03'], ['F04']]);
+  assert.equal(w.width, 2);
+  assert.equal(estimate(w, 1), 180);
+  assert.equal(estimate(w, 2), 150);
+  // Abgewähltes fällt heraus, samt der Abhängigkeit darauf
+  const off = workPackages(f.map(x => (x.id === 'F02' ? { ...x, on: false } : x)));
+  assert.deepEqual(off.waves, [['F01'], ['F03'], ['F04']]);
+  // Ein Zyklus wird aufgelöst statt zu hängen
+  const loop = workPackages(cleanFeatures([{ id: 'F01', name: 'X', dependsOn: ['F02'] }, { id: 'F02', name: 'Y', dependsOn: ['F01'] }]));
+  assert.equal(loop.waves.flat().length, 2);
+  const demo = workPackages(demoFeatures(demoQuestions().map(acceptDefault)));
+  assert.deepEqual(demo.waves[0], ['F01']);
+  assert.ok(demo.width >= 2 && demo.waves.length === 3, 'quality work follows the functions');
+});
+
+test('extensions are suggested only as far as the target duration allows; base features always stay', () => {
+  const f = cleanFeatures([
+    { id: 'F01', name: 'Gerüst', minutes: 60, core: true },
+    { id: 'F02', name: 'Kernfunktion', minutes: 60, core: true, dependsOn: ['F01'] },
+    { id: 'F03', name: 'Export', minutes: 90, dependsOn: ['F02'] },
+    { id: 'F04', name: 'Suche', minutes: 30, dependsOn: ['F02'] },
+    { id: 'F05', name: 'Suchfilter', minutes: 20, dependsOn: ['F04'] },
+  ]);
+  assert.equal(featureDuration(f, 1), 260);
+  const tight = suggestExtensions(f, 180, 1);
+  assert.equal(tight.base, 120);
+  assert.deepEqual(tight.chosen, ['F04', 'F05'], 'the long export does not fit, the two short ones do');
+  assert.equal(tight.total, 170);
+  assert.ok(tight.features.filter(x => x.core).every(x => x.on));
+  // Eine Erweiterung bringt die Erweiterung mit, auf der sie aufbaut
+  const pair = suggestExtensions(f.filter(x => x.id !== 'F03'), 170, 1);
+  assert.deepEqual(pair.chosen, ['F04', 'F05']);
+  // Reicht die Zeit nicht einmal für die Basis, bleibt es bei der Basis
+  const none = suggestExtensions(f, 60, 1);
+  assert.deepEqual(none.chosen, []);
+  assert.equal(none.total, 120);
+  // Mit zwei Agenten passt mehr hinein
+  assert.deepEqual(suggestExtensions(f, 210, 1).chosen, ['F03']);
+  assert.deepEqual(suggestExtensions(f, 210, 2).chosen, ['F03', 'F04', 'F05']);
+  const demo = demoFeatures(demoQuestions().map(acceptDefault));
+  assert.ok(demo.filter(x => x.core).length >= 2 && demo.some(x => !x.core), 'demo separates base features from extensions');
+});
+
+test('decisions and features stay linked: features know their decisions, changed scope maps back to answers', () => {
+  const qs = demoQuestions().map(acceptDefault);
+  const feats = demoFeatures(qs);
+  assert.ok(feats.filter(f => !f.name.startsWith('Grundgerüst')).every(f => f.from.length === 1 && answerOf(qs[f.from[0]]) === f.name));
+  const single = qs.findIndex(q => !q.multi), multi = qs.findIndex(q => q.multi);
+  const mapped = mapAnswers(qs, [
+    { nr: single + 1, answer: qs[single].options[1].toUpperCase() },
+    { nr: multi + 1, answer: 'Entfällt in dieser Version' },
+    { nr: single + 1, answer: 'doppelt' }, { nr: 999, answer: 'x' }, { nr: 2, answer: answerOf(qs[1]) },
+  ]);
+  assert.deepEqual(mapped, [{ index: single, choice: [1], custom: '' }, { index: multi, choice: [], custom: 'Entfällt in dieser Version' }]);
 });

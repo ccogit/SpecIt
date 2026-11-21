@@ -3,11 +3,12 @@
 // Die Agenten arbeiten ausschließlich im angegebenen Zielordner und dürfen Dateien lesen und schreiben;
 // Befehle (Tests, Build) nur, wenn das ausdrücklich erlaubt wurde.
 import { spawn } from 'node:child_process';
-import { mkdir, stat } from 'node:fs/promises';
+import { mkdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validatePlan, renderTask, renderSingle } from './planner.mjs';
 import { cleanSelections } from './reuse.mjs';
+import { isFileName, downloadFile } from './stitch.mjs';
 
 const own = path.resolve(fileURLToPath(new URL('.', import.meta.url)));
 const model = process.env.SPECIT_AGENT_MODEL || '';
@@ -25,7 +26,7 @@ export function validateRun(b) {
   if (inside(dir, own) || inside(own, dir)) throw Error('Der Zielordner darf nicht der SpecIt-Ordner sein oder ihn enthalten.');
   if (typeof b.spec !== 'string' || !b.spec.trim() || b.spec.length > 50000) throw Error('Spezifikation fehlt oder zu lang.');
   const agents = Number.isInteger(b.agents) ? Math.min(maxAgents, Math.max(1, b.agents)) : 1;
-  return { dir, agents, shell: b.shell === true, spec: b.spec, plan: validatePlan(b.plan), context: { repo: String(b.repo || '').slice(0, 500), agent: 'Claude Code', reuse: cleanSelections(b.reuse), ...(typeof b.layoutUrl === 'string' && b.layoutUrl.startsWith('https://stitch.withgoogle.com/projects/') ? { layoutUrl: b.layoutUrl } : {}) } };
+  return { dir, agents, layoutHtmls: (Array.isArray(b.layoutHtmls) ? b.layoutHtmls : []).filter(isFileName).slice(0, 4), shell: b.shell === true, spec: b.spec, plan: validatePlan(b.plan), context: { repo: String(b.repo || '').slice(0, 500), agent: 'Claude Code', reuse: cleanSelections(b.reuse), ...(typeof b.layoutChoice === 'string' && b.layoutChoice.trim() ? { layoutChoice: b.layoutChoice.trim().slice(0, 200) } : {}), ...(typeof b.layoutUrl === 'string' && b.layoutUrl.startsWith('https://stitch.withgoogle.com/projects/') ? { layoutUrl: b.layoutUrl } : {}) } };
 }
 
 const runNotes = (many, shell) => '\n\n## Hinweise für diesen automatischen Lauf\n'
@@ -63,6 +64,19 @@ export async function startRun(r) {
   if (job && !job.ended) throw Error('Es läuft bereits eine Umsetzung.');
   await mkdir(r.dir, { recursive: true });
   if (!(await stat(r.dir)).isDirectory()) throw Error('Der Zielordner ist kein Ordner.');
+  // Den gewählten Stitch-Entwurf als Datei in den Zielordner legen, damit die Agenten ihn lesen können
+  if (r.layoutHtmls.length) {
+    const files = [];
+    for (const [i, name] of r.layoutHtmls.entries()) {
+      try {
+        const file = await downloadFile(name), target = r.layoutHtmls.length === 1 ? 'layout.html' : 'layout-' + (i + 1) + '.html';
+        await mkdir(path.join(r.dir, 'design'), { recursive: true });
+        await writeFile(path.join(r.dir, 'design', target), file.body);
+        files.push('design/' + target);
+      } catch { /* der Entwurf bleibt über den Link erreichbar */ }
+    }
+    if (files.length) r.context.layoutFile = files.join(', ');
+  }
   const many = r.agents > 1;
   const items = many
     ? r.plan.waves.flat().map(id => r.plan.tasks.find(t => t.id === id)).map(t => ({ id: t.id, title: t.title, deps: t.dependsOn, prompt: renderTask(t, r.plan, r.spec, r.context) }))

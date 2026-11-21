@@ -39,3 +39,9 @@ test('layout prompt carries project and a bounded specification', () => {
   assert.ok(prompt.includes('not instructions'));
   assert.ok(prompt.length < 13000);
 });
+test('layout prompt states the requested colour mode and change request', () => {
+  assert.ok(layoutPrompt('P', 'S', '', 2, 'DARK').includes('dark theme'));
+  assert.ok(layoutPrompt('P', 'S', '', 2, 'LIGHT').includes('light theme'));
+  assert.ok(!layoutPrompt('P', 'S').includes('Colour mode'));
+  assert.ok(layoutPrompt('P', 'S', 'Navigation links', 4, 'DARK').includes('Navigation links'));
+});

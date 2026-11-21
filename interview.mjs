@@ -1,6 +1,7 @@
 // Interview: aus einem Satz werden Fragen mit Antwortoptionen und vorbelegten Standards.
 // Geteilt zwischen Server (Validierung, Demo, Prompt) und Browser (Darstellung, Fortschritt).
 import { withToc } from './markdown.mjs';
+import { estimate } from './planner.mjs';
 
 export const topics =['Ziel', 'Nutzer', 'Funktionen', 'UX', 'Technik', 'Qualität'];
 export const states = ['open', 'default', 'decided'];
@@ -242,11 +243,19 @@ export function cleanFeatures(list) {
     if (!name || seen.has(key)) continue;
     seen.add(key);
     const core = f.core === true;
-    out.push({ name, note: text(f.note, 240), minutes: Number.isFinite(f.minutes) ? Math.min(2880, Math.max(5, Math.round(f.minutes))) : 60, core, own: f.own === true,
+    out.push({ id: /^F\d{2,3}$/.test(f.id) ? f.id : '', dependsOn: Array.isArray(f.dependsOn) ? f.dependsOn.filter(d => typeof d === 'string') : [], from: Array.isArray(f.from) ? [...new Set(f.from.filter(n => Number.isInteger(n) && n >= 0 && n < 60))].slice(0, 8) : [], name, note: text(f.note, 240), minutes: Number.isFinite(f.minutes) ? Math.min(2880, Math.max(1, Math.round(f.minutes))) : 8, core, own: f.own === true,
       // on = gewünscht, inSpec = so steht es derzeit in der Spezifikation; das Grundgerüst ist nicht abwählbar
       on: core || f.on !== false, inSpec: core || f.inSpec !== false });
     if (out.length >= 30) break;
   }
+  // Kennungen eindeutig machen (F01, F02 …) und Abhängigkeiten auf vorhandene, fremde Features beschränken
+  const used = new Set();
+  let n = 0;
+  for (const f of out) {
+    if (!f.id || used.has(f.id)) { do { n++; } while (used.has('F' + String(n).padStart(2, '0')) || out.some(x => x.id === 'F' + String(n).padStart(2, '0'))); f.id = 'F' + String(n).padStart(2, '0'); }
+    used.add(f.id);
+  }
+  for (const f of out) f.dependsOn = [...new Set(f.dependsOn)].filter(d => d !== f.id && used.has(d)).slice(0, 12);
   return out;
 }
 
@@ -255,12 +264,15 @@ export const featureMinutes = features => features.filter(f => f.on).reduce((n, 
 
 /** Ohne KI: Features aus den Antworten zu Funktionen, UX und Qualität sowie aus zusätzlichen Anforderungen, mit festen Aufwandsannahmen. */
 export function demoFeatures(questions, extras = []) {
-  const per = { 2: 60, 3: 45, 5: 45 };
-  return cleanFeatures([
-    { name: 'Grundgerüst und Kernablauf', note: 'Projektaufbau, Datenhaltung und der durchgängige Hauptablauf.', minutes: 120, core: true },
-    ...questions.filter(q => q.state !== 'open' && per[q.topic]).map(q => ({ name: answerOf(q), note: q.question, minutes: per[q.topic] })),
-    ...extras.map(x => ({ name: x, note: 'Zusätzliche Anforderung', minutes: 90 })),
-  ]);
+  const per = { 2: 6, 3: 5, 5: 6 }, id = i => 'F' + String(i + 1).padStart(2, '0');
+  const rows = [
+    { name: 'Grundgerüst und Kernablauf', note: 'Projektaufbau, Datenhaltung und der durchgängige Hauptablauf.', minutes: 12, core: true, topic: -1 },
+    ...questions.map((q, i) => [q, i]).filter(([q]) => q.state !== 'open' && per[q.topic]).map(([q, i]) => ({ name: answerOf(q), note: q.question, minutes: per[q.topic], topic: q.topic, core: q.topic === 2, from: [i] })),
+    ...extras.map(x => ({ name: x, note: 'Zusätzliche Anforderung', minutes: 8, topic: 2 })),
+  ];
+  // Abhängigkeiten der Demo: alles baut auf dem Grundgerüst auf, die Qualitätssicherung zusätzlich auf den Funktionen
+  const functions = rows.map((r, i) => (r.topic === 2 ? id(i) : '')).filter(Boolean);
+  return cleanFeatures(rows.map((r, i) => ({ ...r, id: id(i), dependsOn: i === 0 ? [] : r.topic === 5 ? [id(0), ...functions] : [id(0)] })));
 }
 
 /** Ohne KI: Abwahl im Abschnitt „Abgewählte Features“ führen (neu zusammenführen, wenn der Entwurf unverändert ist). */
@@ -278,8 +290,80 @@ export function scopeDemo(spec, project, idea, questions, extras, before, after)
   return withToc(lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n');
 }
 
-export const featuresPrompt = 'Ermittle aus der Spezifikation (spec) die enthaltenen Features: abgrenzbare, für Nutzer erkennbare Funktionen oder Leistungsmerkmale, die sich einzeln weglassen ließen. Dazu genau ein Eintrag mit core=true für das unverzichtbare Grundgerüst (Projektaufbau, Datenhaltung, Kernablauf), ohne das nichts funktioniert. Insgesamt 5–20 Einträge in der Reihenfolge der Spezifikation; was dort als Nicht-Ziel oder abgewählt steht, gehört nicht dazu. Je Eintrag: name (kurz, höchstens 60 Zeichen, in den Begriffen der Spezifikation), note (ein Satz, was dazugehört), minutes = realistische reine Bearbeitungszeit eines einzelnen Coding-Agenten einschließlich Tests (meist 15–240), own=true, wenn die Spezifikation es als Vorschlag oder Idee der KI kennzeichnet. Ausschließlich JSON ohne Markdown-Codeblock: {"features":[{"name":"...","note":"...","minutes":60,"core":false,"own":false}]}';
+export const featuresPrompt = 'Ermittle aus der Spezifikation (spec) die enthaltenen Features: abgrenzbare, für Nutzer erkennbare Funktionen oder Leistungsmerkmale. Stufe jedes ein: core=true für Basis-Features – alles, ohne das die Anwendung ihren Grundzweck aus der Spezifikation nicht erfüllt, darunter genau ein Eintrag für das technische Grundgerüst (Projektaufbau, Datenhaltung, Kernablauf); core=false für Erweiterungen (Nice-to-have), die sich weglassen ließen, ohne dass der Kern unbrauchbar wird. Sei streng: Basis ist nur, was für die grundsätzliche Funktionsweise nötig ist. Ein Basis-Feature hängt nie von einer Erweiterung ab. Insgesamt 5–20 Einträge in der Reihenfolge der Spezifikation; was dort als Nicht-Ziel oder abgewählt steht, gehört nicht dazu. Je Eintrag: name (kurz, höchstens 60 Zeichen, in den Begriffen der Spezifikation), note (ein Satz, was dazugehört), minutes = Laufzeit eines einzelnen Coding-Agenten für dieses Feature einschließlich Tests, in Minuten. Gemeint ist die reine Laufzeit eines autonomen Coding-Agenten (KI), nicht die Arbeitszeit eines Menschen: Ein Agent schreibt und testet Code in Minuten. Richtwerte: Grundgerüst 5–15 Minuten, übliches Feature 3–10, aufwendiges Feature 15–30. Schätze knapp und nie in menschlicher Entwicklungszeit. Außerdem: own=true, wenn die Spezifikation es als Vorschlag oder Idee der KI kennzeichnet, id = fortlaufend F01, F02 …, from = Nummern (nr) der Entscheidungen aus decisions, aus denen dieses Feature folgt (leer, wenn es unmittelbar aus der Idee stammt), dependsOn = Kennungen der Features, die fertig sein müssen, bevor dieses umgesetzt werden kann. Die Features bilden so die Arbeitspakete einer Work Breakdown Structure: Trage nur echte fachliche oder technische Abhängigkeiten ein (keine Kette aus bloßer Reihenfolge), damit erkennbar ist, was sich unabhängig voneinander und damit parallel entwickeln lässt; keine Zyklen, das Grundgerüst hängt von nichts ab. Ausschließlich JSON ohne Markdown-Codeblock: {"features":[{"id":"F01","name":"...","note":"...","minutes":60,"core":true,"own":false,"dependsOn":[]},{"id":"F02","name":"...","note":"...","minutes":45,"core":false,"own":false,"dependsOn":["F01"]}]}';
 
-export const scopePrompt = 'Der Nutzer hat den Umfang der Spezifikation (spec) geändert. remove = Features, die nicht mehr dazugehören: Entferne ihre Anforderungen, Abläufe, Oberflächenelemente und Akzeptanzkriterien und führe sie bei den Nicht-Zielen als abgewählt auf. restore = Features, die wieder dazugehören: Nimm sie mit Anforderungen und Akzeptanzkriterien wieder auf und streiche sie aus den Nicht-Zielen. Passe davon abhängige Stellen an (z. B. Architektur, Risiken). Alles Übrige bleibt wörtlich unverändert.' + editFormat;
+export const scopePrompt = 'Der Nutzer hat den Umfang der Spezifikation (spec) geändert. remove = Features, die nicht mehr dazugehören: Entferne ihre Anforderungen, Abläufe, Oberflächenelemente und Akzeptanzkriterien und führe sie bei den Nicht-Zielen als abgewählt auf. restore = Features, die wieder dazugehören: Nimm sie mit Anforderungen und Akzeptanzkriterien wieder auf und streiche sie aus den Nicht-Zielen. Passe davon abhängige Stellen an (z. B. Architektur, Risiken). Alles Übrige bleibt wörtlich unverändert.' + editFormat + ' Entscheidungen und Umfang müssen zusammenpassen: decisions enthält die bisherigen Entscheidungen (nr, Frage, Optionen, Antwort). Gib im selben JSON-Objekt zusätzlich "answers":[{"nr":3,"answer":"..."}] an – für jede Entscheidung, deren Antwort durch die Umfangsänderung nicht mehr stimmt, die nun zutreffende Antwort (bevorzugt eine der vorhandenen Optionen im Wortlaut, sonst ein kurzer eigener Text). Leere Liste, wenn alle Antworten weiter gelten.';
 
 export const scopeFullPrompt = 'Der Nutzer hat den Umfang der Spezifikation (spec) geändert. remove = Features, die nicht mehr dazugehören (Anforderungen, Abläufe und Akzeptanzkriterien entfernen, bei den Nicht-Zielen als abgewählt aufführen); restore = Features, die wieder dazugehören (wieder aufnehmen, aus den Nicht-Zielen streichen). Gib die vollständige überarbeitete Spezifikation als Markdown aus – ohne Vor- oder Nachbemerkung und ohne Codeblock. Alles, was die Änderung nicht betrifft, bleibt wörtlich erhalten.';
+
+/**
+ * Work Breakdown Structure der gewählten Features: Arbeitspakete mit Abhängigkeiten und den Stufen, in denen sie
+ * frühestens beginnen können. width = größte Zahl gleichzeitig bearbeitbarer Pakete, also die sinnvolle Obergrenze
+ * paralleler Agenten. Abhängigkeiten auf abgewählte Features entfallen; ein Zyklus wird an einer Stelle aufgelöst.
+ */
+export function workPackages(features) {
+  const on = features.filter(f => f.on), ids = new Set(on.map(f => f.id));
+  const tasks = on.map(f => ({ id: f.id, name: f.name, minutes: f.minutes, core: f.core, dependsOn: (f.dependsOn || []).filter(d => ids.has(d)) }));
+  const waves = [], done = new Set();
+  while (done.size < tasks.length) {
+    const wave = tasks.filter(t => !done.has(t.id) && t.dependsOn.every(d => done.has(d)));
+    if (!wave.length) { const stuck = tasks.find(t => !done.has(t.id)); stuck.dependsOn = stuck.dependsOn.filter(d => done.has(d)); continue; }
+    waves.push(wave.map(t => t.id));
+    wave.forEach(t => done.add(t.id));
+  }
+  return { tasks, waves, width: Math.max(1, ...waves.map(w => w.length)) };
+}
+
+/** Dauer der gewählten Features in Minuten für eine Agentenzahl (höchstens so viele, wie Pakete gleichzeitig bereitstehen). */
+export function featureDuration(features, agents = 1) {
+  const w = workPackages(features);
+  return w.tasks.length ? estimate(w, Math.min(Math.max(1, agents), w.width)) : 0;
+}
+
+/**
+ * Vorschlag für die Zielvorgabe: Die Basis-Features sind gesetzt; in der Reihenfolge der Liste kommen Erweiterungen
+ * hinzu, solange die Gesamtdauer in die Zielzeit passt (eine Erweiterung bringt die Erweiterungen mit, auf denen sie
+ * aufbaut). Liefert die Features mit neuer Auswahl, die Dauer der Basis allein und die Gesamtdauer.
+ */
+export function suggestExtensions(features, target, agents = 1) {
+  const byId = new Map(features.map(f => [f.id, f]));
+  let current = features.map(f => ({ ...f, on: f.core }));
+  const base = featureDuration(current, agents), chosen = [];
+  if (target > 0) for (const f of features) {
+    if (f.core || chosen.includes(f.id)) continue;
+    const need = new Set([f.id]), add = id => { for (const d of byId.get(id).dependsOn || []) { const p = byId.get(d); if (p && !p.core && !need.has(d)) { need.add(d); add(d); } } };
+    add(f.id);
+    const trial = current.map(x => (need.has(x.id) ? { ...x, on: true } : x));
+    if (featureDuration(trial, agents) <= target) { current = trial; for (const id of need) if (!chosen.includes(id)) chosen.push(id); }
+  }
+  return { features: current, chosen, base, total: featureDuration(current, agents) };
+}
+
+/** Maßnahmen eines Lösungsvorschlags prüfen: Art, betroffenes Feature, Text, Ersparnis in Minuten, Suchbegriffe für vorhandenen Code. */
+export function cleanMeasures(list) {
+  const kinds = ['verschlanken', 'herabstufen', 'wiederverwenden', 'parallelisieren'];
+  return (Array.isArray(list) ? list : []).map(m => (m && typeof m === 'object' && text(m.text, 400) ? {
+    kind: kinds.includes(m.kind) ? m.kind : 'verschlanken', feature: text(m.feature, 80), text: text(m.text, 400),
+    saves: Number.isFinite(m.saves) ? Math.max(0, Math.round(m.saves)) : 0, search: text(m.search, 80),
+  } : null)).filter(Boolean).slice(0, 12);
+}
+
+export const fitPrompt = 'Die Features der Spezifikation (features: minutes = Laufzeit eines Coding-Agenten, core = Basis-Feature, dependsOn = Abhängigkeiten) passen nicht in die Zielzeit (targetMinutes): Schon die Basis-Features brauchen länger, auch mit maxAgents parallelen Agenten. Stelle nicht fest, dass es nicht geht, sondern finde eine Lösung, die hineinpasst und den Grundzweck der Anwendung erhält. Mittel: (1) verschlanken – ein Basis-Feature auf das Unverzichtbare kürzen und genau benennen, was entfällt oder einfacher wird; (2) herabstufen – was für den Grundzweck nicht zwingend ist, wird Erweiterung (core=false) oder aus einem Basis-Feature herausgelöst; (3) wiederverwenden – Eigenentwicklung durch vorhandenen Code ersetzen (verbreitete Bibliotheken, Starter-Vorlagen, Funktionen der Plattform) und dafür englische Suchbegriffe für GitHub nennen, niemals erfundene Repository-Namen; (4) parallelisieren – Pakete so schneiden und Abhängigkeiten so lösen, dass mehr gleichzeitig geht. Gemeint ist die reine Laufzeit eines autonomen Coding-Agenten (KI), nicht die Arbeitszeit eines Menschen: Ein Agent schreibt und testet Code in Minuten. Richtwerte: Grundgerüst 5–15 Minuten, übliches Feature 3–10, aufwendiges Feature 15–30. Schätze knapp und nie in menschlicher Entwicklungszeit. Liefere die vollständige überarbeitete Feature-Liste (Kennungen beibehalten, wo das Feature bleibt; name und note beschreiben den neuen Umfang) und die Maßnahmen. Die Basis-Features müssen mit maxAgents Agenten unter Beachtung der Abhängigkeiten in targetMinutes passen; bleibt Zeit, dürfen Erweiterungen hinzukommen. Ausschließlich JSON ohne Markdown-Codeblock: {"summary":"ein bis zwei Sätze, was der Vorschlag ändert","measures":[{"kind":"verschlanken|herabstufen|wiederverwenden|parallelisieren","feature":"F01","text":"konkret, was sich ändert","saves":10,"search":"nur bei wiederverwenden: Suchbegriffe"}],"features":[{"id":"F01","name":"...","note":"...","minutes":8,"core":true,"own":false,"dependsOn":[]}]}';
+
+/**
+ * Ordnet von der KI genannte Antworten den Fragen zu: nr = Position + 1, answer = Wortlaut einer Option (bei
+ * Mehrfachauswahl mit „;“ getrennt) oder eigener Text. Liefert nur tatsächliche Änderungen als { index, choice, custom }.
+ */
+export function mapAnswers(questions, list) {
+  const out = [];
+  for (const a of Array.isArray(list) ? list : []) {
+    const index = a && Number.isInteger(a.nr) ? a.nr - 1 : -1, q = questions[index], answer = text(a && a.answer, 500);
+    if (!q || !answer || out.some(x => x.index === index)) continue;
+    const find = t => q.options.findIndex(o => o.toLowerCase() === t.trim().toLowerCase());
+    const parts = q.multi ? answer.split(';').map(t => t.trim()).filter(Boolean) : [answer];
+    const hits = parts.map(find);
+    const choice = hits.every(i => i >= 0) ? [...new Set(hits)].sort() : [], custom = choice.length ? '' : answer;
+    if (answerOf({ ...q, state: 'decided', choice, custom }) !== answerOf(q)) out.push({ index, choice, custom });
+  }
+  return out;
+}
