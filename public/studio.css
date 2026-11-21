@@ -255,6 +255,14 @@ main{width:100%;max-width:1500px;padding:37px clamp(20px,4vw,70px) 100px;gap:28p
   .navgroup #navNext{min-width:144px}
   .tools{gap:4px}
 }
+@media(max-width:1480px){
+  /* Keep every journey stage visible rather than compressing a large desktop toolbar. */
+  .bar{flex-wrap:wrap}
+  .brand{flex:1}
+  .navgroup{order:3;flex-basis:100%;justify-content:center}
+  .phases{max-width:100%;overflow-x:auto}
+  .tools{margin-left:auto}
+}
 @media(max-width:1180px){
   .bar{flex-wrap:wrap}
   .navgroup{order:3;flex-basis:100%;justify-content:space-between}
@@ -300,7 +308,8 @@ main{width:100%;max-width:1500px;padding:37px clamp(20px,4vw,70px) 100px;gap:28p
   .tools .switch{padding:7px 8px}
   .navgroup{gap:7px;flex-wrap:nowrap}
   .phases{gap:0;flex:1;min-width:0;justify-content:space-between;overflow:auto}
-  .phase{padding:8px 6px;gap:4px;font-size:10px}
+  .phase{padding:8px 5px;min-width:34px;gap:0;justify-content:center;font-size:10px}
+  .phase>span:not(.num){display:none}
   .phase .num{width:18px;height:18px;font-size:10px}
   .phase .chip{display:none}
   .navgroup #navBack{min-width:32px;padding:7px}
