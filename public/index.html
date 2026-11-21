@@ -497,6 +497,7 @@ html{scrollbar-gutter:stable}
 .catacts .btn{white-space:normal;text-align:left}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.working,.working::after,.working .pulse i{animation:none}.working .pulse i:nth-child(odd){transform:scaleY(.55)}.working .stripe{animation:none;width:100%}}
 </style>
+<link rel="stylesheet" href="/studio.css">
 </head>
 <body>
 <header class="top">
@@ -519,18 +520,37 @@ html{scrollbar-gutter:stable}
 <main>
   <!-- Schritt 1 · Idee -->
   <div id="phase0" class="hero hidden">
-    <div class="intro">
-      <h1>Was willst du bauen?</h1>
+    <div class="launch-stage">
+      <div class="intro">
+        <div class="hero-kicker">AI Product Studio · Von der Idee zum Produkt</div>
+        <h1>Eine Idee.<br><em>Unendlich viel Potenzial.</em></h1>
+        <p>Beschreibe in deinen eigenen Worten, was dir vorschwebt. SpecIt denkt die Details mit, stellt nur notwendige Fragen und macht aus deinem Gedanken ein durchdachtes, umsetzbares Produktkonzept.</p>
+        <div class="hero-proofs"><span>Ein Satz genügt</span><span>Entscheidungen transparent</span><span>Direkt umsetzbar</span></div>
+      </div>
+      <aside class="vision-card" aria-label="So entsteht dein Produkt">
+        <div class="vision-top"><span class="vision-brand">✦ SpecIt / Studio</span><span class="vision-live">Produktidee → Umsetzung</span></div>
+        <h2 class="vision-title">Deine Vision. <span style="color:#b5aaff">Unser gemeinsamer Bauplan.</span></h2>
+        <div class="vision-track">
+          <div class="vision-step"><span class="vision-icon" aria-hidden="true">✎</span><span><strong>01 / Deine Idee</strong><small>Ein natürlicher Satz statt langer Formulare</small></span></div>
+          <div class="vision-step is-active"><span class="vision-icon" aria-hidden="true">✦</span><span><strong>02 / Intelligente Ausarbeitung</strong><small>Vorschläge, Entscheidungen und Qualitätssicherung</small></span></div>
+          <div class="vision-step"><span class="vision-icon" aria-hidden="true">⌘</span><span><strong>03 / Bereit für die Umsetzung</strong><small>Spezifikation, Designvarianten und Agent-Aufträge</small></span></div>
+        </div>
+      </aside>
     </div>
-    <div class="card" style="display:flex;flex-direction:column;gap:16px">
-      <div class="spread"><label class="field-label" for="idea" style="margin:0">Deine Idee in einem Satz</label><span class="meta" id="ideaCount"></span></div>
-      <textarea id="idea" rows="7" maxlength="2000" placeholder="z. B. Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost. Ein Satz genügt – mehr Details sind willkommen (Umschalt+Enter für eine neue Zeile)."></textarea>
-      <div class="spread">
-        <span class="status" id="ideaStatus" role="status"></span>
-        <button id="derive" class="btn primary hidden" type="button"><span id="deriveLabel">✦ Fragen ableiten →</span> <kbd>Enter</kbd></button>
+    <div class="card composer" style="display:flex;flex-direction:column;gap:16px">
+      <div class="composer-title"><div><span class="eyebrow">01 / Beschreibe deine Vision</span><h2>Was möchtest du erschaffen?</h2></div><span class="chip ok">Kein Briefing nötig</span></div>
+      <div class="spread"><label class="field-label" for="idea" style="margin:0">Deine Idee – ganz unkompliziert</label><span class="meta" id="ideaCount"></span></div>
+      <textarea id="idea" rows="4" maxlength="2000" placeholder="Ich wünsche mir eine App, die …  Beschreibe einfach das Problem, die Zielgruppe oder dein Wunsch-Ergebnis."></textarea>
+      <div id="briefSignal" aria-live="polite"></div>
+      <div class="composer-foot">
+        <div><span class="status" id="ideaStatus" role="status"></span><p class="meta" id="launchHint">Automatische Entscheidungen werden als Annahmen gekennzeichnet und bleiben bearbeitbar.</p></div>
+        <div class="actions"><button id="magicStart" class="btn primary magic-button" type="button">✦ Mit KI zum fertigen Konzept</button><button id="derive" class="btn hidden" type="button"><span id="deriveLabel">Fragen ableiten →</span> <kbd>Enter</kbd></button></div>
       </div>
     </div>
-    <div class="presets"><span class="field-label" style="margin:0">Voreinstellung</span><div class="actions" id="presets" role="group" aria-label="Voreinstellungen für die Regler"></div></div>
+    <div class="idea-examples" id="ideaExamples" aria-label="Beispielideen"><span class="eyebrow">Ideen zum Ausprobieren</span></div>
+    <details id="advancedPanel" class="advanced-panel">
+      <summary>Konzept-Steuerung <small>Optional: Kreativität, Rückfragen, Zeitrahmen und Design festlegen</small></summary>
+    <div class="presets"><span class="field-label" style="margin:0">Arbeitsweise</span><div class="actions" id="presets" role="group" aria-label="Voreinstellungen für die Regler"></div></div>
     <div class="card scales">
       <div>
         <div class="spread"><span class="scalelabel"><label class="field-label" for="autonomy" style="margin:0">Modus</label><span class="info" id="autonomyInfo" tabindex="0" role="note"><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true"></span></span></span><span class="chip ok picked" id="autonomyValue"></span></div>
@@ -577,12 +597,14 @@ html{scrollbar-gutter:stable}
         <div class="actions" style="margin-top:10px"><select id="reviewBy" aria-label="Anbieter für das Review" style="flex:1;min-width:150px"></select><select id="reviewModel" aria-label="Modell für das Review" style="flex:1;min-width:130px"></select></div>
       </div>
     </div>
-    <p style="text-align:center"><button class="link" type="button" id="pasteSpec">Vorhandene Spezifikation einfügen</button></p>
+    </details>
+    <p style="text-align:center"><button class="link" type="button" id="pasteSpec">Bereits eine Spezifikation? Hier importieren</button></p>
   </div>
 
   <!-- Schritt 2 · Fragen -->
   <div id="phase1" class="interview hidden">
     <div class="column">
+      <div class="workspace-head"><span class="eyebrow">02 / Konzeption</span><h1>Die richtigen Entscheidungen.</h1><p>SpecIt übersetzt deine Idee in ein tragfähiges Konzept. Bestätige Vorschläge, ändere Details oder übernimm die empfohlenen Standards gesammelt.</p></div>
       <div class="ideabox">
         <div><span class="eyebrow" style="color:var(--secondary)">Ursprüngliche Idee</span><blockquote id="ideaQuote"></blockquote></div>
         <button class="btn small" type="button" data-phase="0" style="background:var(--card)">Bearbeiten</button>
@@ -620,6 +642,7 @@ html{scrollbar-gutter:stable}
     <div class="pagehead">
       <div class="headline"><h1>Spezifikation<span class="info" tabindex="0" role="note" aria-label="Der konsolidierte Entwurf aus Idee und Antworten. Annahmen und offene Entscheidungen prüfen, Antworten im Fragen-Katalog ändern, direkt bearbeiten oder eine vorhandene Spezifikation einfügen."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Der konsolidierte Entwurf aus Idee und Antworten. Annahmen und offene Entscheidungen prüfen, Antworten im Fragen-Katalog ändern, direkt bearbeiten oder eine vorhandene Spezifikation einfügen.</span></span></h1><span class="chip" id="specBadge"></span><span id="specStatus" role="status" class="status"></span></div>
     </div>
+    <p class="section-lede">Dein intelligenter Produkt-Bauplan. Jede Annahme ist nachvollziehbar, jedes Feature überprüfbar und alle Details können jederzeit angepasst werden.</p>
     <div class="split">
       <div>
         <div class="namebox hidden" id="nameBox"></div>
@@ -667,6 +690,7 @@ html{scrollbar-gutter:stable}
     <div class="pagehead">
       <div><h1>Umsetzung<span class="info" tabindex="0" role="note" aria-label="Zerlege die Spezifikation in delegierbare Aufgaben mit Abhängigkeiten, Akzeptanzkriterien, Tests und Zuständigkeiten. Agenten starten nur, wenn du „Direkt umsetzen“ wählst und die Umsetzung dort selbst startest."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Zerlege die Spezifikation in delegierbare Aufgaben mit Abhängigkeiten, Akzeptanzkriterien, Tests und Zuständigkeiten. Agenten starten nur, wenn du „Direkt umsetzen“ wählst und die Umsetzung dort selbst startest.</span></span></h1></div>
     </div>
+    <p class="section-lede">Vom Konzept zur Realisierung: Funktionen priorisieren, den Ablauf planen, Agenten-Aufträge exportieren oder die Umsetzung bewusst selbst starten.</p>
     <!-- Sperre: Aufträge gibt es erst, wenn das Konzept vollständig ist oder der Nutzer das automatische Entscheiden bestätigt hat -->
     <div id="planGate" class="card gate hidden" role="status">
       <h2 id="gateTitle"></h2>
@@ -738,6 +762,7 @@ html{scrollbar-gutter:stable}
 
   </div>
 </main>
+<footer class="studio-footer" aria-label="Über SpecIt"><strong>SpecIt Studio</strong><span class="divider-dot"></span><span>Von der Idee zum belastbaren Konzept</span><span class="divider-dot"></span><span>Deine Entscheidungen bleiben nachvollziehbar</span></footer>
 
 <dialog id="lightbox" class="lightbox" aria-label="Layout-Entwurf, Großansicht">
   <div class="lightbar"><span id="lightCap" class="meta"></span><div class="actions"><button id="lightPrev" class="btn small" type="button">← Vorige</button><button id="lightNext" class="btn small" type="button">Nächste →</button><button id="lightClose" class="btn small" type="button">Schließen</button></div></div>
@@ -764,6 +789,7 @@ applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?
 import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate} from '/planner.mjs';
 import {topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
+import {conceptSignals,IDEA_EXAMPLES} from '/studio.mjs';
 
 const $=id=>document.getElementById(id),pageTitle=document.title;
 // Höhe der Kopfzeile (bricht bei schmalem Fenster um) für alles, was darunter haften bleibt
@@ -806,7 +832,7 @@ const toneNames=[
   ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:3,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:80,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -938,6 +964,39 @@ $('navNext').onclick=()=>nextOf()?.click();
 $('navBack').onclick=()=>{if(s.phase)setPhase(s.phase-1)};
 
 /* ---------- Schritt 1: Idee ---------- */
+function studioUI(){
+  const signal=conceptSignals(s.idea),out=$('briefSignal'),action=$('magicStart');
+  out.replaceChildren();
+  if(signal.ready){
+    out.append(node('strong','Erste Themen erkannt:'));
+    signal.ideas.forEach(t=>out.append(node('span',t,'chip')));
+    out.append(node('span','Erste Orientierung · die echten Anforderungen entstehen nach dem Start','meta'));
+  }else out.append(node('span',signal.hint,'meta'));
+  action.disabled=active||!s.idea.trim();
+  $('launchHint').textContent=statusLoaded&&!available
+    ?'Demo-Modus: Ohne Claude-Zugang wird ein allgemeines Beispielkonzept erstellt. Für individuelle KI-Ergebnisse Claude aktivieren.'
+    :'Der Autopilot trifft Entscheidungen selbst und kennzeichnet Annahmen. Alles bleibt bearbeitbar.';
+}
+const examples=$('ideaExamples');
+IDEA_EXAMPLES.forEach(example=>{
+  const b=button(example.title,'idea-example',()=>{
+    $('idea').value=example.text;
+    $('idea').dispatchEvent(new Event('input',{bubbles:true}));
+    $('idea').focus();
+    $('idea').setSelectionRange(example.text.length,example.text.length);
+  });
+  b.title=example.text;examples.append(b);
+});
+$('magicStart').onclick=async()=>{
+  if(active||!s.idea.trim())return;
+  s.autonomy=100;s.creativity=Math.max(3,s.creativity);
+  const next=applyAutonomy(s.questions,s.autonomy);
+  if(next.some((q,i)=>q.state!==s.questions[i].state)){
+    s.questions=next;change=null;s.last=-1;activate(firstOpen(),false);
+  }
+  touched();renderAll();
+  await derive(false);
+};
 function ideaUI(){
   $('ideaCount').textContent=plural(words(s.idea),'Wort','Wörter');
   const same=s.questions.length>0&&s.idea.trim()===s.askedIdea;
@@ -1026,7 +1085,7 @@ async function derive(more){
   }catch(e){status.textContent=e.message}finally{lock(false)}
   if(auto)generate();
 }
-$('idea').oninput=e=>{s.idea=e.target.value;revision++;if(s.spec)s.dirty=true;ideaUI();statuses();save()};
+$('idea').oninput=e=>{s.idea=e.target.value;revision++;if(s.spec)s.dirty=true;ideaUI();studioUI();statuses();save()};
 $('idea').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();derive(false)}};
 $('derive').onclick=()=>derive(false);
 $('more').onclick=()=>derive(true);
@@ -2215,16 +2274,16 @@ if($('idea').value!==s.idea)$('idea').value=s.idea;
   $('creativity').value=s.creativity;$('tone').value=s.tone;
   $('autonomy').value=s.autonomy/20;$('durLevel').value=s.durLevel;
   $('repo').value=s.repo;$('agent').value=s.agent;$('layoutCount').value=s.layoutCount;$('layoutDevice').value=s.layoutDevice;$('layoutTheme').value=s.layoutTheme;
-  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();save();
+  ideaUI();studioUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();save();
 }
 if(s.phase===1&&s.active<0)activate(firstOpen(),false);else if(s.active>=0)activate(s.active,false);
 renderAll();
 fetch('/api/status').then(r=>r.json()).then(r=>{
   available=!!r.available;provider=r.provider||null;statusLoaded=true;stitch=!!r.stitch;agentsOk=!!r.agents;reviewers=Array.isArray(r.reviewers)?r.reviewers:[];reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
-  let wanted=false;try{wanted=localStorage.getItem('specit-ai')==='1'}catch{}
+  let wanted=true;try{wanted=localStorage.getItem('specit-ai')!=='0'}catch{}
   $('ai').checked=available&&wanted;aiUI();
   if(!stitch)$('layoutHint').textContent='Kein STITCH_API_KEY konfiguriert. Schlüssel in .env setzen und neu starten, siehe README.';
-  layoutUI();
+  layoutUI();studioUI();
 }).catch(()=>{$('mode').classList.remove('hidden');$('mode').textContent='Server nicht erreichbar'});
 aiUI();
 // Lebenszeichen: Solange diese Verbindung steht, läuft der Server. Wird die letzte Seite geschlossen, beendet er sich.
