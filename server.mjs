@@ -1,5 +1,6 @@
 import http from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, unlink } from 'node:fs/promises';
+import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { validatePlan, demoPlan } from './planner.mjs';
@@ -7,7 +8,7 @@ import { validateRun, startRun, stopRun, runStatus, killAgents } from './runner.
 import { withSkills } from './skills.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
-import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
+import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
 import { withToc } from './markdown.mjs';
 import { stitchKey, createProject, generateLayout, generateVariants, downloadFile, isProjectId, isScreenId, isFileName, variantCount, device } from './stitch.mjs';
 const host='127.0.0.1', port=Number(process.env.PORT||3000);
@@ -38,10 +39,10 @@ const cliModel=process.env.CLAUDE_CODE_MODEL||'sonnet';
 // Claude Code wird auch mit API-Schlüssel gebraucht: Die direkte Umsetzung läuft immer über seine Agenten.
 const cliOk=process.env.SPECIT_NO_CLAUDE_CODE!=='1'&&await cli(['--version'],'',15000).then(()=>true,()=>false);
 const hasCli=!key&&cliOk;
-async function ask(instruction,data,maxTokens){
+async function ask(instruction,data,maxTokens,use=''){
  const content=instruction+'\n\nProjektdaten (JSON):\n'+JSON.stringify(data);
  if(!key){
-  let r;try{r=JSON.parse(await cli(['-p','--output-format','json','--system-prompt',system,'--tools','','--strict-mcp-config','--no-session-persistence','--disable-slash-commands','--model',cliModel],content,240000))}catch(e){throw e instanceof SyntaxError?Error('Claude Code hat eine unlesbare Antwort geliefert.'):e}
+  let r;try{r=JSON.parse(await cli(['-p','--output-format','json','--system-prompt',system,'--tools','','--strict-mcp-config','--no-session-persistence','--disable-slash-commands','--model',use||cliModel],content,240000))}catch(e){throw e instanceof SyntaxError?Error('Claude Code hat eine unlesbare Antwort geliefert.'):e}
   if(r.is_error||typeof r.result!=='string'||!r.result.trim())throw Error('Claude Code hat keine Antwort geliefert. Anmeldung und Kontingent prüfen.');
   return r.result;
  }
@@ -61,13 +62,19 @@ function frameIn(b){
  return {autonomy,duration,creativity,tone,excluded,frame:{duration,tone:toneLevels[tone],excluded}};
 }
 function validate(b){
- if(!b||!['questions','final','plan','revise','decisions','triage','adjust','features','scope','fit','names'].includes(b.mode))throw Error('Ungültiger Modus.');
+ if(!b||!['questions','final','plan','revise','decisions','triage','adjust','features','scope','fit','names','review'].includes(b.mode))throw Error('Ungültiger Modus.');
  if(b.mode==='adjust'){
   // Änderungswunsch in eigenen Worten; die Idee darf fehlen (eingefügte Spezifikation).
   if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
   const wish=String(b.wish||'').trim().replace(/\s+/g,' ').slice(0,2000);
   if(!wish)throw Error('Bitte den Änderungswunsch eingeben.');
   return {mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),questions:cleanQuestions(b.questions||[]),extras:cleanExtras(b.extras),...frameIn(b),spec:b.spec,wish};
+ }
+ if(b.mode==='review'){
+  // Review der Spezifikation durch einen gewählten Agenten
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  const provider=b.provider==='codex'?'codex':'claude',wanted=String(b.model||'');
+  return {mode:b.mode,ai:b.ai===true,spec:b.spec,provider,model:provider==='claude'&&['sonnet','opus','haiku'].includes(wanted)?wanted:'',duration:frameIn(b).duration};
  }
  if(b.mode==='names'){
   // Namensvorschläge aus Idee und – falls vorhanden – Spezifikation
@@ -121,6 +128,7 @@ function demo(b){
  // Ohne KI lässt sich der Umfang nicht sinnvoll umschneiden
  if(b.mode==='fit')return {source:'demo',features:[],measures:[],summary:''};
  if(b.mode==='names')return {source:'demo',names:demoNames(b.idea||b.spec,b.count)};
+ if(b.mode==='review')return {source:'demo',summary:'Ein Review braucht einen Agenten; im Demo-Modus findet keines statt.',findings:[]};
  if(b.mode==='adjust')return {markdown:adjustDemo(b.spec,b.project,b.idea,b.questions,b.extras,b.wish,b.frame)};
  if(b.mode==='features')return {source:'demo',features:demoFeatures(b.questions,b.extras)};
  if(b.mode==='scope')return {markdown:scopeDemo(b.spec,b.project,b.idea,b.questions,b.extras,{...b.frame,excluded:b.before},b.frame)};
@@ -179,6 +187,35 @@ function askStream(instruction,data,maxTokens,onText){
 }
 // Getroffene Entscheidungen in der Sicht für die KI: Nummer, Frage, Optionen, Antwort
 const decisionsOf=questions=>questions.map((q,i)=>({nr:i+1,question:q.question,options:q.options,answer:answerOf(q)})).filter(d=>d.answer);
+// Zweiter Anbieter für das Review: Codex im nicht-interaktiven Lauf, nur lesend, außerhalb des Projektordners.
+// Die Antwort schreibt Codex in eine Datei im Temp-Ordner; die Anmeldung dort ist die des Nutzers.
+const probe=(cmd,args)=>new Promise(resolve=>{
+ try{
+  const c=spawn(cmd,args,{windowsHide:true,stdio:'ignore',shell:process.platform==='win32'});
+  const t=setTimeout(()=>{c.kill();resolve(false)},15000);
+  c.on('error',()=>{clearTimeout(t);resolve(false)});c.on('close',code=>{clearTimeout(t);resolve(code===0)});
+ }catch{resolve(false)}
+});
+const codexOk=process.env.SPECIT_NO_CODEX!=='1'&&await probe('codex',['--version']);
+function codexAsk(instruction,data){
+ const content=system+'\n\n'+instruction+'\n\nProjektdaten (JSON):\n'+JSON.stringify(data),dir=tmpdir(),file='specit-review-'+Date.now()+'-'+Math.floor(Math.random()*1e6)+'.txt';
+ return new Promise((resolve,reject)=>{
+  let done=false;const finish=(fn,v)=>{if(done)return;done=true;clearTimeout(timer);fn(v)};
+  const child=spawn('codex',['exec','--skip-git-repo-check','--ephemeral','--sandbox','read-only','--color','never','-o',file,'-'],{cwd:dir,windowsHide:true,shell:process.platform==='win32',stdio:['pipe','ignore','ignore']});
+  const timer=setTimeout(()=>{child.kill();finish(reject,Error('Codex hat nicht rechtzeitig geantwortet.'))},300000);
+  currentAbort?.signal.addEventListener('abort',()=>{child.kill();finish(reject,Error('Abgebrochen.'))},{once:true});
+  child.on('error',()=>finish(reject,Error('Codex konnte nicht gestartet werden.')));
+  child.on('close',async code=>{
+   let text='';try{text=await readFile(path.join(dir,file),'utf8')}catch{/* keine Antwortdatei */}
+   try{await unlink(path.join(dir,file))}catch{/* nichts zu löschen */}
+   if(code!==0||!text.trim())return finish(reject,Error('Codex hat keine Antwort geliefert. Anmeldung mit „codex“ im Terminal prüfen.'));
+   finish(resolve,text);
+  });
+  child.stdin.on('error',()=>{});child.stdin.end(content);
+ });
+}
+// Wer ein Review übernehmen kann: Claude (über Claude Code mit wählbarem Modell oder über die API) und, falls eingerichtet, Codex
+const reviewers=[...(key?[{id:'claude',name:'Claude',models:[model]}]:cliOk?[{id:'claude',name:'Claude',models:['sonnet','opus','haiku']}]:[]),...(codexOk?[{id:'codex',name:'Codex',models:[]}]:[])];
 function parseJson(out){return JSON.parse(out.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''))}
 async function claude(b){
  if(b.mode==='revise'){
@@ -194,6 +231,14 @@ async function claude(b){
   let md=null,answers=[];try{const parsed=parseJson(await ask(withSkills(b.mode,scope?scopePrompt:adjustPrompt),data,8000));md=applyEdits(b.spec,parsed.edits);if(scope&&md!==null)answers=mapAnswers(b.questions,parsed.answers)}catch(e){if(!(e instanceof SyntaxError)&&!/JSON/.test(String(e.message)))throw e}
   if(md===null){const full=(await ask(withSkills(b.mode,scope?scopeFullPrompt:adjustFullPrompt),data,16000)).trim().replace(/^```(?:markdown|md)?\s*/i,'').replace(/\s*```$/,'');md=full&&full.length<=50000?full:null}
   return {markdown:md===null?null:withToc(md),answers};
+ }
+ if(b.mode==='review'){
+  if(b.provider==='codex'&&!codexOk)throw Error('Codex ist auf diesem Rechner nicht eingerichtet.');
+  const data={...(b.duration?{targetDuration:b.duration}:{}),spec:b.spec};
+  const out=b.provider==='codex'?await codexAsk(reviewPrompt,data):await ask(reviewPrompt,data,5000,b.model);
+  // Der Reviewer darf Text um das JSON legen; maßgeblich ist das äußerste Objekt
+  let parsed;try{parsed=JSON.parse(out.slice(out.indexOf('{'),out.lastIndexOf('}')+1))}catch{throw Error('Der Reviewer hat kein lesbares Ergebnis geliefert. Bitte erneut versuchen.')}
+  return {source:b.provider,model:b.model,summary:String(parsed.summary||'').trim().slice(0,600),findings:cleanFindings(parsed.findings)};
  }
  if(b.mode==='names'){
   let parsed;try{parsed=parseJson(await ask(namesPrompt,{count:b.count,idea:b.idea,context:toneLevels[b.tone],avoid:b.avoid,spec:b.spec.slice(0,12000)},1200))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
@@ -288,7 +333,7 @@ http.createServer(async(req,res)=>{
   return res.end(req.url==='/'?html:modules[req.url]);
  }
  if(req.method==='GET'&&req.url==='/api/alive')return alive(req,res);
- if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,stitch:!!stitchKey(),agents:cliOk});
+ if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,stitch:!!stitchKey(),agents:cliOk,reviewers});
  if(req.method==='GET'&&req.url==='/api/run')return send(res,200,runStatus());
  if(req.method==='GET'&&req.url.startsWith('/api/layout/file?')){
   const query=new URL(req.url,'http://'+host).searchParams,name=query.get('name');

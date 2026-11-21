@@ -391,3 +391,13 @@ export function demoNames(idea, count = 3) {
 }
 
 export const namesPrompt = 'Schlage genau count Namen für die Anwendung vor, die in idea und – falls vorhanden – spec beschrieben ist. Kurz (ein bis zwei Wörter), gut aussprechbar, einprägsam, zum Einsatzbereich (context) passend und untereinander deutlich verschieden im Stil (beschreibend, bildhaft, Kunstwort). Keine bekannten Marken- oder Produktnamen, keine Namen aus avoid. Je Name ein Halbsatz, warum er passt. Ausschließlich JSON ohne Markdown-Codeblock: {"names":[{"name":"...","why":"..."}]}';
+
+/** Befunde eines Reviews prüfen: Gewicht, Abschnitt, Problem und ein einarbeitbarer Vorschlag. */
+export function cleanFindings(list) {
+  const levels = ['hoch', 'mittel', 'niedrig'];
+  return (Array.isArray(list) ? list : []).map(f => (f && typeof f === 'object' && text(f.issue, 400) ? {
+    severity: levels.includes(f.severity) ? f.severity : 'mittel', section: text(f.section, 80), issue: text(f.issue, 400), suggestion: text(f.suggestion, 400),
+  } : null)).filter(Boolean).slice(0, 10);
+}
+
+export const reviewPrompt = 'Prüfe die Spezifikation (spec) als unabhängiger Reviewer, bevor Coding-Agenten sie umsetzen. Suche nach: Widersprüchen, Lücken, nicht prüfbaren Anforderungen, fehlenden Randfällen, Unklarheiten, an denen ein Agent hängen bliebe, und unnötiger Komplexität gemessen an der Zielzeit (targetDuration, reine Laufzeit der Agenten). Höchstens zehn Befunde, die wichtigsten zuerst; kein Lob, nichts erfinden, nur was sich an der Spezifikation belegen lässt. Je Befund: severity (hoch, mittel oder niedrig), section (betroffener Abschnitt), issue (das Problem in einem Satz), suggestion (die konkrete Änderung an der Spezifikation in einem Satz, so formuliert, dass sie sich unmittelbar einarbeiten lässt). Antworte auf Deutsch und ausschließlich mit JSON ohne Markdown-Codeblock: {"summary":"Gesamteindruck in ein bis zwei Sätzen","findings":[{"severity":"hoch","section":"...","issue":"...","suggestion":"..."}]}';

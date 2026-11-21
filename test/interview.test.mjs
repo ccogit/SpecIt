@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { estimate } from '../planner.mjs';
 import assert from 'node:assert/strict';
-import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant, adjustDemo, cleanFeatures, demoFeatures, workPackages, suggestExtensions, featureDuration, mapAnswers, cleanNames, demoNames } from '../interview.mjs';
+import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant, adjustDemo, cleanFeatures, demoFeatures, workPackages, suggestExtensions, featureDuration, mapAnswers, cleanNames, demoNames, cleanFindings } from '../interview.mjs';
 
 test('autonomy decides a share of the questions itself and gives them back when lowered', () => {
   const qs = demoQuestions(), n = qs.length;
@@ -189,4 +189,11 @@ test('name suggestions are short, unique and limited to the requested count', ()
   assert.equal(names.length, 4);
   assert.ok(names[0].name.includes('Lesetagebuch') && new Set(names.map(n => n.name)).size === 4);
   assert.equal(demoNames('', 2).length, 2);
+});
+
+test('review findings are normalised and capped', () => {
+  const f = cleanFindings([{ severity: 'HOCH', section: ' Daten ', issue: 'Widerspruch', suggestion: 'Abschnitt 3 anpassen' }, { issue: '' }, null, ...Array.from({ length: 12 }, (_, i) => ({ severity: 'niedrig', issue: 'Punkt ' + i }))]);
+  assert.equal(f.length, 10);
+  assert.deepEqual(f[0], { severity: 'mittel', section: 'Daten', issue: 'Widerspruch', suggestion: 'Abschnitt 3 anpassen' });
+  assert.equal(f[1].severity, 'niedrig');
 });
