@@ -48,7 +48,7 @@ Setze `STITCH_API_KEY` in `.env` (oder in der Umgebung) und starte neu. In Schri
 
 Leitidee: **so wenig Aufwand wie möglich, ohne Qualitätsverlust.** Auf dem neuen Studio-Startbildschirm genügt ein Satz oder eine der Beispielideen. Die Schaltfläche **„Mit KI zum fertigen Konzept“** aktiviert den Autopilot (100 % Entscheidungsautonomie): SpecIt leitet domänenspezifische Fragen ab, übernimmt plausible Standards ausdrücklich als Annahmen und erstellt daraus die Spezifikation. Diese enthält neben Anforderungen auch Nutzerreisen, UX-Entwurf, Architektur, Risiken und Akzeptanzkriterien. Die KI soll keine Tatsachen über Nutzer oder Organisation erfinden. Ohne Claude-Zugang ist die Aktion erkennbar als **„Beispielkonzept erstellen“** beschriftet; das Ergebnis bleibt generisch.
 
-Der ausklappbare Bereich **„Konzept-Steuerung“** hält für Nutzer mit mehr Kontrolle die bisherigen Regler, Voreinstellungen, das optionalen KI-Review und Stitch-Konfiguration bereit. Über die Schrittleiste kann weiterhin ein geführtes Interview gestartet werden. Die Anwendung führt unverändert durch die vier Phasen Idee → Fragen → Spezifikation → Umsetzung.
+Der ausklappbare Bereich **„Konzept-Steuerung“** hält für Nutzer mit mehr Kontrolle die bisherigen Regler, Voreinstellungen, das optionale KI-Review und Stitch-Konfiguration bereit. Über die Schrittleiste kann weiterhin ein geführtes Interview gestartet werden. Die Anwendung führt unverändert durch die vier Phasen Idee → Fragen → Spezifikation → Umsetzung.
 
 **↺ Zurücksetzen** in der Kopfzeile leert mit einem Klick alles Angegebene und Beantwortete (Projektname, Idee, Modus, Dauer, Antworten, Spezifikation, Agent Tasks) – ohne Rückfrage, dafür 20 Sekunden lang über „Rückgängig“ widerrufbar.
 
