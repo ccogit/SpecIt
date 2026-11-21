@@ -351,7 +351,15 @@ summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;co
 .sketchbox{flex:1;min-height:150px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .sketch{flex:1;min-height:0;display:grid;place-items:center;border-radius:8px;background:var(--surface-low);padding:12px;overflow:hidden}
 .sketch svg{width:100%;height:100%;max-height:100%;display:block}
-.sketchbox.empty .sketch{border:1.5px dashed var(--outline-soft);background:none}
+ .sketchbox.empty .sketch{border:1.5px dashed var(--outline-soft);background:none}
+ #liveForgeQuick{display:none}
+ #sketchBox[data-live-view="prototype"] #liveForgeQuick:not([hidden]){display:block;flex:1;min-height:0;overflow:auto;margin:0;overscroll-behavior:contain}
+ #sketchBox[data-live-view="prototype"] :is(#sketch,#sketchPalette,#sketchPlay,#sketchRefine,#sketchNote,#promptView){display:none!important}
+ #sketchBox[data-live-view="prototype"] #sketchDevice{display:inline-flex!important}
+ #liveForgeSwitch[hidden]{display:none!important}
+ .hero>.ideacard:has(#sketchBox[data-live-view="prototype"]){max-height:none;min-height:0}
+ @media(min-width:1181px){.hero>.ideacard:has(#sketchBox[data-live-view="prototype"]) .sketchbox{min-height:0}}
+ @media(max-width:1180px){.hero>.ideacard:has(#sketchBox[data-live-view="prototype"]) .sketchbox{min-height:360px}}
 .sk-frame{fill:var(--card);stroke:var(--outline-soft);stroke-width:1.5}
 .sk-bar,.sk-side{fill:var(--surface-mid)}
 .sk-box{fill:none;stroke:var(--outline-soft);stroke-width:1.2}
@@ -1010,10 +1018,10 @@ body.merged.decqa #decDerive{margin-top:12px}
     <div class="card ideacard">
       <textarea id="idea" rows="7" maxlength="2000" aria-label="Was willst du bauen?" placeholder="Was willst du bauen? Ein Satz genügt – z. B. „Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost“. Mehr Details sind willkommen (Umschalt+Enter für eine neue Zeile)."></textarea>
       <div class="sketchbox" id="sketchBox">
-        <div class="spread"><span class="eyebrow">Skizze · live aus deiner Idee</span><span class="actions"><span class="meta" id="sketchNote"></span><button id="sketchPlay" class="btn small hidden" type="button" title="Zeigt, wie Agenten die Bereiche der Skizze bauen würden: erst das Grundgerüst, dann parallel.">▶ Bau-Vorschau</button><button id="sketchDevice" class="btn small hidden" type="button" aria-pressed="false">▯ Handy</button><button id="sketchRefine" class="btn small hidden" type="button" title="Claude zeichnet ohnehin live mit, sobald du einen Moment nichts änderst (verbraucht Claude-Kontingent). Hier beginnt er sofort von vorn.">✦ Von Claude zeichnen lassen</button></span></div>
+        <div class="spread"><span class="eyebrow" id="liveForgeHeading">Skizze · live aus deiner Idee</span><span class="actions"><button id="liveForgeSwitch" class="btn small" type="button" hidden>Skizze anzeigen</button><span class="meta" id="sketchNote"></span><button id="sketchPlay" class="btn small hidden" type="button" title="Zeigt, wie Agenten die Bereiche der Skizze bauen würden: erst das Grundgerüst, dann parallel.">▶ Bau-Vorschau</button><button id="sketchDevice" class="btn small hidden" type="button" aria-pressed="false">▯ Handy</button><button id="sketchRefine" class="btn small hidden" type="button" title="Claude zeichnet ohnehin live mit, sobald du einen Moment nichts änderst (verbraucht Claude-Kontingent). Hier beginnt er sofort von vorn.">✦ Von Claude zeichnen lassen</button></span></div>
         <div id="sketch" class="sketch"></div>
         <div id="sketchPalette" class="actions sketchpalette hidden"></div>
-        <details id="liveForgeQuick" class="lfq" open hidden><summary><span class="eyebrow">Bedienbarer Entwurf · LiveForge</span><span class="meta">Lokal · ohne KI-Aufruf</span></summary><div class="lfq-body" id="liveForgeBody"></div></details>
+        <section id="liveForgeQuick" class="lfq" hidden aria-label="Bedienbarer lokaler Entwurf"><div class="lfq-body" id="liveForgeBody"></div></section>
         <details class="promptview hidden" id="promptView"><summary><span class="eyebrow">Wirksamer Prompt</span><span class="meta" id="promptMeta"></span></summary><div id="promptBody" class="promptbody"></div></details>
       </div>
       <div class="spread">
@@ -1398,13 +1406,18 @@ let catOpen=-1,catPick=[],catCustom='',change=null;
 const catGroups=new Set();
 
 // Local preview is deliberately independent of Claude, persistence and the SVG stream.
-let quickPreview=null,quickPhone=false;
+let quickPreview=null,quickPhone=false,quickMode=true;
 function refreshLiveForge(phone){
   if(typeof phone==='boolean')quickPhone=phone;
   if(s.phase!==0)return;
   const root=$('liveForgeBody');if(!root)return;
   if(!quickPreview)quickPreview=mountLivePreview(root);
   quickPreview.update(s,{phone:quickPhone});
+  const hasIdea=!!s.idea.trim(),interactive=hasIdea&&quickMode;
+  $('sketchBox').dataset.liveView=interactive?'prototype':'sketch';
+  const toggle=$('liveForgeSwitch');toggle.hidden=!hasIdea;toggle.textContent=interactive?'Skizze anzeigen':'Bedienbaren Entwurf anzeigen';toggle.setAttribute('aria-pressed',String(interactive));
+  $('liveForgeHeading').textContent=interactive?'Bedienbarer Entwurf · live und lokal':'Skizze · live aus deiner Idee';
+  if(interactive){$('sketchDevice').textContent=quickPhone?'▭ Desktop':'▯ Handy';$('sketchDevice').setAttribute('aria-pressed',String(quickPhone))}
 }
 function save(){try{localStorage.setItem('specit-v3',JSON.stringify(s))}catch{$('busy').textContent='Lokales Speichern nicht möglich.'}refreshLiveForge()}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
@@ -3034,6 +3047,7 @@ function sketchUI(){
   else{box.classList.remove('streaming');box.querySelector('.sk-stream')?.remove();for(const c of box.children)c.classList.remove('sk-under')}
 }
 $('idea').addEventListener('input',()=>sketchUI());
+$('liveForgeSwitch').onclick=()=>{quickMode=!quickMode;refreshLiveForge()};
 $('sketchPlay').onclick=playBuild;
 $('sketchDevice').onclick=()=>{sketchPhone=!sketchPhone;sketchUI()};
 // Auch die Regler formen die Skizze: Zieldauer, Kreativität, Einsatzbereich, Logo
