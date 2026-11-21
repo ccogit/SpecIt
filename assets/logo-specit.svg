@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" role="img" aria-labelledby="title">
+<title id="title">SpecIt</title>
+<g stroke-linecap="round" stroke-linejoin="round">
+<path d="M142 38h121l49 49v65M312 234v27q0 31-31 31h-16M220 292h-78q-33 0-33-33V71q0-33 33-33Z" fill="none" stroke="#0D4B3B" stroke-width="18"/>
+<path d="M263 38v43q0 12 12 12h37Z" fill="#75D86D" stroke="#0D4B3B" stroke-width="10"/>
+<path d="M147 96h81M194 142h75M194 188h75M194 234h43" stroke="#0D4B3B" stroke-width="13"/>
+<g fill="#41B63A"><rect x="135" y="124" width="37" height="37" rx="9"/><rect x="135" y="170" width="37" height="37" rx="9"/><rect x="135" y="216" width="37" height="37" rx="9"/></g>
+<path d="m145 141 7 7 13-15m-20 54 7 7 13-15m-20 54 7 7 13-15" fill="none" stroke="white" stroke-width="5"/>
+<path d="m238 294 112-130" stroke="#0D4B3B" stroke-width="23"/><path d="m330 187 20-23" stroke="#41B63A" stroke-width="23"/>
+<g fill="#41B63A"><path d="M354 81Q359 105 380 109Q359 113 354 137Q350 113 329 109Q350 105 354 81Z"/><path d="M319 114Q322 129 336 132Q322 135 319 150Q316 135 302 132Q316 129 319 114Z"/><path d="M377 137Q380 151 393 154Q380 157 377 171Q374 157 361 154Q374 151 377 137Z"/></g>
+</g>
+<text x="240" y="390" text-anchor="middle" font-family="Verdana,Arial,sans-serif" font-size="98" font-weight="bold" letter-spacing="-5" fill="#0D4B3B">Spec<tspan fill="#41B63A">It</tspan></text>
+</svg>
