@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant } from '../interview.mjs';
+import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant, adjustDemo } from '../interview.mjs';
 
 test('autonomy decides a share of the questions itself and gives them back when lowered', () => {
   const qs = demoQuestions(), n = qs.length;
@@ -20,6 +20,14 @@ test('without AI the decisions on goal, users and features stay with the user', 
   const relevant = demoRelevant(qs);
   assert.ok(relevant.length > 0 && !relevant.includes(0), 'answered questions are not open decisions');
   assert.ok(relevant.every(i => qs[i].topic <= 2) && qs.every((q, i) => relevant.includes(i) === (q.state === 'open' && q.topic <= 2)));
+});
+test('without AI a change request becomes an additional requirement', () => {
+  const qs = demoQuestions().map(acceptDefault), spec = demoSpec('P', 'Idee', qs);
+  assert.equal(adjustDemo(spec, 'P', 'Idee', qs, [], 'CSV-Export'), demoSpec('P', 'Idee', qs, ['CSV-Export']));
+  const edited = adjustDemo(spec + '\n\n## Notizen\n\nBleibt.', 'P', 'Idee', qs, [], 'CSV-Export');
+  assert.ok(edited.includes('## Zusätzliche Anforderungen\n\n- CSV-Export') && edited.includes('Bleibt.') && edited.includes('[Zusätzliche Anforderungen](#zusätzliche-anforderungen)'));
+  const twice = adjustDemo(edited, 'P', 'Idee', qs, ['CSV-Export'], 'Druckansicht');
+  assert.ok(twice.includes('- CSV-Export\n- Druckansicht') && twice.split('## Zusätzliche Anforderungen').length === 2);
 });
 test('target duration appears in the demo spec and in the prompt frame', () => {
   const qs = demoQuestions().map(acceptDefault);
