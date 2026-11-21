@@ -597,6 +597,7 @@ html{scrollbar-gutter:stable}
         <div class="actions" style="margin-top:10px"><select id="reviewBy" aria-label="Anbieter für das Review" style="flex:1;min-width:150px"></select><select id="reviewModel" aria-label="Modell für das Review" style="flex:1;min-width:130px"></select></div>
       </div>
     </div>
+      <div class="advanced-actions"><span class="meta">Deine gewählte Autonomie und Kreativität werden beim geführten Start respektiert.</span><button id="guidedStart" class="btn" type="button">Mit meinen Einstellungen fortfahren →</button></div>
     </details>
     <p style="text-align:center"><button class="link" type="button" id="pasteSpec">Bereits eine Spezifikation? Hier importieren</button></p>
   </div>
@@ -987,6 +988,7 @@ function studioUI(){
     out.append(node('span','Erste Orientierung · die echten Anforderungen entstehen nach dem Start','meta'));
   }else out.append(node('span',signal.hint,'meta'));
   action.disabled=active||!s.idea.trim();
+  $('guidedStart').disabled=active||!s.idea.trim();
   const e=effort(),dec=summary(s.questions);
   $('metricInput').textContent=e.typed.toLocaleString('de-DE');
   $('metricDecisions').textContent=(dec.decided+dec.defaults+s.extras.length).toLocaleString('de-DE');
@@ -1006,6 +1008,7 @@ IDEA_EXAMPLES.forEach(example=>{
   });
   b.title=example.text;examples.append(b);
 });
+$('guidedStart').onclick=()=>derive(false);
 $('magicStart').onclick=async()=>{
   if(active||!s.idea.trim())return;
   s.autonomy=100;s.creativity=Math.max(3,s.creativity);
@@ -1612,7 +1615,7 @@ function working(text,since){
   // Erst nach einem Augenblick einblenden: Antworten ohne KI kommen sofort und sollen nicht aufblitzen.
   tick();workTimer=setInterval(tick,1000);showTimer=setTimeout(()=>{bar.classList.remove('hidden');document.title='⏳ '+who+' – '+pageTitle},250);
 }
-function lock(v,text){active=v;aborter=v?new AbortController():null;for(const id of ['derive','more','generate','plan'])$(id).disabled=v;$('magicStart').disabled=v||!s.idea.trim();navUI();working(v?text||'Anfrage läuft':'');if(!v&&runBusy)pollRun()}
+function lock(v,text){active=v;aborter=v?new AbortController():null;for(const id of ['derive','more','generate','plan'])$(id).disabled=v;$('magicStart').disabled=v||!s.idea.trim();$('guidedStart').disabled=v||!s.idea.trim();navUI();working(v?text||'Anfrage läuft':'');if(!v&&runBusy)pollRun()}
 // Schließen oder Neuladen während einer laufenden Anfrage nur nach Rückfrage des Browsers
 $('workingStop').onclick=()=>{
   if(aborter)aborter.abort();else if(layoutAbort)layoutAbort.abort();else if(runBusy)$('runStop').click();
@@ -2019,7 +2022,7 @@ function aiUI(){
   $('mode').title=on?'Fragen und Spezifikation werden von Claude auf die Idee zugeschnitten'+(provider==='claude-code'?' (über das lokale Claude Code).':'.')
     :available?'Allgemeiner Fragenkatalog, für jede Idee gleich. Mit Claude werden die Fragen auf die Idee zugeschnitten.'
     :'Kein Claude-Zugang gefunden: ANTHROPIC_API_KEY in .env setzen oder Claude Code installieren und anmelden, dann SpecIt neu starten.';
-  ideaUI();
+  ideaUI();studioUI();
   // Hinweis zum Datenfluss am Schalter selbst (die Fußzeile gibt es nicht mehr)
   $('aiSwitch').title=on?'Claude ist aktiv: Projektdaten werden an Anthropic gesendet. Keine vertraulichen Daten eingeben. Der Entwurf wird lokal im Browser gespeichert.':'Mit aktivem Claude werden Projektdaten an Anthropic gesendet. Keine vertraulichen Daten eingeben. Der Entwurf wird lokal im Browser gespeichert.';
   gaugeUI();
@@ -2302,7 +2305,7 @@ $('reset').onclick=()=>{
   replaceState(fresh);s.autonomy=blank().autonomy;s.phase=0;catGroups.clear();renderAll();window.scrollTo({top:0});$('idea').focus();
   const undo=button('↶ Rückgängig','btn small',()=>{clearTimeout(undoTimer);toast.classList.add('hidden');revision++;s=before;change=null;catOpen=-1;if(s.active>=0)activate(s.active,false);renderAll()});
   toast.replaceChildren(node('span','Alles zurückgesetzt.'),undo);toast.classList.remove('hidden');
-  clearTimeout(undoTimer);undoTimer=setTimeout(()=>toast.classList.add('hidden'),5000);
+  clearTimeout(undoTimer);undoTimer=setTimeout(()=>toast.classList.add('hidden'),20000);
 };
 
 function renderAll(){
