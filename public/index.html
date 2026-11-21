@@ -946,6 +946,7 @@ function phasesUI(){
     if(i)bar.append(node('span','→','arrow'));
     const b=button(undefined,'phase'+(p.done?' done':''),()=>setPhase(i));
     b.setAttribute('aria-current',i===s.phase?'page':'false');
+    b.setAttribute('aria-label','Schritt '+(i+1)+': '+phaseNames[i]+(p.done?' abgeschlossen':''));
     b.append(node('span',p.done&&i!==s.phase?'✓':String(i+1),'num'),node('span',phaseNames[i]));
     if(p.chip)b.append(node('span',p.chip,'chip'+(p.warn?' warn':'')));
     bar.append(b);
@@ -966,15 +967,16 @@ function ensureFeatures(){
 }
 for(const b of document.querySelectorAll('[data-phase]'))b.onclick=()=>setPhase(Number(b.dataset.phase));
 // Die Knöpfe der einzelnen Schritte bleiben (versteckt) erhalten; die feste Leiste löst sie aus und zeigt ihren Stand.
-const nextOf=()=>[$('derive'),$('toSpec'),$('toTasks'),$('finish')][s.phase]||null;
+const nextOf=()=>[$('advancedPanel').open?$('derive'):$('magicStart'),$('toSpec'),$('toTasks'),$('finish')][s.phase]||null;
 function navUI(){
   const target=nextOf(),next=$('navNext'),back=$('navBack');
   back.style.visibility=s.phase?'visible':'hidden';back.textContent='←';back.title='Zurück zu „'+(phaseNames[s.phase-1]||'')+'“';back.setAttribute('aria-label',back.title);
   next.style.visibility=target?'visible':'hidden';
-  if(target){next.textContent=s.phase===0?$('deriveLabel').textContent:target.textContent;next.disabled=target.disabled}
+  if(target){next.textContent=s.phase===0?(target===$('magicStart')?$('magicStart').textContent:$('deriveLabel').textContent):target.textContent;next.disabled=target.disabled||(s.phase===0&&!s.idea.trim())}
   $('navHint').textContent='Schritt '+(s.phase+1)+' von '+phaseNames.length+' · '+phaseNames[s.phase];
 }
 $('navNext').onclick=()=>nextOf()?.click();
+$('advancedPanel').addEventListener('toggle',navUI);
 $('navBack').onclick=()=>{if(s.phase)setPhase(s.phase-1)};
 
 /* ---------- Schritt 1: Idee ---------- */
@@ -2022,7 +2024,7 @@ function aiUI(){
   $('mode').title=on?'Fragen und Spezifikation werden von Claude auf die Idee zugeschnitten'+(provider==='claude-code'?' (über das lokale Claude Code).':'.')
     :available?'Allgemeiner Fragenkatalog, für jede Idee gleich. Mit Claude werden die Fragen auf die Idee zugeschnitten.'
     :'Kein Claude-Zugang gefunden: ANTHROPIC_API_KEY in .env setzen oder Claude Code installieren und anmelden, dann SpecIt neu starten.';
-  ideaUI();studioUI();
+  ideaUI();studioUI();navUI();
   // Hinweis zum Datenfluss am Schalter selbst (die Fußzeile gibt es nicht mehr)
   $('aiSwitch').title=on?'Claude ist aktiv: Projektdaten werden an Anthropic gesendet. Keine vertraulichen Daten eingeben. Der Entwurf wird lokal im Browser gespeichert.':'Mit aktivem Claude werden Projektdaten an Anthropic gesendet. Keine vertraulichen Daten eingeben. Der Entwurf wird lokal im Browser gespeichert.';
   gaugeUI();
