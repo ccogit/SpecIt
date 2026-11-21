@@ -59,7 +59,7 @@ export function buildLiveConcept(s={},context={}){
   const views=kinds.map(k=>({id:k,title:titleFor(k,p,tone),source:requested.includes(k)?'erkannter Wunsch':k===primary?'vorläufiger Kern':'optionaler Vorschlag'}));
   const rows=p.rows.map(([label,detail],i)=>({id:'demo-'+i,label,detail,done:false}));
   const title=name||(nameCount?p.title:'Anwendung ohne Namen');
-  const scopeConflict=kinds.filter(k=>requested.includes(k)||k===primary).length>cap;
+  const scopeConflict=minutes>0&&kinds.filter(k=>requested.includes(k)||k===primary).length>cap;
   const descriptions=[
     ['Idee',idea],
     ['Name',name?name+' (festgelegt) · '+nameCount+' Namensvorschläge gewünscht':nameCount?nameCount+' Namensvorschläge gewünscht; Arbeitstitel: '+p.title:'Keine Namensvorschläge; neutraler Platzhalter'],
@@ -201,14 +201,14 @@ export function mountLivePreview(root){
   }
   return {update(next,context={}){
     const m=buildLiveConcept(next,context);
-    const sig=JSON.stringify(m);if(signature===sig)return;
+    const sig=JSON.stringify(m);if(signature===sig)return m;
     signature=sig;
     // Clearing the idea or changing the detected domain drops sandbox-only state.
     if(!model||model.domain!==m.domain||!m.idea||!model.idea)reset(m);
-    model=m;const panel=root.closest('.lfq');if(panel)panel.hidden=!m.idea;else root.hidden=!m.idea;if(!m.idea){contentKey='';main.replaceChildren();brief.textContent='';return}
+    model=m;const panel=root.closest('.lfq');if(panel)panel.hidden=!m.idea;else root.hidden=!m.idea;if(!m.idea){contentKey='';main.replaceChildren();brief.textContent='';return m}
     if(!m.views.some(v=>v.id===active)){active=m.primary;selected=null;showForm=false;query=''}
     notice.textContent=m.title+' · '+m.views.length+' '+(m.views.length===1?'Bereich':'Bereiche')+' · '+(m.scopeConflict?'Zielumfang prüfen · ':'')+(m.autonomy===0?'Alle nicht bestätigten Festlegungen bleiben offen. ':'')+'Vorläufiger Entwurf – keine echte Datenhaltung.';
     brief.textContent=m.descriptions.map(([k,v])=>k+': '+v).join('\n');
-    draw();
+    draw();return m;
   }};
 }
