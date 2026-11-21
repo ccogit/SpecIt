@@ -27,7 +27,7 @@ try{
   const context=await browser.newContext({viewport:{width:1440,height:900},deviceScaleFactor:1});
   const page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(base+'/',{waitUntil:'networkidle'});
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   assert.equal(await page.locator('#phase0').isVisible(),true);
   assert.equal(await page.locator('#magicStart').isDisabled(),true);
   await page.screenshot({path:join(directory,'01-desktop-welcome.png'),fullPage:true});
@@ -64,7 +64,7 @@ try{
   const mobile=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
   const mobilePage=await mobile.newPage(),mobileErrors=[];
   mobilePage.on('pageerror',e=>mobileErrors.push(e.message));
-  await mobilePage.goto(base+'/',{waitUntil:'networkidle'});
+  await mobilePage.goto(base+'/',{waitUntil:'domcontentloaded'});
   assert.equal(await mobilePage.locator('#phase0').isVisible(),true);
   await mobilePage.screenshot({path:join(directory,'05-mobile-welcome.png'),fullPage:true});
   await mobilePage.locator('#advancedPanel > summary').click();
