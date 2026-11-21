@@ -323,3 +323,26 @@ main{width:100%;max-width:1500px;padding:37px clamp(20px,4vw,70px) 100px;gap:28p
   html{scroll-behavior:auto}
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
+
+
+/* Outcome proof: real state-derived values, never a synthetic quality score. */
+.studio-metrics{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin:0 0 4px;padding:19px 23px;border:1px solid var(--outline-soft);border-radius:16px;background:var(--card);box-shadow:var(--shadow)}
+.studio-metric{display:flex;align-items:center;gap:11px;min-width:160px}
+.studio-metric .metric-symbol{display:grid;place-items:center;width:39px;height:39px;flex-shrink:0;border:1px solid var(--outline-soft);background:var(--tint);color:var(--secondary);border-radius:12px;font-size:19px}
+.studio-metric strong{display:block;font-size:22px;font-weight:780;line-height:1.2;color:var(--heading);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.studio-metric small{display:block;font-size:12px;color:var(--ink-soft)}
+.metric-divider{color:var(--outline);font-weight:700}
+.studio-metrics>#metricSource{margin-left:auto}
+.refinement-prompts{border-top:1px solid var(--outline-soft);padding-top:13px}
+.refinement-prompts .idea-example{background:var(--surface);white-space:normal;text-align:center}
+@media(max-width:800px){
+  .studio-metrics{gap:12px 20px;padding:15px 17px}
+  .studio-metric{min-width:125px;flex:1}
+  .metric-divider{display:none}
+  .studio-metrics>#metricSource{margin-left:0}
+}
+@media(max-width:440px){
+  .studio-metric{min-width:calc(50% - 15px)}
+  .studio-metric strong{font-size:20px}
+  .studio-metric small{font-size:11px}
+}
