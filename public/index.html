@@ -1615,7 +1615,7 @@ function working(text,since){
   // Erst nach einem Augenblick einblenden: Antworten ohne KI kommen sofort und sollen nicht aufblitzen.
   tick();workTimer=setInterval(tick,1000);showTimer=setTimeout(()=>{bar.classList.remove('hidden');document.title='⏳ '+who+' – '+pageTitle},250);
 }
-function lock(v,text){active=v;aborter=v?new AbortController():null;for(const id of ['derive','more','generate','plan'])$(id).disabled=v;$('magicStart').disabled=v||!s.idea.trim();$('guidedStart').disabled=v||!s.idea.trim();navUI();working(v?text||'Anfrage läuft':'');if(!v&&runBusy)pollRun()}
+function lock(v,text){active=v;aborter=v?new AbortController():null;for(const id of ['derive','more','generate','plan'])$(id).disabled=v;$('magicStart').disabled=v||!s.idea.trim();$('guidedStart').disabled=v||!s.idea.trim();navUI();working(v?text||'Anfrage läuft':'');if(!v&&runBusy)pollRun();if(!v&&s.phase===3)queueMicrotask(preparePlan)}
 // Schließen oder Neuladen während einer laufenden Anfrage nur nach Rückfrage des Browsers
 $('workingStop').onclick=()=>{
   if(aborter)aborter.abort();else if(layoutAbort)layoutAbort.abort();else if(runBusy)$('runStop').click();
@@ -2169,7 +2169,7 @@ $('layoutRun').onclick=async()=>{
     }
     layoutBusy=false;layoutUI();planUI();navUI();
   }catch(e){layoutBusy=false;layoutUI();status.textContent=e.message}
-  finally{layoutBusy=false;layoutAbort=null;$('layoutRun').disabled=false;if(!active)working('')}
+  finally{layoutBusy=false;layoutAbort=null;$('layoutRun').disabled=false;if(!active)working('');if(s.phase===3)preparePlan()}
 };
 
 /* ---------- Export ---------- */
