@@ -348,6 +348,46 @@ summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;co
 .ideacard{flex:1;display:flex;flex-direction:column;gap:12px;min-height:200px;max-height:340px}
 /* Das Ideenfeld ist kompakt; darunter steht die Live-Skizze und füllt den Rest der Karte */
 .ideacard #idea{flex:0 0 auto;height:132px}
+.conceptbox{flex:1 1 0;min-height:150px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.conceptbox>.spread{flex-wrap:wrap;gap:6px 10px}
+.concept{flex:1 1 0;min-height:120px;overflow-y:auto;padding:14px 18px;border-radius:8px;background:var(--card);box-shadow:var(--shadow);font-size:14px;line-height:1.6;overflow-wrap:anywhere;transition:opacity .25s ease}
+.concept.empty{background:none;box-shadow:none;border:1.5px dashed var(--outline-soft);display:grid;place-items:center;text-align:center}
+.concept.stale{opacity:.45}
+.concept.inspec{flex:none;min-height:0;padding:0;background:none;box-shadow:none;overflow:visible}
+.md h3 .meta{font-weight:400;margin-left:8px}
+.md .concept.inspec h3{margin:14px 0 2px;padding:0;border:0;font-family:var(--mono);font-size:11px;line-height:16px;letter-spacing:.07em;text-transform:uppercase;color:var(--secondary)}
+.md .concept.inspec h3:first-child{margin-top:4px}
+.md .concept.inspec p,.md .concept.inspec ul{margin:0 0 4px}
+.concept .dim{opacity:.38;transition:opacity .2s ease}
+/* Deine Festlegungen bleiben unter dem Text stehen, auch während er neu geschrieben wird */
+.conceptwish{display:flex;gap:8px;align-items:center}
+.conceptwish.hidden{display:none}
+.conceptwish input{flex:1;min-width:0;padding:8px 12px;font-size:14px}
+.conceptown .ownchip.wish{background:var(--surface-high);color:var(--ink)}
+.conceptown{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.conceptown .ownchip{display:inline-flex;align-items:center;gap:6px;padding:2px 4px 2px 9px;border-radius:5px;font-size:12px;font-weight:600;background:var(--mint);color:var(--on-mint)}
+.conceptown .ownchip.away{background:none;box-shadow:inset 0 0 0 1px var(--go);color:var(--ink-soft)}
+.conceptown .ownchip button{all:unset;cursor:pointer;padding:0 5px;border-radius:4px;opacity:.6}
+.conceptown .ownchip button:hover,.conceptown .ownchip button:focus-visible{opacity:1;background:rgba(128,128,128,.25)}
+.concept h3{margin:12px 0 2px;font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--secondary)}
+.concept h3:first-child{margin-top:0}
+.concept p{margin:0 0 4px}
+.concept ul{margin:0 0 4px;padding-left:18px}
+.concept .caret{display:inline-block;width:7px;height:15px;margin-left:2px;vertical-align:-2px;background:var(--secondary);animation:caret 1s steps(2) infinite}
+@keyframes caret{50%{opacity:0}}
+/* Offene Stelle im Text: gestrichelt = Annahme der KI, grün = von dir entschieden */
+.cmark{all:unset;cursor:pointer;padding:0 5px;border-radius:4px;background:color-mix(in srgb,#e2a336 20%,transparent);box-shadow:inset 0 -1.5px 0 #e2a336;font-weight:600}
+.cmark:hover,.cmark:focus-visible{background:color-mix(in srgb,#e2a336 34%,transparent)}
+.cmark.own{background:var(--mint);color:var(--on-mint);box-shadow:inset 0 -1.5px 0 var(--go)}
+.cmark.flash{animation:cflash 1.1s ease-out}
+@keyframes cflash{0%{background:var(--go);color:var(--on-go);box-shadow:0 0 0 5px color-mix(in srgb,var(--go) 45%,transparent)}100%{box-shadow:0 0 0 0 transparent}}
+@media(prefers-reduced-motion:reduce){.cmark.flash{animation:none}}
+.cmark[aria-expanded=true]{outline:2px solid var(--secondary);outline-offset:1px}
+.cask{display:block;margin:6px 0 8px;padding:10px 12px;border-radius:8px;background:var(--surface-low);border-left:4px solid var(--secondary)}
+.cask b{display:block;margin-bottom:6px;font-size:13px}
+.cask .actions{flex-wrap:wrap;gap:6px}
+.cask input{flex:1;min-width:140px;padding:6px 9px;font-size:13px}
+@media(prefers-reduced-motion:reduce){.concept .caret{animation:none}}
 .sketchbox{flex:1;min-height:150px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .sketch{flex:1;min-height:0;display:grid;place-items:center;border-radius:8px;background:var(--surface-low);padding:12px;overflow:hidden}
 .sketch svg{width:100%;height:100%;max-height:100%;display:block}
@@ -607,7 +647,7 @@ body{padding-bottom:62px}
 /* Arbeitsanzeige in der Leiste: nimmt die Mitte ein und ersetzt dort die Schrittangabe */
 .stepnav .working{flex:1;min-width:0;border-radius:8px;padding:7px 12px 9px;gap:10px;flex-wrap:nowrap;font-size:13px}
 .stepnav .working b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.stepnav .working #workingHint{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.stepnav .working #workingHint{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 10 auto}
 .stepnav .working .workstop{min-width:0;flex-shrink:0}
 .stepnav .working .timer{flex-shrink:0}
 /* Drei Zonen mit gleich breiten Seiten: Die Arbeitsanzeige steht dadurch genau in der Mitte */
@@ -632,6 +672,7 @@ body{padding-bottom:62px}
 .effortbar .t.user i,.effortbar .t.std i,.effortbar .t.ai i{font-weight:700}
 .effortbar.tight .t.more{display:none}
 .effortbar.tighter .t:not(.m),.effortbar.tighter .arr{display:none}
+.effortbar.gone{visibility:hidden;width:0;margin:0!important;padding:0!important;border:0!important;overflow:hidden!important}
 .effortbar .t.pending b{color:var(--outline)}
 .effortbar .ebar{display:flex!important}
 .effortbar .ebar>i{border-radius:0}
@@ -697,6 +738,20 @@ body{padding-bottom:62px}
 .stepnav .working .workstop{background:transparent;color:var(--ink-soft);box-shadow:inset 0 0 0 1px var(--outline-soft)}
 .stepnav .working .workstop:hover{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink-soft)}
 .stepnav .working .timer{background:none;box-shadow:none;padding:0;color:var(--ink-soft)}
+/* Arbeitsanzeige: über die ganze freie Breite der Fußleiste, ruhig schimmernde Fläche, Ring statt Punkten, feine Lichtspur am unteren Rand */
+.stepnav .inner{grid-template-columns:auto minmax(0,1fr) auto}
+.stepnav .working{isolation:isolate;border-radius:12px;padding:10px 16px 12px;gap:14px;background:linear-gradient(115deg,color-mix(in srgb,var(--src-ai) 11%,var(--card)),color-mix(in srgb,var(--go) 13%,var(--card)) 45%,color-mix(in srgb,var(--src-ai) 9%,var(--card)) 90%);background-size:240% 100%;animation:aurora 9s ease-in-out infinite alternate;box-shadow:0 8px 26px -12px color-mix(in srgb,var(--go) 60%,transparent),inset 0 0 0 1px color-mix(in srgb,var(--go) 32%,transparent)}
+@keyframes aurora{to{background-position:100% 0}}
+.stepnav .working::before{height:2px;background:color-mix(in srgb,var(--go) 16%,transparent)}
+.stepnav .working .stripe{height:2px;width:20%;background:linear-gradient(90deg,transparent,var(--go) 55%,var(--src-ai));box-shadow:0 0 12px 1px color-mix(in srgb,var(--go) 80%,transparent)}
+.stepnav .working .pulse{width:18px;height:18px;flex:0 0 18px;gap:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 22%,var(--go) 68%,var(--src-ai));-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));animation:wspin 1.05s linear infinite}
+.stepnav .working .pulse i{display:none}
+@keyframes wspin{to{transform:rotate(360deg)}}
+.stepnav .working b{font-size:14px;letter-spacing:.01em}
+.stepnav .working #workingHint{flex:1 1 auto;font-size:13px}
+.stepnav .working .timer{padding:3px 11px;border-radius:999px;background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--ink);font-weight:600}
+.stepnav .working .workstop{border-radius:999px;padding-inline:14px}
+@media(prefers-reduced-motion:reduce){.stepnav .working,.stepnav .working .pulse{animation:none}}
 @media(prefers-reduced-motion:reduce){.stepnav .working b{animation:none;color:var(--ink);background:none}.stepnav .working .pulse i{animation:none;transform:none;opacity:.8}}
 .stepnav #navNext{min-width:280px}
 /* Weiter-Knopf: neutral, solange etwas fehlt; grün, sobald das Nötige für den nächsten Schritt da ist */
@@ -734,6 +789,52 @@ body{padding-bottom:62px}
 .askbox h2{color:var(--heading);margin-bottom:8px}
 .askbox p{font-size:15px;margin-bottom:18px}
 .askbox .btn{white-space:normal;text-align:left}
+/* Ansicht der Spezifikation: Kapitelliste links, rechts immer ein Kapitel; Anforderungen aufklappbar. Gedruckt wird das ganze Dokument. */
+.specwrap{display:flex;gap:16px;align-items:flex-start;min-width:0}
+.specwrap>#specView{flex:1;min-width:0}
+.specrail{position:sticky;top:0;flex:0 0 200px;display:flex;flex-direction:column;gap:2px;padding:8px;border-radius:8px;background:var(--card);box-shadow:var(--shadow);max-height:calc(100vh - 230px);overflow-y:auto}
+.specrail.hidden{display:none}
+.specrail button{all:unset;cursor:pointer;display:flex;align-items:baseline;gap:6px;padding:6px 10px;border-radius:6px;font-size:13px;line-height:18px;color:var(--ink-soft)}
+.specrail button:hover,.specrail button:focus-visible{background:var(--surface-low);color:var(--ink)}
+.specrail button[aria-current=true]{background:var(--tint);color:var(--heading);font-weight:700;box-shadow:inset 3px 0 0 var(--go)}
+.specrail button .n{font-family:var(--mono);font-size:10px;color:var(--outline);margin-left:auto;white-space:nowrap}
+.specrail button.fresh .n{color:var(--on-go);background:var(--go);border-radius:4px;padding:0 5px;font-weight:700}
+.specrail button.fixed::before{content:"▪";color:var(--outline);font-size:10px}
+.specrail .sep{height:1px;margin:6px 4px;background:var(--outline-soft)}
+.specrail .eyebrow{padding:4px 10px 2px}
+@media(max-width:1500px){.specrail{flex-basis:168px}}
+@media(max-width:900px){.specwrap{flex-direction:column}.specrail{position:static;flex:none;flex-direction:row;flex-wrap:wrap;max-height:none;width:100%}.specrail .sep,.specrail .eyebrow{display:none}}
+.specsum{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 18px}
+.specsum button{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:8px;background:var(--surface-low)}
+.specsum button:hover,.specsum button:focus-visible{box-shadow:inset 0 0 0 1.5px var(--go)}
+.specsum b{font-family:var(--mono);font-size:20px;line-height:24px;color:var(--heading);font-variant-numeric:tabular-nums}
+.specsum span{font-size:12px;color:var(--ink-soft)}
+.specsum button.warn b{color:var(--on-error-container)}
+@media screen{
+  .md .chap-hidden{display:none!important}
+  .md li.req{list-style:none;margin-left:-18px}
+  .md p.req{margin:0}
+  .md details.req{border-radius:6px;background:var(--surface-low);margin:4px 0}
+  .md details.req>summary{padding:8px 12px;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);list-style:none;display:flex;gap:8px;align-items:baseline}
+  .md details.req>summary::-webkit-details-marker{display:none}
+  .md details.req>summary::before{content:"▸";font-family:var(--mono);font-size:12px;color:var(--outline)}
+  .md details.req[open]>summary::before{content:"▾"}
+  .md details.req>div{padding:0 12px 10px 30px;font-size:14px}
+  .md .reqhead{cursor:pointer;margin:4px 0 0;padding:8px 12px;border-radius:6px;background:var(--surface-low);font-size:14px}
+  .md .reqhead::before{content:"▸ ";font-family:var(--mono);font-size:12px;color:var(--outline)}
+  .md .reqhead.open::before{content:"▾ "}
+  .md .reqbody{margin-left:30px}
+  .md .reqbody.shut{display:none!important}
+  .md .reqtools{display:flex;justify-content:flex-end;margin:6px 0}
+}
+@media print{.md .reqtools{display:none}}
+.md .speclogo{float:right;margin:0 0 10px 18px}
+.md .speclogo svg{display:block;border-radius:10px}
+/* Nach einer Änderung pulsiert der Knopf, der den Stand wieder aktuell macht – ruhig, ohne zu blinken */
+.btn.nudge{position:relative;box-shadow:inset 0 0 0 1.5px var(--go);animation:nudge 2s ease-in-out infinite}
+@keyframes nudge{0%,100%{box-shadow:inset 0 0 0 1.5px var(--go),0 0 0 0 color-mix(in srgb,var(--go) 45%,transparent)}55%{box-shadow:inset 0 0 0 1.5px var(--go),0 0 0 7px color-mix(in srgb,var(--go) 0%,transparent)}}
+.btn.nudge:disabled{animation:none}
+@media(prefers-reduced-motion:reduce){.btn.nudge{animation:none}}
 .need{box-shadow:0 0 0 2px var(--error)!important}
 /* Fehlende Pflichtangabe: rote Kontur am Feld, „fehlt“ an der Beschriftung, deutlicher Hinweis mit Sprung zur Stelle */
 .field-label:has(+.need)::after{content:" · fehlt";color:var(--error);font-weight:700}
@@ -917,7 +1018,7 @@ body.fitview main>div:not(.hidden){flex:1 1 0;min-height:0;overflow-y:auto;posit
 body.merged .qapane{display:flex;flex-direction:column;gap:14px}
 body.merged .qapane.hidden{display:none}
 body.merged .qapane .gauge,body.merged .qapane .ideabox{display:none}
-body.merged.qa #specView,body.merged.qa #specCount,body.merged.qa #decPanel{display:none}
+body.merged.qa #specView,body.merged.qa #specRail,body.merged.qa #specCount,body.merged.qa #decPanel{display:none}
 /* Im Feld „Entscheidungen“ ersetzt die Fragenliste den früheren Katalog */
 body.merged.decqa #decPanel :is(#openHead,#openList,#doneHead,#catalog){display:none}
 body.merged.decqa #decPanel .qapane{gap:10px}
@@ -970,7 +1071,7 @@ body.merged.decqa #decDerive{margin-top:12px}
   html,body{background:#fff!important}
   body{padding:0!important;display:block!important;min-height:0;height:auto!important;overflow:visible!important}
   main,.split>div:first-child{overflow:visible!important}
-  .top,.stepnav,.toast,dialog,#phase0,#phase1,#phase3,#phase2>.pagehead,.split>.side,.split>div:first-child>*:not(#specView),#phase2>.wishbox,#phase2>.specbar,#changeBar,.md .marks{display:none!important}
+  .top,.stepnav,.toast,dialog,#phase0,#phase1,#phase3,#phase2>.pagehead,.split>.side,.split>div:first-child>*:not(.specwrap),#specRail,.specsum,#phase2>.wishbox,#phase2>.specbar,#changeBar,.md .marks{display:none!important}
   main{max-width:none!important;padding:0!important;display:block!important}
   #phase2,.split{display:block!important}
   .md{box-shadow:none;border-radius:0;padding:0;min-height:0;background:#fff;color:#111;font-size:10.5pt;line-height:1.5}
@@ -1009,7 +1110,15 @@ body.merged.decqa #decDerive{margin-top:12px}
     <div class="spread ideahead"><label class="field-label" for="idea" style="margin:0">Deine Idee in einem Satz</label><span class="meta" id="ideaCount"></span></div>
     <div class="card ideacard">
       <textarea id="idea" rows="7" maxlength="2000" aria-label="Was willst du bauen?" placeholder="Was willst du bauen? Ein Satz genügt – z. B. „Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost“. Mehr Details sind willkommen (Umschalt+Enter für eine neue Zeile)."></textarea>
-      <div class="sketchbox" id="sketchBox">
+      <!-- Live-Konzept: entsteht beim Tippen als Strom; offene Stellen sind im Text anklickbar -->
+      <div class="conceptbox" id="conceptBox">
+        <div class="spread"><span class="eyebrow">Kurzfassung der Spezifikation · entsteht live aus deiner Idee</span><span class="actions"><span class="meta" id="conceptNote"></span><button id="conceptAll" class="btn small hidden" type="button" title="Übernimmt alle Annahmen der KI als deine Festlegungen.">✓ Alles akzeptieren</button><button id="conceptRedo" class="btn small hidden" type="button" title="Schreibt das Konzept neu und berücksichtigt dabei deine Antworten im ganzen Text.">↻ Neu schreiben</button></span></div>
+        <div id="concept" class="concept" aria-live="off"></div>
+        <div id="conceptOwn" class="conceptown hidden"></div>
+        <div id="conceptWishBox" class="conceptwish hidden"><input type="text" id="conceptWish" maxlength="500" aria-label="Änderungswunsch für das Konzept" placeholder="Was soll am Konzept anders werden? z. B. „Auslosung nur alle zwei Wochen“"><button id="conceptWishRun" class="btn small" type="button">✦ Einarbeiten</button></div>
+      </div>
+      <!-- Die Skizze ist vorerst ausgeblendet (später, nach dem Konzept, wieder vorgesehen) -->
+      <div class="sketchbox hidden" id="sketchBox">
         <div class="spread"><span class="eyebrow">Skizze · live aus deiner Idee</span><span class="actions"><span class="meta" id="sketchNote"></span><button id="sketchPlay" class="btn small hidden" type="button" title="Zeigt, wie Agenten die Bereiche der Skizze bauen würden: erst das Grundgerüst, dann parallel.">▶ Bau-Vorschau</button><button id="sketchDevice" class="btn small hidden" type="button" aria-pressed="false">▯ Handy</button><button id="sketchRefine" class="btn small hidden" type="button" title="Claude zeichnet ohnehin live mit, sobald du einen Moment nichts änderst (verbraucht Claude-Kontingent). Hier beginnt er sofort von vorn.">✦ Von Claude zeichnen lassen</button></span></div>
         <div id="sketch" class="sketch"></div>
         <div id="sketchPalette" class="actions sketchpalette hidden"></div>
@@ -1126,7 +1235,7 @@ body.merged.decqa #decDerive{margin-top:12px}
     <div id="changeBar" class="changebar hidden" role="status"></div>
     <div class="split">
       <div>
-        <article id="specView" class="md" aria-label="Spezifikation, Ansicht"></article>
+        <div class="specwrap"><nav id="specRail" class="specrail hidden" aria-label="Kapitel der Spezifikation"></nav><article id="specView" class="md" aria-label="Spezifikation, Ansicht"></article></div>
         <textarea id="spec" aria-label="Spezifikation als Markdown bearbeiten" class="hidden" rows="22" maxlength="50000" placeholder="Spezifikation generieren oder hier einfügen …"></textarea>
         <p class="meta" id="specCount" style="text-align:right;margin-top:6px"></p>
       </div>
@@ -1336,7 +1445,7 @@ const toneNames=[
   ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung. Beschreibender Name, kein Humor.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({usage:{context:0,ai:0,calls:0},runOutput:null,own:{},sketch:null,logoCount:0,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},runOutput:null,own:{},sketch:null,logoCount:0,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -1347,6 +1456,9 @@ try{
     if(![0,1,2,3].includes(s.phase))s.phase=0;
     if(!Number.isInteger(s.active)||s.active>=s.questions.length)s.active=-1;
     if(!Number.isInteger(s.clicks)||s.clicks<0)s.clicks=0;
+    if(!s.concept||typeof s.concept.text!=='string'||typeof s.concept.key!=='string')s.concept=null;
+    if(!s.conceptAnswers||typeof s.conceptAnswers!=='object'||Array.isArray(s.conceptAnswers))s.conceptAnswers={};
+    s.conceptWishes=(Array.isArray(s.conceptWishes)?s.conceptWishes:[]).filter(x=>typeof x==='string'&&x.trim()).slice(0,12);
     {const u=s.usage&&typeof s.usage==='object'?s.usage:{},n=v=>Number.isFinite(v)&&v>0?Math.round(v):0;s.usage={context:n(u.context),ai:n(u.ai),calls:n(u.calls)};if(!s.runOutput||typeof s.runOutput!=='object'||!Array.isArray(s.runOutput.groups))s.runOutput=null}
     s.last=-1;
     if(!Number.isInteger(s.layoutCount)||s.layoutCount<1||s.layoutCount>5)s.layoutCount=3;
@@ -1476,9 +1588,9 @@ function effortBar(){
 }
 // Reicht der Platz neben der Navigation nicht, fallen erst die Zusatzzahlen weg, dann alle Zahlen; die Füllstände bleiben
 function fitBar(){
-  const box=$('navHint'),nav=$('phases');box.classList.remove('tight','tighter');
+  const box=$('navHint'),nav=$('phases');box.classList.remove('tight','tighter','gone');
   const clash=()=>{const a=box.getBoundingClientRect(),n=nav.getBoundingClientRect();return a.width>0&&n.width>0&&a.left<n.right+16&&a.top<n.bottom&&a.bottom>n.top};
-  if(clash()){box.classList.add('tight');if(clash())box.classList.add('tighter')}
+  if(clash()){box.classList.add('tight');if(clash()){box.classList.add('tighter');if(clash())box.classList.add('gone')}}
 }
 addEventListener('resize',fitBar);
 // Übersicht: links die drei Quellen des Inputs, rechts die entstandenen Artefakte
@@ -1578,6 +1690,7 @@ function navUI(){
   const open=s.questions.some(q=>q.state==='open'),okNow=[!!s.idea.trim()&&!scaleMissing().length,s.questions.length>0&&!open,!!s.spec.trim()&&!s.dirty&&!open&&!s.features.some(f=>f.on!==f.inSpec),!!s.plan&&!stale()&&!s.finished&&(s.nextStep!=='run'||!!s.runDir.trim())][s.phase];
   next.classList.toggle('ready',!!okNow&&!!target&&!target.disabled&&!active);
   // Derselbe Grundsatz über dem leeren Dokument: „Spezifikation erstellen“ wird grün, sobald der Umfang steht und in die Zielzeit passt
+  $('generate').classList.toggle('nudge',!!s.spec.trim()&&!!s.dirty&&!active);
   $('generate').classList.toggle('ready',!s.spec.trim()&&s.features.length>0&&!open&&!overTarget()&&!active);
   suggestRunDir();
   sketchUI();
@@ -1595,7 +1708,7 @@ $('navBack').onclick=()=>{if(s.phase)setPhase(MERGED&&s.phase===2?0:s.phase-1)};
 function ideaUI(){
   $('ideaCount').textContent=plural(words(s.idea),'Wort','Wörter');
   const same=s.questions.length>0&&s.idea.trim()===s.askedIdea;
-  $('deriveLabel').textContent=same?'Weiter zu den Fragen →':s.autonomy===100?'✦ Spezifikation erstellen →':s.questions.length?'✦ Fragen neu ableiten →':'✦ Fragen ableiten →';
+  $('deriveLabel').textContent=same?(MERGED?'Weiter zur Spezifikation →':'Weiter zu den Fragen →'):s.autonomy===100?'✦ Spezifikation erstellen →':s.questions.length?'✦ Fragen neu ableiten →':conceptLive()?'✦ Ausarbeiten →':'✦ Fragen ableiten →';
   // Modus als Stufe mit Bedeutung statt als Prozentwert
   const level=s.autonomy/20,[title,text]=levels[level],n=s.questions.length,ask=Math.round(n*(1-s.autonomy/100)),who=$('ai').checked?'Claude':'SpecIt';
   levelMark('autonomyValue',level+1,levels.length,(level+1)+'/'+levels.length,'Stufe '+(level+1)+' von '+levels.length);
@@ -1671,7 +1784,8 @@ async function derive(more){
   const rev=revision;lock(true,more?'Weitere Fragen werden abgeleitet':'Fragen werden abgeleitet');status.textContent=more?'Weitere Fragen werden abgeleitet …':'Fragen werden abgeleitet …';
   let auto=false;
   try{
-    const r=await call({mode:'questions',idea,project:s.project,questions:more?s.questions:[],ai:$('ai').checked,...frame()});
+    const base=more?[]:conceptQuestions(),concept=conceptPlain();
+    const r=await call({mode:'questions',idea,project:s.project,questions:more?s.questions:base,fill:base.length>0,...(concept?{concept}:{}),ai:$('ai').checked,...frame()});
     if(rev!==revision){status.textContent='Eingaben geändert. Erneut starten.';return}
     const fresh=cleanQuestions(r.questions);
     if(more){
@@ -1680,8 +1794,14 @@ async function derive(more){
       status.textContent=added.length?plural(added.length,'weitere Frage','weitere Fragen')+' ergänzt.':'Keine weiteren Fragen nötig.';
       if(added.length&&s.spec)s.dirty=true;
     }else{
-      if(!fresh.length)throw Error('Es konnten keine Fragen abgeleitet werden. Bitte erneut versuchen.');
-      s.questions=fresh;s.askedIdea=idea;s.extras=[];s.last=-1;change=null;catOpen=-1;status.textContent='';
+      if(!fresh.length&&!base.length)throw Error('Es konnten keine Fragen abgeleitet werden. Bitte erneut versuchen.');
+      // Zuerst die Entscheidungen aus dem Konzept (sie prägen das Produkt), dann die ergänzten Fragen
+      for(const r0 of Array.isArray(r.rephrase)?r.rephrase:[]){
+        const hit=base.find(q=>q.question===r0.from);if(!hit||typeof r0.to!=='string'||!r0.to.trim())continue;hit.question=r0.to.trim();
+        if(s.concept)s.concept.text=s.concept.text.split('{{'+r0.from+'|').join('{{'+hit.question+'|');
+        if(r0.from in s.conceptAnswers){s.conceptAnswers[hit.question]=s.conceptAnswers[r0.from];delete s.conceptAnswers[r0.from]}
+      }
+      {const known=new Set(base.map(q=>q.question.toLowerCase()));s.questions=[...base,...fresh.filter(q=>!known.has(q.question.toLowerCase()))].slice(0,40)}s.askedIdea=idea;s.extras=[];s.last=-1;change=null;catOpen=-1;status.textContent='';
       if(s.spec)s.dirty=true;
     }
     // Je nach Modus entscheidet SpecIt einen Teil der Fragen selbst; im Auto-Modus alle, dann geht es direkt zur Spezifikation.
@@ -1710,6 +1830,26 @@ function choose(i){
 function touched(){revision++;if(s.spec)s.dirty=true}
 // Woran sich messen lässt, ob die Spezifikation noch zum Stand der Eingaben passt – und was sich geändert hat
 const basisNow=()=>({idea:s.idea.trim(),q:s.questions.map(q=>[q.question,q.state==='open'?'':answerOf(q)]),x:[...s.extras],d:duration(),n:s.project.trim()});
+// null = kapitelweise nicht möglich (andere Idee, kein Stand, Spezifikation ohne Bausteine, Änderung an Reglern ohne erfassbaren Unterschied)
+function specChanges(){
+  const b=s.specBasis,now=basisNow();
+  if(!b||!Array.isArray(b.q)||b.idea!==now.idea||s.specSource!=='claude'||!/^## Nichtfunktionale Standards\s*$/m.test(s.spec))return null;
+  const out=[],old=new Map(b.q.map(([k,v])=>[k,v]));
+  for(const [q,a] of now.q){
+    if(!old.has(q)){if(a)out.push('Neue Entscheidung „'+q+'“: '+a)}
+    else if(old.get(q)!==a)out.push('Entscheidung „'+q+'“: bisher '+(old.get(q)||'offen')+', jetzt '+(a||'wieder offen'));
+    old.delete(q);
+  }
+  for(const [q,a] of old)if(a)out.push('Die Entscheidung „'+q+'“ ('+a+') entfällt.');
+  const xOld=new Set(b.x||[]),xNow=new Set(now.x);
+  for(const x of now.x)if(!xOld.has(x))out.push('Neue Zusatzanforderung: '+x);
+  for(const x of xOld)if(!xNow.has(x))out.push('Die Zusatzanforderung „'+x+'“ entfällt.');
+  if(b.d!==now.d)out.push('Ziel-Entwicklungsdauer: bisher '+(b.d||'keine Vorgabe')+', jetzt '+(now.d||'keine Vorgabe'));
+  for(const f of s.features)if(f.on!==f.inSpec)out.push('Feature „'+f.name+'“ '+(f.on?'gehört jetzt zum Umfang':'entfällt aus dem Umfang'));
+  // Nur der Name oder nichts Erfassbares: Dann genügt der frische Rahmen – es sei denn, es ist etwas anderes verstellt (Ton, Kreativität)
+  if(!out.length&&!(b.n!==now.n))return null;
+  return out;
+}
 function dirtyWhy(){
   const b=s.specBasis,now=basisNow(),out=[];if(!b||!Array.isArray(b.q))return out;
   const short=t=>'„'+(t.length>48?t.slice(0,48)+'…':t)+'“';
@@ -2071,14 +2211,15 @@ async function startSpec(){
   if(active)return;
   if(!s.idea.trim()){generate();return}
   const basis=scopeBasis();
-  if(!s.features.length||(s.featBasis!==basis&&(s.dirty||!s.spec.trim()))){
+  // Bei einer kapitelweisen Aktualisierung bleibt der festgelegte Umfang stehen; er wird nur für eine neue Spezifikation neu ermittelt
+  if(!s.features.length||(s.featBasis!==basis&&(s.dirty||!s.spec.trim())&&!(s.spec.trim()&&s.dirty&&specChanges()))){
     await deriveFeatures(true);
     if(!s.features.length)return;
     s.featBasis=basis;save();
     if(overTarget())await proposeFit();
     await deriveNames(false);
     // Nur im Auto-Modus und wenn der Umfang passt, geht es ohne Rückfrage weiter
-    if(!(s.autonomy>=100&&!overTarget()&&!fitProposal)){renderAll();specNote('Umfang ermittelt: Features und Zielzeit rechts prüfen, dann „Spezifikation erstellen“.');return}
+    if(overTarget()||fitProposal){renderAll();specNote('Umfang ermittelt: Features und Zielzeit rechts prüfen, dann „Spezifikation erstellen“.');return}
   }
   ensureFits(generate);
 }
@@ -2135,6 +2276,81 @@ function keepIds(root){
   }
   for(const c of root.querySelectorAll('td,th'))if(c.textContent.trim().length<=18)c.style.whiteSpace='nowrap';
 }
+/* ---------- Ansicht der Spezifikation in Kapiteln ---------- */
+// (Der Renderer setzt Überschriften eine Ebene tiefer: Kapitel „##“ sind im Dokument H3.)
+// Das Dokument bleibt ein Stück Markdown; für die Ansicht wird nur ausgeblendet, was nicht zum gewählten Kapitel gehört.
+// „Überblick“ zeigt die Kennzahlen und das Ziel, „Ganzes Dokument“ alles am Stück (so wird auch gedruckt).
+const fixedChapters=new Set(['Rahmen','Umfang','Nichtfunktionale Standards','Betrieb und Übergabe','Standard-Risiken','Entscheidungen und Annahmen','Offene Entscheidungen','Abnahme']);
+let specChapter='Überblick';const reqOpen=new Set(),specFresh=new Set();
+function chaptersUI(view){
+  const rail=$('specRail'),chapters=[];let cur=null,lastIntro=null;
+  for(const el of [...view.children]){
+    if(el.tagName==='H3'){cur={title:el.textContent.trim(),els:[el]};chapters.push(cur)}else if(cur)cur.els.push(el);else lastIntro=el;
+  }
+  const list=chapters.filter(c=>!/^Inhaltsverzeichnis$/i.test(c.title));
+  // Kurze oder ungegliederte Dokumente bleiben, wie sie sind
+  if(list.length<4){rail.classList.add('hidden');return}
+  // Nach einer Änderung steht das ganze Dokument da, damit jede markierte Stelle zu sehen ist
+  const all=!!change||specChapter==='Alles';
+  if(!all&&specChapter!=='Überblick'&&!list.some(c=>c.title===specChapter))specChapter='Überblick';
+  const overview=!all&&specChapter==='Überblick',go=title=>{specChapter=title;specFresh.delete(title);specUI();$('specView').closest('.specwrap').scrollIntoView({block:'start'})};
+  for(const c of chapters)for(const el of c.els)el.classList.toggle('chap-hidden',!list.includes(c)||!(all||c.title===specChapter||(overview&&!conceptLive()&&/^Ziel/i.test(c.title))));
+  // Kennzahlen des Überblicks; jede führt in ihr Kapitel
+  if(overview){
+    const ids=[...new Set(s.spec.match(/\b(?:FR|NFR)-\d{3}\b/g)||[])],fr=ids.filter(x=>x.startsWith('FR')).length,sum=summary(s.questions),feats=s.features.filter(f=>f.on);
+    const box=node('div',undefined,'specsum'),find=re=>(list.find(c=>re.test(c.title))||{}).title;
+    const tile=(n,label,target,warn)=>{const b=node('button',undefined,warn?'warn':'');b.type='button';b.append(node('b',String(n)),node('span',label));if(target)b.onclick=()=>go(target);else b.disabled=true;box.append(b)};
+    tile(duration()||'–','Ziel-Entwicklungsdauer',find(/^Rahmen/));
+    if(feats.length)tile(feats.filter(f=>f.core).length+' + '+feats.filter(f=>!f.core).length,'Basis-Features + Erweiterungen',find(/^Umfang/));
+    tile(fr,fr===1?'funktionale Anforderung':'funktionale Anforderungen',find(/^Funktionale Anforderungen/));
+    tile(ids.length-fr,'nichtfunktionale Anforderungen',find(/^Nichtfunktionale Standards/)||find(/nichtfunktional/i));
+    tile(sum.decided+s.extras.length,'eigene Festlegungen',find(/^Entscheidungen/));
+    tile(sum.defaults,sum.defaults===1?'Annahme':'Annahmen',find(/^Entscheidungen/));
+    tile(sum.open,sum.open===1?'offene Entscheidung':'offene Entscheidungen',find(/^Offene Entscheidungen/),sum.open>0);
+    tile(words(s.spec).toLocaleString('de-DE'),'Wörter insgesamt','Alles');
+    (lastIntro||view.firstElementChild).after(box);
+    // Die Kurzfassung ist dieselbe wie auf der Idee-Seite: Eine Wahl hier wirkt dort und auf die Fragen
+    if(conceptLive()){
+      const head=node('h3','Kurzfassung'),short=node('div',undefined,'concept inspec'),drift=conceptMarks(s.concept.text).filter(m=>s.conceptAnswers[m.q]&&s.conceptAnswers[m.q]!==m.first).length;
+      box.after(head,short);conceptRender(s.concept.text,false,null,short);
+      head.append(' ',node('span',plural(conceptMarks(s.concept.text).filter(m=>!s.conceptAnswers[m.q]).length,'Annahme','Annahmen')+' · anklicken, um selbst zu entscheiden'+(drift?' · '+plural(drift,'Festlegung weicht','Festlegungen weichen')+' vom Text ab':''),'meta'));
+    }
+  }
+  // Anforderungen aufklappbar: Kennung und Titel stehen da, Einzelheiten und Abnahme auf Klick
+  for(const c of list){
+    if(!/Anforderungen|Standards/i.test(c.title)||!(all||c.title===specChapter))continue;
+    const hasId=el=>/\b(?:FR|NFR)-\d{3}\b/.test(el.textContent),heads=c.els.filter(el=>/^H[45]$/.test(el.tagName)&&hasId(el)),items=[];
+    if(heads.length){
+      let open=false;
+      for(const el of c.els.slice(1)){
+        if(heads.includes(el)){const id=el.textContent.match(/\b(?:FR|NFR)-\d{3}\b/)[0];open=!!change||reqOpen.has(id);el.classList.add('reqhead');el.classList.toggle('open',open);el.tabIndex=0;el.setAttribute('role','button');
+          const flip=()=>{if(reqOpen.has(id))reqOpen.delete(id);else reqOpen.add(id);specUI()};el.onclick=flip;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}};items.push(id)}
+        else if(items.length&&!/^H[34]$/.test(el.tagName)){el.classList.add('reqbody');el.classList.toggle('shut',!open)}
+      }
+    }else for(const li of c.els.flatMap(el=>el.tagName==='UL'?[...el.children]:el.tagName==='P'?[el]:[])){
+      const strong=li.firstElementChild&&li.firstElementChild.tagName==='STRONG'?li.firstElementChild:null;if(!strong||!hasId(strong))continue;
+      const id=strong.textContent.match(/\b(?:FR|NFR)-\d{3}\b/)[0],d=node('details',undefined,'req'),sm=node('summary'),body=node('div');
+      strong.remove();sm.append(...strong.childNodes);body.append(...li.childNodes);
+      // Der Gedankenstrich hinter dem Titel gehört nicht in den aufgeklappten Text
+      if(body.firstChild&&body.firstChild.nodeType===3)body.firstChild.nodeValue=body.firstChild.nodeValue.replace(/^\s*[–-]\s*/,'');
+      d.open=!!change||reqOpen.has(id);d.ontoggle=()=>{if(d.open)reqOpen.add(id);else reqOpen.delete(id)};d.append(sm,body);li.classList.add('req');li.append(d);items.push(id);
+    }
+    if(items.length>1&&!change){
+      const bar=node('div',undefined,'reqtools'),allOpen=items.every(id=>reqOpen.has(id));
+      bar.append(button(allOpen?'Alle zuklappen':'Alle aufklappen','link',()=>{for(const id of items)if(allOpen)reqOpen.delete(id);else reqOpen.add(id);specUI()}));c.els[0].after(bar);
+    }
+  }
+  // Kapitelliste
+  rail.classList.remove('hidden');rail.replaceChildren();
+  const entry=(title,label,extra,cls)=>{const b=node('button',undefined,cls||'');b.type='button';b.append(node('span',label));if(extra)b.append(node('span',extra,'n'));b.setAttribute('aria-current',String(all?title==='Alles':title===specChapter));b.onclick=()=>go(title);rail.append(b)};
+  entry('Überblick','Überblick');rail.append(node('div',undefined,'sep'));
+  for(const c of list){
+    const n=new Set(c.els.map(el=>el.textContent).join(' ').match(/\b(?:FR|NFR)-\d{3}\b/g)||[]).size;
+    entry(c.title,c.title,specFresh.has(c.title)&&c.title!==specChapter?'neu':/Anforderungen|Standards/i.test(c.title)&&n?String(n):'',(fixedChapters.has(c.title)?'fixed':'')+(specFresh.has(c.title)?' fresh':''));
+  }
+  rail.append(node('div',undefined,'sep'));entry('Alles','Ganzes Dokument');
+  rail.title='▪ = Baustein von SpecIt (ohne KI zusammengesetzt)';
+}
 function specUI(){
   const qaPane=MERGED?$('qaPane'):null;
   if(qaPane){
@@ -2149,15 +2365,17 @@ function specUI(){
   $('modeView').setAttribute('aria-pressed',String(!edit));$('modeEdit').setAttribute('aria-pressed',String(edit));
   $('spec').classList.toggle('hidden',!edit);$('specView').classList.toggle('hidden',edit);
   if(change&&(change.ids.some(i=>!s.questions[i])||!s.spec.trim()))change=null;
-  if(edit){changeUI(null);return}
+  if(edit){$('specRail').classList.add('hidden');changeUI(null);return}
   const view=$('specView');
   const live=typeof streamText==='string';view.classList.toggle('writing',live);
   if(live){
-    if(streamText.trim()){view.replaceChildren(renderMarkdown(streamText,document));keepIds(view);view.lastElementChild?.scrollIntoView({block:'nearest'})}
+    $('specRail').classList.add('hidden');
+    if(streamText.trim()){view.replaceChildren(renderMarkdown(streamText,document));specLogo(view);keepIds(view);view.lastElementChild?.scrollIntoView({block:'nearest'})}
     else view.replaceChildren(node('p',$('ai').checked?'Claude beginnt zu schreiben …':'Spezifikation wird zusammengeführt …','placeholder'));
     changeUI(null);return;
   }
-  if(s.spec.trim()){view.replaceChildren(renderMarkdown(s.spec,document));keepIds(view)}
+  $('specRail').classList.add('hidden');
+  if(s.spec.trim()){view.replaceChildren(renderMarkdown(s.spec,document));specLogo(view);keepIds(view);chaptersUI(view)}
   else view.replaceChildren(node('p',s.features.length?'Der Umfang steht rechts unter „Features“. Auswahl und Zielzeit prüfen, dann „Spezifikation erstellen“ – geschrieben wird erst für den festgelegten Umfang.':'Noch keine Spezifikation. „Spezifikation erstellen“ wählen oder über „Bearbeiten“ eine vorhandene Spezifikation einfügen.','placeholder'));
   changeUI(view);
 }
@@ -2169,7 +2387,7 @@ function statuses(){
   // Stand, auf dem die Spezifikation beruht: wird mitgeführt, solange sie aktuell ist, und dient danach als Vergleich
   if(s.spec&&!s.dirty)s.specBasis=basisNow();
   if(s.spec&&s.dirty){
-    const why=dirtyWhy(),go=button('↻ Spezifikation aktualisieren','btn small',()=>$('generate').click());go.disabled=active;go.style.marginLeft='12px';
+    const why=dirtyWhy(),go=button('↻ Spezifikation aktualisieren','btn small nudge',()=>$('generate').click());go.disabled=active;go.style.marginLeft='12px';
     $('specStatus').replaceChildren('⚠ Die Spezifikation ist nicht mehr aktuell. '+(why.length?'Geändert seit ihrem Stand: '+why.join(' · ')+'.':'Seit ihrem Stand haben sich Eingaben geändert.'),go);
   }else $('specStatus').textContent='';
   $('specStatus').className=s.spec&&s.dirty?'banner':'status';
@@ -2181,7 +2399,7 @@ function statuses(){
 function planUI(){
   const p=s.plan,old=!!stale();
   for(const id of ['json','backlog','copyAll'])$(id).disabled=!p||old;
-  $('planStale').classList.toggle('hidden',!old);
+  $('planStale').classList.toggle('hidden',!old);$('plan').classList.toggle('nudge',old&&!active);
   // Auftragsform: ein Gesamtauftrag für einen Agenten oder mehrere einzeln delegierbare Teilaufträge – aus demselben Plan
   // Sperre: Solange Fragen oder Entscheidungen offen sind oder die Spezifikation fehlt bzw. nicht aktuell ist,
   // gibt es keine Aufträge. Offenes muss beantwortet oder ausdrücklich an SpecIt abgegeben werden.
@@ -2291,7 +2509,7 @@ function working(text,since){
   const who=since||($('ai').checked&&!text.startsWith('Stitch'))?'Claude arbeitet':'SpecIt arbeitet';workSince=since||Date.now();
   $('workingText').textContent=who+' · '+text+' …';
   const tick=()=>{
-    const sec=Math.round((Date.now()-workSince)/1000),hint=since?'Die Agenten arbeiten im Zielordner; das kann je nach Umfang lange dauern. Bitte das Fenster geöffnet lassen.':sec>=8?'Das kann bis zu einer Minute oder länger dauern. Bitte das Fenster geöffnet lassen.':'Bitte das Fenster geöffnet lassen.';
+    const sec=Math.round((Date.now()-workSince)/1000),hint=since?'Kann je nach Umfang lange dauern · Fenster geöffnet lassen':sec>=8?'Kann eine Minute oder länger dauern · Fenster geöffnet lassen':'Fenster geöffnet lassen';
     $('workingTime').textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
     if($('workingHint').textContent!==hint)$('workingHint').textContent=hint;
   };
@@ -2328,20 +2546,26 @@ async function generate(){
   if(active)return;
   const note=t=>{$('specStatus').className='status';$('specStatus').textContent=t};
   if(!s.idea.trim()){note('Bitte zuerst eine Idee eingeben oder eine Spezifikation einfügen.');return}
-  const rev=revision;lock(true,'Spezifikation wird erstellt');note('Spezifikation wird erstellt …');
-  let message='';
+  // Gibt es schon eine Spezifikation und ist klar, was sich geändert hat, werden nur die betroffenen Kapitel neu geschrieben
+  const changes=s.spec.trim()&&s.dirty?specChanges():null,partial=!!changes;
+  const rev=revision;lock(true,partial?'Geänderte Kapitel werden neu geschrieben':'Spezifikation wird erstellt');note(partial?'Geänderte Kapitel werden neu geschrieben …':'Spezifikation wird erstellt …');
+  let message='',done=null;
   try{
     // Die Antwort kommt als Strom und wird beim Entstehen angezeigt
     let r=null;streamText='';specMode='view';specUI();statuses();
-    await stream('/api/spec/stream',{mode:'final',idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,features:s.features.filter(f=>f.on),ai:$('ai').checked,...frame()},m=>{
+    await stream('/api/spec/stream',{mode:'final',...(partial?{update:true,spec:s.spec,changes}:{}),minutes:targetMinutes(),...(conceptPlain()?{concept:conceptPlain()}:{}),idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,features:s.features.filter(f=>f.on),ai:$('ai').checked,...frame()},m=>{
       if(typeof m.t==='string'){streamText+=m.t;const now=performance.now();if(now-paintAt>180){paintAt=now;specUI();$('specCount').textContent=streamText.length.toLocaleString('de-DE')+' Zeichen …'}}
       else if(m.error)throw Error(m.error);else if(m.done)r=m;
     });
     if(!r||typeof r.markdown!=='string')throw Error('Die Antwort ist unvollständig angekommen. Bitte erneut versuchen.');
     if(rev!==revision)message='Eingaben geändert. Erneut starten.';
-    else{s.spec=r.markdown;s.specSource=r.source;s.specDuration=duration();goalChanged=false;s.dirty=false;change=null;s.features=s.features.map(f=>({...f,inSpec:f.on}));$('spec').value=s.spec;specMode='view';save()}
+    else{s.spec=r.markdown;s.specSource=r.source;s.specDuration=duration();goalChanged=false;s.dirty=false;change=null;s.features=s.features.map(f=>({...f,inSpec:f.on}));$('spec').value=s.spec;specMode='view';done=r;
+      // Nach einer kapitelweisen Aktualisierung: geänderte Kapitel in der Liste kennzeichnen und das erste gleich zeigen
+      specFresh.clear();if(r.update){for(const x of r.changed||[])specFresh.add(x);if(specFresh.size)specChapter=[...specFresh][0]}
+      save()}
   }catch(e){message=e.message}finally{streamText=null;lock(false)}
   renderAll();if(message){note(message);return}
+  if(done&&done.update){const n=(done.changed||[]).length;note(n?(done.entries?plural(done.entries,'Eintrag','Einträge')+' in '+plural(n,'Kapitel','Kapiteln')+' geändert: ':plural(n,'Kapitel','Kapitel')+' neu geschrieben: ')+done.changed.join(', ')+'. Alles Übrige ist unverändert.'+((done.skipped||[]).length?' Nicht einzuordnen waren Änderungen in: '+done.skipped.join(', ')+' – dafür „Bearbeiten“ nutzen oder die Idee kurz ändern und ganz neu erstellen.':''):'Kein Kapitel musste sich ändern; Rahmen und Entscheidungen sind auf dem neuen Stand.');return}
   // Was Claude in der Spezifikation offen lässt, gleich als Fragen mit Alternativen anbieten
   // (nicht im Auto-Modus: dort entscheidet Claude sie selbst und es wird nicht rückgefragt)
   if(s.specSource==='claude'&&$('ai').checked&&s.autonomy<100)await deriveDecisions();
@@ -2361,7 +2585,7 @@ async function deriveFeatures(early){
   const rev=revision;lock(true,early?'Umfang wird festgelegt: Features und Aufwand':'Features und Aufwand werden ermittelt');
   let message='';
   try{
-    const r=await call({mode:'features',spec:early?'':s.spec,idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()});
+    const r=await call({mode:'features',...(early&&conceptPlain()?{concept:conceptPlain()}:{}),spec:early?'':s.spec,idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()});
     if(rev===revision){
       // Bisherige Auswahl bleibt: gleichnamige Features behalten ihren Zustand, bereits abgewählte bleiben in der Liste.
       const old=new Map(s.features.map(f=>[f.name.toLowerCase(),f])),fresh=cleanFeatures(r.features).map(f=>{const o=old.get(f.name.toLowerCase());return o?{...f,on:o.on,inSpec:o.inSpec}:{...f,on:true,inSpec:true}});
@@ -2760,6 +2984,11 @@ function logoNode(svg,size){
   if(!root||root.nodeName!=='svg'||doc.querySelector('parsererror'))return node('span','?','meta');
   const el=document.importNode(root,true);el.setAttribute('width',size);el.setAttribute('height',size);el.setAttribute('aria-hidden','true');return el;
 }
+// Das gewählte Logo steht ohne weiteres Zutun neben der Überschrift der Spezifikation – in der Ansicht und damit auch im PDF
+function specLogo(view){
+  const pick=s.logos[s.logoChosen],h=view.querySelector('h1');if(!pick||!h)return;
+  const box=node('span',undefined,'speclogo');box.append(logoNode(pick.svg,64));box.title='Logo: '+pick.name;h.before(box);
+}
 function logoUI(){
   // Das gewählte Logo steht in der Kopfzeile vor dem Projektnamen
   const mark=$('brandLogo'),chosen=s.logos[s.logoChosen];mark.replaceChildren();mark.classList.toggle('hidden',!chosen);if(chosen){mark.append(logoNode(chosen.svg,30));mark.title='Gewähltes Logo: '+chosen.name}
@@ -2775,7 +3004,7 @@ function logoUI(){
   if(off)return;
   const head=node('div',undefined,'namehead'),row=node('div',undefined,'namerow');
   s.logos.forEach((l,i)=>{
-    const b=button('','logotile'+(i===s.logoChosen?' on':''),()=>{s.logoChosen=i===s.logoChosen?-1:i;save();logoUI();panelsUI()});
+    const b=button('','logotile'+(i===s.logoChosen?' on':''),()=>{s.logoChosen=i===s.logoChosen?-1:i;save();logoUI();panelsUI();specUI()});
     b.append(logoNode(l.svg,72));b.title=l.name+(l.idea?' – '+l.idea:'')+' · Klicken, um diesen Entwurf zu wählen';b.setAttribute('aria-label','Logo-Entwurf '+l.name);b.setAttribute('aria-pressed',String(i===s.logoChosen));b.disabled=active;row.append(b);
   });
   if(pick&&pick.idea)row.append(node('p',pick.idea,'meta logoidea'));
@@ -2991,9 +3220,218 @@ async function runAuto(key,pass){
   }catch(e){if(!ac.signal.aborted)sketchPauseUntil=Date.now()+6000}
   finally{clearTimeout(job.timer);if(sketchAuto===job)sketchAuto=null;sketchUI()}
 }
+/* ---------- Live-Konzept: entsteht beim Tippen, Fragen stehen als anklickbare Stellen im Text ---------- */
+// Die Skizze ist vorerst abgeschaltet; ihr Code bleibt für später stehen.
+const SKETCH=false;
+let conceptJob=null,conceptIdle=0,conceptPauseUntil=0,conceptAsk='',conceptAskShown='';const conceptFlash={};
+// Was den Text bestimmt: Idee, Kreativität, Einsatzbereich, Zieldauer. Der Entscheidungsmodus ändert ihn nicht.
+const conceptNow=()=>({idea:s.idea.trim(),creativity:s.creativity,tone:s.tone,duration:duration()});
+const conceptKey=()=>JSON.stringify(conceptNow());
+// Text in Abschnitte zerlegen, zusammensetzen und einzelne Abschnitte austauschen
+const conceptSplit=text=>{const m=new Map();let cur=null;for(const line of text.split('\n')){const h=line.trim().match(/^##\s+(.+)$/);if(h){cur=h[1].trim();m.set(cur,[])}else if(cur!==null)m.get(cur).push(line)}return m};
+const conceptJoin=m=>[...m].map(([k,v])=>'## '+k+'\n'+v.join('\n').trim()).join('\n\n');
+const conceptMerge=(prev,part)=>{const a=conceptSplit(prev);for(const [k,v] of conceptSplit(part))if(a.has(k))a.set(k,v);return conceptJoin(a)};
+// Welche Abschnitte eine Regleränderung betrifft; null = alles neu (andere Idee oder noch kein vollständiges Konzept)
+const conceptAffects={tone:['Ziel','UX'],duration:['Funktionen','Technik','Qualität'],creativity:['Funktionen','UX']};
+function conceptOnly(){
+  const c=s.concept;if(!c||!c.parts||c.parts.idea!==s.idea.trim()||conceptSplit(c.text).size<7)return null;
+  const now=conceptNow(),set=new Set();for(const k in conceptAffects)if(c.parts[k]!==now[k])conceptAffects[k].forEach(x=>set.add(x));
+  return set.size?[...set]:null;
+}
+const CARET='\u2063';
+// Zerlegt eine Zeile in Text und Markierungen {{Frage?|Annahme|Alternative…}}; eine noch nicht geschlossene Markierung am Ende bleibt weg
+function conceptInline(line,into,seen){
+  let last=0,ask=null;
+  for(const m of line.matchAll(/\{\{([^{}|]+)\|([^{}]*)\}\}/g)){
+    into.append(line.slice(last,m.index));last=m.index+m[0].length;
+    const q=m[1].trim(),opts=m[2].split('|').map(x=>x.trim()).filter(Boolean);if(!opts.length){continue}
+    if(seen.has(q)){into.append(s.conceptAnswers[q]||opts[0]);continue}seen.add(q);
+    const mine=s.conceptAnswers[q],b=node('button',mine||opts[0],'cmark'+(mine?' own':'')+(mine&&Date.now()-(conceptFlash[q]||0)<1100?' flash':''));
+    b.type='button';b.title=q+(mine?' – von dir entschieden':' – Annahme der KI; klicken, um selbst zu entscheiden');b.setAttribute('aria-expanded',String(conceptAsk===q));
+    b.onclick=()=>{conceptAsk=conceptAsk===q?'':q;conceptRefresh()};into.append(b);
+    if(conceptAsk===q){
+      const box=node('span',undefined,'cask'),row=node('span',undefined,'actions'),own=node('input');
+      const pick=a=>{if(a)s.conceptAnswers[q]=a;else delete s.conceptAnswers[q];conceptAsk='';save();if(conceptPush())renderAll();else conceptRefresh()};
+      for(const o of opts){const x=button(o,'chip pickchip'+((mine||opts[0])===o?' ok':''),()=>pick(o));row.append(x)}
+      own.type='text';own.maxLength=120;own.placeholder='Eigene Antwort …';own.setAttribute('aria-label','Eigene Antwort auf: '+q);
+      own.onkeydown=e=>{if(e.key==='Enter'&&own.value.trim())pick(own.value.trim());else if(e.key==='Escape'){conceptAsk='';conceptRefresh()}};
+      row.append(own);if(mine)row.append(button('Annahme wiederherstellen','link',()=>pick('')));
+      box.append(node('b',q),row);ask=box;
+    }
+  }
+  into.append(line.slice(last).replace(/\{\{[^}]*$/,''));
+  // Die Frage steht unter dem ganzen Satz, damit er nicht zerrissen wird
+  if(ask)into.append(ask);
+}
+// pending: Abschnitte, die gerade neu geschrieben werden und noch den alten Text zeigen (blass)
+function conceptRender(text,live,pending,target){
+  const out=target||$('concept'),frag=document.createDocumentFragment(),seen=new Set();let list=null,lastEl=null,dim=false,caretAt=null;
+  const mark=el=>{if(dim)el.classList.add('dim');return el};
+  for(const raw0 of text.split('\n')){
+    const here=raw0.includes(CARET),line=raw0.replace(CARET,'').trim();
+    if(line){
+      if(line.startsWith('## ')){list=null;const title=line.slice(3).trim();dim=!!pending&&pending.has(title);lastEl=mark(node('h3',title));frag.append(lastEl)}
+      else if(/^[-•]\s+/.test(line)){if(!list){list=mark(node('ul'));frag.append(list)}lastEl=node('li');conceptInline(line.replace(/^[-•]\s+/,''),lastEl,seen);list.append(lastEl)}
+      else{list=null;lastEl=mark(node('p'));conceptInline(line,lastEl,seen);frag.append(lastEl)}
+    }else list=null;
+    if(here)caretAt=lastEl;
+  }
+  if(live&&(caretAt||lastEl))(caretAt||lastEl).append(node('span',undefined,'caret'));
+  // Der Text wird bei jedem Stück neu aufgebaut; die Leseposition bleibt dabei stehen
+  const top=out.scrollTop;out.replaceChildren(frag);out.scrollTop=top;
+  // Eine gerade geöffnete Frage rückt samt Optionen in den sichtbaren Bereich
+  if(target){if(conceptAsk)setTimeout(()=>target.querySelector('.cask')?.scrollIntoView({block:'center'}),0)}
+  else{if(conceptAsk&&conceptAsk!==conceptAskShown)out.querySelector('.cask')?.scrollIntoView({block:'nearest'});conceptAskShown=conceptAsk}
+}
+// Nach dem Neuschreiben kann dieselbe Entscheidung unter einer anders formulierten Frage stehen:
+// Steht deine Antwort dort als erste Option, wandert sie zu dieser Frage mit.
+const conceptMarks=text=>[...text.matchAll(/\{\{([^{}|]+)\|([^{}]*)\}\}/g)].map(m=>({q:m[1].trim(),first:(m[2].split("|")[0]||"").trim()}));
+function conceptAdopt(text){
+  const marks=conceptMarks(text),here=new Set(marks.map(m=>m.q)),norm=x=>x.toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
+  for(const [q,a] of Object.entries(s.conceptAnswers)){
+    if(here.has(q))continue;
+    const hit=marks.find(m=>!s.conceptAnswers[m.q]&&norm(m.first)===norm(a));
+    if(hit){s.conceptAnswers[hit.q]=a;delete s.conceptAnswers[q]}
+  }
+}
+function conceptOwnUI(text){
+  const here=new Set(conceptMarks(text||"").map(m=>m.q)),box=$("conceptOwn"),own=Object.entries(s.conceptAnswers).filter(([q])=>!here.has(q));
+  box.classList.toggle("hidden",!own.length&&!s.conceptWishes.length);box.replaceChildren();if(!own.length&&!s.conceptWishes.length)return;
+  box.append(node("span","Von dir festgelegt","eyebrow"));
+  for(const [q,a] of own){
+    const away=!here.has(q),chip=node("span",a,"ownchip"+(away?" away":"")),x=button("×",undefined,()=>{delete s.conceptAnswers[q];save();if(conceptPush())renderAll();else conceptRefresh()});
+    chip.title=q+(away?" – steht im aktuellen Text nicht als eigene Stelle; gilt beim nächsten Neuschreiben weiter":"");x.setAttribute("aria-label","Festlegung entfernen: "+a);chip.append(x);box.append(chip);
+  }
+  // Eingearbeitete Wünsche: gelten bei jedem Neuschreiben weiter, bis du sie hier entfernst
+  s.conceptWishes.forEach((w,i)=>{
+    const chip=node("span","✎ "+(w.length>48?w.slice(0,46)+"…":w),"ownchip wish"),x=button("×",undefined,()=>{s.conceptWishes.splice(i,1);save();conceptUI()});
+    chip.title="Dein Wunsch: "+w+" – gilt beim Neuschreiben weiter";x.setAttribute("aria-label","Wunsch entfernen: "+w);chip.append(x);box.append(chip);
+  });
+}
+/* ---------- Konzept und Fragen sind dieselben Entscheidungen ---------- */
+// Gilt das Konzept noch für die aktuelle Idee?
+const conceptLive=()=>!!(s.concept&&s.concept.parts&&s.concept.parts.idea===s.idea.trim());
+// Der Text des Konzepts mit eingesetzten Antworten – so geht er als Grundlage in Fragen, Umfang und Spezifikation ein
+const conceptPlain=()=>conceptLive()?s.concept.text.replace(/\{\{([^{}|]+)\|([^{}]*)\}\}/g,(_,q,o)=>s.conceptAnswers[q.trim()]||(o.split('|')[0]||'').trim()):'';
+// Jede markierte Stelle des Konzepts als Frage: Thema = Abschnitt, Standard = die Annahme im Text, deine Wahl = entschieden
+function conceptQuestions(){
+  if(!conceptLive())return [];
+  const out=[],seen=new Set();
+  for(const [title,lines] of conceptSplit(s.concept.text))for(const m of lines.join('\n').matchAll(/\{\{([^{}|]+)\|([^{}]*)\}\}/g)){
+    const q=m[1].trim(),opts=[...new Set(m[2].split('|').map(x=>x.trim()).filter(Boolean))].slice(0,4);if(!opts.length||seen.has(q.toLowerCase()))continue;seen.add(q.toLowerCase());
+    const mine=s.conceptAnswers[q],at=mine?opts.indexOf(mine):-1;
+    if(opts.length<2)opts.push('Anders – noch festzulegen');
+    out.push({topic:Math.max(0,topics.indexOf(title)),question:q,options:opts,multi:false,defaults:[0],reason:'Annahme aus dem Konzept',concept:true,
+      state:mine?'decided':'open',choice:mine&&at>=0?[at]:[],custom:mine&&at<0?mine:''});
+  }
+  return cleanQuestions(out);
+}
+// Richtung Konzept → Fragen: eine Wahl im Text entscheidet die zugehörige Frage (oder öffnet sie wieder); neue Stellen werden zu neuen Fragen
+function conceptPush(){
+  if(!s.questions.length||s.askedIdea!==s.idea.trim()||!conceptLive())return;
+  const byText=new Map(conceptQuestions().map(q=>[q.question.toLowerCase(),q])),known=new Set(s.questions.map(q=>q.question.toLowerCase()));let changed=false;
+  s.questions=s.questions.map(q=>{
+    if(!q.concept)return q;const c=byText.get(q.question.toLowerCase());if(!c)return q;
+    const mine=s.conceptAnswers[c.question];
+    if(mine&&(q.state!=='decided'||answerOf(q)!==mine)){changed=true;const at=q.options.indexOf(mine);return {...q,state:'decided',choice:at>=0?[at]:[],custom:at>=0?'':mine,auto:false}}
+    if(!mine&&q.state==='decided'){changed=true;return {...q,state:'open',choice:[],custom:'',auto:false}}
+    return q;
+  });
+  {const before=s.questions.length;s.questions=s.questions.filter(q=>!q.concept||q.state==='decided'||byText.has(q.question.toLowerCase()));if(s.questions.length!==before)changed=true}
+  const added=[...byText.values()].filter(q=>!known.has(q.question.toLowerCase()));
+  if(added.length){s.questions=[...s.questions,...added].slice(0,40);changed=true}
+  // Bewusst ohne erneutes Verteilen nach dem Entscheidungsmodus: Sonst gingen dadurch andere, schon getroffene Annahmen wieder auf
+  if(changed){touched();save()}
+  return changed;
+}
+// Richtung Fragen → Konzept: Was bei den Fragen entschieden ist, steht im Text als deine Festlegung; was dort wieder offen oder nur Annahme ist, nicht
+function conceptPull(){
+  if(!s.questions.length||s.askedIdea!==s.idea.trim())return;
+  for(const q of s.questions)if(q.concept){
+    const a=q.state==='decided'?answerOf(q):'';
+    if(a)s.conceptAnswers[q.question]=a;else delete s.conceptAnswers[q.question];
+  }
+}
+const conceptRefresh=()=>{conceptUI();if(s.phase===2)specUI()};
+function conceptUI(){
+  conceptPull();
+  const out=$('concept'),note=$('conceptNote'),idea=s.idea.trim(),on=$('ai').checked,key=conceptKey(),own=s.concept;
+  scheduleConcept();conceptOwnUI(conceptJob&&conceptJob.text?conceptJob.text:own?own.text:'');
+  $('conceptRedo').classList.toggle('hidden',!on||!own||!!conceptJob);
+  {const drift=own?conceptMarks(own.text).filter(m=>s.conceptAnswers[m.q]&&s.conceptAnswers[m.q]!==m.first).length:0;$('conceptRedo').classList.toggle('nudge',drift>0);$('conceptRedo').title=drift?plural(drift,'Festlegung weicht','Festlegungen weichen')+' vom Text ab – neu schreiben gleicht den ganzen Text an.':'Schreibt das Konzept neu und berücksichtigt dabei deine Antworten im ganzen Text.'}
+  // „Alles akzeptieren“ steht immer da, sobald es ein Konzept gibt; ohne offene Annahmen ist es nicht anklickbar
+  {const left=own&&!conceptJob?conceptMarks(own.text).filter(m=>m.first&&!s.conceptAnswers[m.q]).length:0;$('conceptAll').classList.toggle('hidden',!own);$('conceptAll').disabled=!left}
+  out.classList.remove('empty','stale');
+  $('conceptWishBox').classList.toggle('hidden',!on||!own);$('conceptWishRun').disabled=!!conceptJob||!$('conceptWish').value.trim();
+  if(conceptJob&&conceptJob.wish){
+    // Änderungswunsch: Der Text bleibt stehen; was sich ändert, wird an Ort und Stelle ersetzt
+    const got=conceptJob.text.trimStart().startsWith('#')?conceptJob.text:'';
+    conceptRender(got?conceptMerge(conceptJob.prev,got+CARET):conceptJob.prev,!!got);
+    note.textContent='Claude arbeitet deinen Wunsch ein …';return;
+  }
+  if(conceptJob&&conceptJob.only){
+    // Nur einzelne Abschnitte entstehen neu: Der alte Text bleibt stehen, die betroffenen Abschnitte sind blass, bis ihr neuer Text kommt
+    const got=conceptJob.text.trimStart().startsWith('#')?conceptJob.text:'',done=new Set(conceptSplit(got).keys());
+    conceptRender(got?conceptMerge(conceptJob.prev,got+CARET):conceptJob.prev,!!got,new Set(conceptJob.only.filter(x=>!done.has(x))));
+    note.textContent='Claude schreibt neu: '+conceptJob.only.join(', ')+' …';return;
+  }
+  if(conceptJob&&conceptJob.text.trimStart().startsWith('#')){conceptRender(conceptJob.text+CARET,true);note.textContent='Claude schreibt …';return}
+  if(own&&own.text){
+    // Passt der Text nicht mehr zu Idee oder Reglern, steht er blass da, bis der neue kommt
+    const part=own.key!==key?conceptOnly():null;
+    out.classList.toggle('stale',(own.key!==key&&!part)||!!conceptJob);conceptRender(own.text,false,part?new Set(part):null);
+    const marks=[...new Set([...own.text.matchAll(/\{\{([^{}|]+)\|/g)].map(m=>m[1].trim()))],mine=marks.filter(q=>s.conceptAnswers[q]).length;
+    note.textContent=conceptJob?'Claude schreibt …':own.key!==key?(on?'wird gleich neu geschrieben …':'passt nicht mehr zur Idee – Claude einschalten'):plural(marks.length-mine,'Annahme','Annahmen')+' · '+Object.keys(s.conceptAnswers).length+' von dir entschieden';
+    return;
+  }
+  out.classList.add('empty');
+  out.replaceChildren(node('p',conceptJob?'Claude beginnt zu schreiben …':!on?'Mit Claude (Schalter oben) entsteht hier beim Tippen live ein Konzept – mit einer kleinen Szene und den Stellen, an denen du entscheiden kannst.':words(idea)<4?'Hier entsteht beim Tippen ein Konzept deiner Anwendung. Ein Satz genügt.':'Kurze Pause beim Tippen – dann schreibt Claude los.','meta'));
+  note.textContent='';
+}
+function scheduleConcept(){
+  clearTimeout(conceptIdle);const key=conceptKey();
+  if(conceptJob&&(conceptJob.key!==key||s.phase!==0||!$('ai').checked)){conceptJob.ac.abort();conceptJob=null}
+  if(conceptJob||!$('ai').checked||active||s.phase!==0||(s.concept&&s.concept.key===key)||words(s.idea)<4||Date.now()<conceptPauseUntil)return;
+  conceptIdle=setTimeout(()=>runConcept(key),1200);
+}
+async function runConcept(key,wish=''){
+  if(conceptJob||active||s.phase!==0||key!==conceptKey())return;
+  const only=wish?null:conceptOnly(),ac=new AbortController(),job={key,ac,text:'',timer:0,only,wish,prev:only||wish?s.concept.text:''};conceptJob=job;conceptAsk='';conceptUI();
+  try{
+    const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'concept',idea:s.idea.trim(),project:s.project,ai:true,...frame(),minutes:targetMinutes(),answers:Object.entries(s.conceptAnswers).map(([q,a])=>({q,a})),wishes:s.conceptWishes,...(only?{only,prev:job.prev}:{}),...(wish?{wish,prev:job.prev}:{})}),signal:ac.signal});
+    if(!res.ok||!res.body)throw Error('Konzept nicht möglich.');
+    const reader=res.body.getReader(),decoder=new TextDecoder();let buffer='',fin=null;
+    for(;;){
+      const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});
+      for(let i;(i=buffer.indexOf('\n'))>=0;){
+        const line=buffer.slice(0,i);buffer=buffer.slice(i+1);if(!line.trim())continue;
+        const m=JSON.parse(line);if(m.error)throw Error(m.error);
+        if(m.done)fin=m;
+        // Stücke gebündelt anzeigen: höchstens alle 80 ms
+        else if(m.t&&conceptJob===job){job.text+=m.t;if(!job.timer)job.timer=setTimeout(()=>{job.timer=0;if(conceptJob===job)conceptUI()},80)}
+      }
+    }
+    if(fin&&fin.usage)addUsage('concept',fin.usage);
+    if(conceptJob===job&&fin&&fin.text&&key===conceptKey()){const text=only||wish?conceptMerge(job.prev,fin.text):fin.text;conceptAdopt(text);s.concept={key,text,parts:conceptNow()};if(wish){s.conceptWishes=[...s.conceptWishes,wish].slice(-12);$('conceptWish').value=''}save();if(conceptPush())renderAll()}
+  }catch(e){if(!ac.signal.aborted)conceptPauseUntil=Date.now()+6000}
+  finally{clearTimeout(job.timer);if(conceptJob===job)conceptJob=null;conceptUI()}
+}
+// Änderungswunsch in eigenen Worten: nur bei aktuellem Konzept, sonst wird ohnehin gleich neu geschrieben
+const sendWish=()=>{const w=$('conceptWish').value.trim();if(!w||conceptJob||!s.concept)return;clearTimeout(conceptIdle);if(s.concept.key!==conceptKey()){s.conceptWishes=[...s.conceptWishes,w].slice(-12);$('conceptWish').value='';save();conceptUI();return}runConcept(conceptKey(),w)};
+$('conceptWishRun').onclick=sendWish;
+$('conceptWish').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();sendWish()}};
+$('conceptWish').oninput=()=>{$('conceptWishRun').disabled=!!conceptJob||!$('conceptWish').value.trim()};
+$('conceptAll').onclick=()=>{
+  if(!s.concept)return;const now=Date.now();
+  for(const m of conceptMarks(s.concept.text))if(m.first&&!s.conceptAnswers[m.q]){s.conceptAnswers[m.q]=m.first;conceptFlash[m.q]=now}
+  conceptAsk='';save();if(conceptPush())renderAll();else conceptRefresh();
+};
+$('conceptRedo').onclick=()=>{s.concept=null;conceptPauseUntil=0;save();clearTimeout(conceptIdle);runConcept(conceptKey())};
+$('ai').addEventListener('change',()=>setTimeout(conceptUI,0));
 function sketchUI(){
   const box=$('sketch'),idea=s.idea.trim(),note=$('sketchNote');
   $('sketchBox').classList.toggle('empty',!idea);promptUI();
+  conceptUI();if(!SKETCH)return;
   const tools=[$('sketchPlay'),$('sketchDevice'),$('sketchPalette')];
   // zuerst: Ein laufender Strom, der nicht mehr zu Idee und Reglern passt, endet hier
   scheduleAuto();
@@ -3215,6 +3653,7 @@ function layoutUI(){
   const choice=chosenLayout();$('layoutChoice').textContent=!(l&&l.screens.length)?'':choice?'Gewählt: '+choice.label+'. Geht als maßgebliche Vorlage in die Aufträge ein.':'Noch kein Entwurf gewählt. Wähle den, der umgesetzt werden soll – sonst gehen alle nur als unverbindliche Referenz in die Aufträge ein.';
   const combos=layoutCombos(),perCombo=Number($('layoutCount').value)||s.layoutCount,total=perCombo*combos.length;
   $('layoutPlan').textContent=plural(total,'Entwurf entsteht','Entwürfe entstehen')+': '+plural(perCombo,'Variante','Varianten')+' für '+combos.map(c=>comboName(c[0],c[1])).join(', ')+'. Jede Kombination dauert einige Minuten.'+(total>8?' Das ist zu viel für einen Lauf (höchstens 8).':'');
+  $('layoutRun').classList.toggle('nudge',!!(l&&l.screens.length&&l.spec!==digest(s.spec))&&!layoutBusy&&!s.dirty);
   $('layoutRun').textContent=l&&l.screens.length?'▦ Layouts neu erstellen':'▦ Layouts generieren';
   if($('layoutWish').value!==s.layoutWish)$('layoutWish').value=s.layoutWish;
   if(!layoutBusy&&!(l&&l.screens.length))$('layoutStatus').textContent='';
@@ -3348,7 +3787,7 @@ $('finish').onclick=async()=>{
   if(!s.runDir.trim()){$('finishHint').textContent='Bitte einen Zielordner angeben.';$('runDir').focus();return}
   $('finish').disabled=true;$('finishHint').textContent='Umsetzung wird gestartet …';runOpen.clear();
   try{
-    run=await post('/api/run',{action:'start',dir:s.runDir,agents:agentsNow(),shell:s.runShell,model:s.runModel,plan:p,spec:s.planSpec,repo:s.repo,reuse:selectedReuse(),...(layoutActive()?{layoutUrl:s.layout.url,...(chosenLayout()?{layoutChoice:chosenLayout().label,layoutHtmls:chosenLayout().htmls}:{})}:{})});
+    run=await post('/api/run',{action:'start',dir:s.runDir,agents:agentsNow(),shell:s.runShell,model:s.runModel,plan:p,spec:s.planSpec,repo:s.repo,reuse:selectedReuse(),...(s.logos[s.logoChosen]?{logo:cleanSvg(s.logos[s.logoChosen].svg)}:{}),...(layoutActive()?{layoutUrl:s.layout.url,...(chosenLayout()?{layoutChoice:chosenLayout().label,layoutHtmls:chosenLayout().htmls}:{})}:{})});
     s.finished=finishKey();save();runBusy=true;renderAll();pollRun();$('doneBox').scrollIntoView({block:'nearest'});
   }catch(e){renderAll();$('finishHint').textContent=e.message}
 };

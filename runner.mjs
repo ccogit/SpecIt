@@ -10,6 +10,7 @@ import { validatePlan, renderTask, renderSingle } from './planner.mjs';
 import { cleanSelections } from './reuse.mjs';
 import { isFileName, downloadFile } from './stitch.mjs';
 import { scanArtifacts } from './artifacts.mjs';
+import { cleanSvg } from './interview.mjs';
 
 const own = path.resolve(fileURLToPath(new URL('.', import.meta.url)));
 const model = process.env.SPECIT_AGENT_MODEL || '';
@@ -29,7 +30,7 @@ export function validateRun(b) {
   if (inside(dir, own) || inside(own, dir)) throw Error('Der Zielordner darf nicht der SpecIt-Ordner sein oder ihn enthalten.');
   if (typeof b.spec !== 'string' || !b.spec.trim() || b.spec.length > 50000) throw Error('Spezifikation fehlt oder zu lang.');
   const agents = Number.isInteger(b.agents) ? Math.min(maxAgents, Math.max(1, b.agents)) : 1;
-  return { dir, agents, layoutHtmls: (Array.isArray(b.layoutHtmls) ? b.layoutHtmls : []).filter(isFileName).slice(0, 4), shell: b.shell === true, model: /^claude-[a-z0-9-]{3,40}$/.test(b.model || '') ? b.model : '', spec: b.spec, plan: validatePlan(b.plan), context: { repo: String(b.repo || '').slice(0, 500), agent: 'Claude Code', reuse: cleanSelections(b.reuse), ...(typeof b.layoutChoice === 'string' && b.layoutChoice.trim() ? { layoutChoice: b.layoutChoice.trim().slice(0, 200) } : {}), ...(typeof b.layoutUrl === 'string' && b.layoutUrl.startsWith('https://stitch.withgoogle.com/projects/') ? { layoutUrl: b.layoutUrl } : {}) } };
+  return { dir, agents, logo: typeof b.logo === 'string' && b.logo.length <= 40000 ? cleanSvg(b.logo) : '', layoutHtmls: (Array.isArray(b.layoutHtmls) ? b.layoutHtmls : []).filter(isFileName).slice(0, 4), shell: b.shell === true, model: /^claude-[a-z0-9-]{3,40}$/.test(b.model || '') ? b.model : '', spec: b.spec, plan: validatePlan(b.plan), context: { repo: String(b.repo || '').slice(0, 500), agent: 'Claude Code', reuse: cleanSelections(b.reuse), ...(typeof b.layoutChoice === 'string' && b.layoutChoice.trim() ? { layoutChoice: b.layoutChoice.trim().slice(0, 200) } : {}), ...(typeof b.layoutUrl === 'string' && b.layoutUrl.startsWith('https://stitch.withgoogle.com/projects/') ? { layoutUrl: b.layoutUrl } : {}) } };
 }
 
 const runNotes = (many, shell) => '\n\n## Hinweise für diesen automatischen Lauf\n'
@@ -80,6 +81,10 @@ export async function startRun(r) {
       } catch { /* der Entwurf bleibt über den Link erreichbar */ }
     }
     if (files.length) r.context.layoutFile = files.join(', ');
+  }
+  // Das gewählte Logo liegt als Datei im Zielordner; die Aufträge verweisen darauf
+  if (r.logo) {
+    try { await mkdir(path.join(r.dir, 'design'), { recursive: true }); await writeFile(path.join(r.dir, 'design', 'logo.svg'), r.logo); r.context.logoFile = 'design/logo.svg'; } catch { /* ohne Logo-Datei weiter */ }
   }
   const many = r.agents > 1;
   const items = many
