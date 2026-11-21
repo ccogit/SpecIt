@@ -88,7 +88,7 @@ const css=String.raw`
 .lfq[hidden]{display:none!important}
 .lfq>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px}
 .lfq>summary::marker{content:''}
-.lfq-body{padding:0 12px 12px;display:grid;gap:8px}
+.lfq-body{padding:10px 12px 12px;display:grid;gap:8px}
 .lfq-app{--lf-accent:#19765b;--lf-bg:#f1f5f3;--lf-panel:#fff;--lf-line:#d9e3df;--lf-ink:#17352d;--lf-muted:#526b63;--lf-radius:8px;--lf-space:10px;color:var(--lf-ink);font-size:13px;background:var(--lf-bg);border:1px solid var(--lf-line);border-radius:var(--lf-radius);overflow:hidden}
 .lfq-app[data-tone="0"]{--lf-accent:#8054b3;--lf-radius:16px;--lf-space:13px}
 .lfq-app[data-tone="1"]{--lf-accent:#267d89;--lf-radius:12px}
@@ -205,7 +205,7 @@ export function mountLivePreview(root){
     signature=sig;
     // Clearing the idea or changing the detected domain drops sandbox-only state.
     if(!model||model.domain!==m.domain||!m.idea||!model.idea)reset(m);
-    model=m;const panel=root.closest('details');if(panel)panel.hidden=!m.idea;else root.hidden=!m.idea;if(!m.idea){contentKey='';main.replaceChildren();brief.textContent='';return}
+    model=m;const panel=root.closest('.lfq');if(panel)panel.hidden=!m.idea;else root.hidden=!m.idea;if(!m.idea){contentKey='';main.replaceChildren();brief.textContent='';return}
     if(!m.views.some(v=>v.id===active)){active=m.primary;selected=null;showForm=false;query=''}
     notice.textContent=m.title+' · '+m.views.length+' '+(m.views.length===1?'Bereich':'Bereiche')+' · '+(m.scopeConflict?'Zielumfang prüfen · ':'')+(m.autonomy===0?'Alle nicht bestätigten Festlegungen bleiben offen. ':'')+'Vorläufiger Entwurf – keine echte Datenhaltung.';
     brief.textContent=m.descriptions.map(([k,v])=>k+': '+v).join('\n');
