@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SpecIt — From idea to agent tasks</title>
+<title>SpecIt Studio — Aus einer Idee wird deine App</title>
 <style>
 /* Layout und Designsystem nach dem Stitch-Entwurf „SpecIt Redesign“ (Farben, Typografie, Flächen). */
 :root{
@@ -650,6 +650,11 @@ html{scrollbar-gutter:stable}
           <label class="wishlabel" for="wish"><span class="spark" aria-hidden="true">✦</span>Spezifikation anpassen</label>
           <textarea id="wish" rows="1" maxlength="500" placeholder="Was soll anders werden? z. B. „Zusätzlich ein CSV-Export der Notizen“"></textarea>
           <div class="wishfoot"><button id="wishRun" class="btn primary small" type="button">✦ Einarbeiten</button><span class="meta"><kbd>Strg</kbd> + <kbd>Enter</kbd></span></div>
+          <div class="idea-examples refinement-prompts" style="margin-top:10px"><span class="eyebrow">Ideen zur Verfeinerung</span>
+            <button class="idea-example" type="button" data-wish="Verbessere die wichtigsten Nutzerreisen: reduziere jeden unnötigen Schritt, definiere sinnvolle Voreinstellungen und beschreibe auch Fehler- und Leerzustände. Bestehende Anforderungen beibehalten.">✦ Nutzerreise schärfen</button>
+            <button class="idea-example" type="button" data-wish="Veredle das UI/UX-Konzept zu einer klaren, hochwertigen und konsistenten Anwendung: Designsystem, responsive Layouts, Microinteractions und Accessibility ausformulieren, ohne zusätzliche Pflichtfunktionen zu erfinden.">✦ Premium-Design</button>
+            <button class="idea-example" type="button" data-wish="Prüfe das Konzept auf widersprüchliche Annahmen, fehlende Akzeptanzkriterien und umständliche Abläufe. Behebe Widersprüche, kennzeichne jede neue Annahme explizit und schärfe den kleinsten funktionsfähigen Kern.">✦ Konzept schärfen</button>
+          </div>
         </div>
         <div style="margin-bottom:8px">
           <div class="actions"><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="generate" class="btn primary small" type="button">↻ Konzept generieren</button><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div></div>
@@ -967,14 +972,15 @@ $('navBack').onclick=()=>{if(s.phase)setPhase(s.phase-1)};
 function studioUI(){
   const signal=conceptSignals(s.idea),out=$('briefSignal'),action=$('magicStart');
   out.replaceChildren();
+  action.textContent=statusLoaded&&!$('ai').checked?'✦ Beispielkonzept erstellen':'✦ Mit KI zum fertigen Konzept';
   if(signal.ready){
     out.append(node('strong','Erste Themen erkannt:'));
     signal.ideas.forEach(t=>out.append(node('span',t,'chip')));
     out.append(node('span','Erste Orientierung · die echten Anforderungen entstehen nach dem Start','meta'));
   }else out.append(node('span',signal.hint,'meta'));
   action.disabled=active||!s.idea.trim();
-  $('launchHint').textContent=statusLoaded&&!available
-    ?'Demo-Modus: Ohne Claude-Zugang wird ein allgemeines Beispielkonzept erstellt. Für individuelle KI-Ergebnisse Claude aktivieren.'
+  $('launchHint').textContent=statusLoaded&&!$('ai').checked
+    ?'Demo-Modus: Es entsteht ein allgemeines Beispielkonzept, keine auf deine Idee zugeschnittene KI-Analyse. Aktiviere Claude für individuelle Ergebnisse.'
     :'Der Autopilot trifft Entscheidungen selbst und kennzeichnet Annahmen. Alles bleibt bearbeitbar.';
 }
 const examples=$('ideaExamples');
@@ -1061,7 +1067,13 @@ async function derive(more){
   if(active)return;
   const idea=s.idea.trim(),status=more?$('busy'):$('ideaStatus');
   if(!idea){$('ideaStatus').textContent='Bitte die Idee in einem Satz beschreiben.';$('idea').focus();return}
-  if(!more&&s.questions.length&&idea===s.askedIdea){setPhase(1);return}
+  if(!more&&s.questions.length&&idea===s.askedIdea){
+    if(s.autonomy===100&&firstOpen()<0){
+      setPhase(2);
+      if(!s.spec.trim()||s.dirty)await generate();
+    }else setPhase(1);
+    return;
+  }
   if(!more&&s.questions.some(q=>q.state!=='open')&&!confirm('Die Idee wurde geändert. Vorhandene Fragen und Antworten ersetzen?'))return;
   const rev=revision;lock(true,more?'Weitere Fragen werden abgeleitet':'Fragen werden abgeleitet');status.textContent=more?'Weitere Fragen werden abgeleitet …':'Fragen werden abgeleitet …';
   let auto=false;
@@ -1086,7 +1098,7 @@ async function derive(more){
   if(auto)generate();
 }
 $('idea').oninput=e=>{s.idea=e.target.value;revision++;if(s.spec)s.dirty=true;ideaUI();studioUI();statuses();save()};
-$('idea').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();derive(false)}};
+$('idea').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('magicStart').click()}};
 $('derive').onclick=()=>derive(false);
 $('more').onclick=()=>derive(true);
 
@@ -1587,7 +1599,7 @@ function working(text,since){
   // Erst nach einem Augenblick einblenden: Antworten ohne KI kommen sofort und sollen nicht aufblitzen.
   tick();workTimer=setInterval(tick,1000);showTimer=setTimeout(()=>{bar.classList.remove('hidden');document.title='⏳ '+who+' – '+pageTitle},250);
 }
-function lock(v,text){active=v;aborter=v?new AbortController():null;for(const id of ['derive','more','generate','plan'])$(id).disabled=v;navUI();working(v?text||'Anfrage läuft':'');if(!v&&runBusy)pollRun()}
+function lock(v,text){active=v;aborter=v?new AbortController():null;for(const id of ['derive','more','generate','plan'])$(id).disabled=v;$('magicStart').disabled=v||!s.idea.trim();navUI();working(v?text||'Anfrage läuft':'');if(!v&&runBusy)pollRun()}
 // Schließen oder Neuladen während einer laufenden Anfrage nur nach Rückfrage des Browsers
 $('workingStop').onclick=()=>{
   if(aborter)aborter.abort();else if(layoutAbort)layoutAbort.abort();else if(runBusy)$('runStop').click();
@@ -2217,6 +2229,9 @@ async function adjustSpec(){
   if(s.specSource==='claude'&&$('ai').checked&&s.autonomy<100)await deriveDecisions(true);
 }
 $('wishRun').onclick=adjustSpec;
+document.querySelectorAll('[data-wish]').forEach(b=>b.onclick=()=>{
+  $('wish').value=b.dataset.wish;$('wish').focus();$('wish').setSelectionRange($('wish').value.length,$('wish').value.length);
+});
 $('wish').onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();adjustSpec()}};
 
 /* ---------- Direkte Umsetzung über Claude Code ---------- */
