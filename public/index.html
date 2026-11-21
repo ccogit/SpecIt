@@ -1,63 +1,798 @@
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SpecIt — From idea to agent tasks</title>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SpecIt — From idea to agent tasks</title>
 <style>
-:root{font:16px/1.5 system-ui,sans-serif;color:#1d342d;background:#edf2ef;--accent:#285c48;--border:#d2dfd7}*{box-sizing:border-box}body{margin:0}header{background:#15382c;color:white;padding:24px max(22px,calc((100% - 1220px)/2));display:flex;justify-content:space-between;align-items:center;gap:16px}header h1{margin:0;font-size:32px;letter-spacing:-1px}header h1 span{color:#a6e0bb}header p{margin:0;color:#c8dfd4}main{max-width:1260px;margin:auto;padding:24px;display:grid;grid-template-columns:230px 1fr;gap:20px}section,aside{background:#fff;border:1px solid var(--border);padding:22px;border-radius:14px;margin-bottom:16px}aside{align-self:start}h2,h3{margin:0 0 10px}h2{font-size:23px}p{margin:8px 0;color:#52675e}button,input,textarea,select{font:inherit}button{cursor:pointer;border:1px solid var(--border);background:white;padding:9px 14px;border-radius:8px;color:inherit;font-weight:600}button.primary{background:var(--accent);color:white}button:disabled{opacity:.45;cursor:not-allowed}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #86bfa0;outline-offset:2px}nav{display:grid;gap:6px}nav button{text-align:left;font-size:14px}nav button[aria-current=step]{background:#e1f0e7;border-color:#80ad96}label{display:block;font-weight:600;margin:12px 0 5px}input[type=text],textarea,select{width:100%;border:1px solid #aebfb5;border-radius:8px;padding:10px;background:white;color:inherit}textarea{resize:vertical;line-height:1.5} .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}.row>*{flex-shrink:0}.small{font-size:13px;color:#52675e}.question{padding:12px;border-left:3px solid #8ab79a;background:#f6faf7;margin:10px 0}.status{font-size:13px;min-height:20px}.warn{color:#93461c}.task{border:1px solid var(--border);border-radius:10px;padding:14px;margin:10px 0}.task pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f7f5;padding:12px;border-radius:8px;font:13px/1.55 ui-monospace,monospace}summary{cursor:pointer;font-weight:600}.hidden{display:none!important}progress{width:100%;accent-color:var(--accent)}@media(max-width:760px){main{grid-template-columns:1fr;padding:12px}header{padding:16px}aside{margin-bottom:0}nav{grid-template-columns:1fr 1fr}section{padding:15px}}
-</style></head><body><header><div><h1>Spec<span>It.</span></h1><p>From idea to actionable agent tasks.</p></div><div id="mode" role="status">Demo-Modus</div></header>
-<main><aside><h3>Spec Builder</h3><progress id="progress" max="6" value="0"></progress><p class="small" id="progressText"></p><nav id="nav"></nav><div class="row"><button id="example">Beispiel</button><button id="reset">Neu</button></div><label><input type="checkbox" id="ai" disabled> Claude aktivieren</label><p id="privacy" class="small">Demo ohne API. Bei aktiver KI werden Projektdaten an Anthropic gesendet. Keine vertraulichen Daten eingeben.</p></aside>
-<div><section><label for="project">Projektname</label><input id="project" type="text" maxlength="100" placeholder="Beliebiges Projekt"><p class="small" id="stepNo"></p><h2 id="title"></h2><label for="entry">Deine Anforderungen</label><textarea id="entry" rows="6" maxlength="5000"></textarea><div class="row"><button id="prev">← Zurück</button><button id="next" class="primary">Weiter →</button><button id="review">Schritt prüfen</button></div><p id="busy" class="status" role="status"></p><h3>Spec Assistant</h3><p id="note" class="small"></p><div id="questions"></div></section>
-<section id="specSection"><h2>2 · Spezifikation</h2><p>Erstelle einen konsolidierten Entwurf. Prüfe Annahmen und offene Entscheidungen oder füge eine vorhandene Spezifikation direkt ein.</p><div class="row"><button id="generate" class="primary">Konzept generieren</button><button id="specDownload">SPEC.md</button></div><label for="spec">Bearbeitbare Spezifikation</label><textarea id="spec" rows="12" maxlength="50000" placeholder="Spezifikation generieren oder hier einfügen …"></textarea><p id="specStatus" role="status" class="status"></p></section>
-<section><h2>3 · Agent Task Builder</h2><p>Zerlege die Spezifikation in delegierbare Aufgaben mit Abhängigkeiten, Akzeptanzkriterien, Tests und Zuständigkeiten. Agenten werden dabei nicht automatisch gestartet.</p><label for="repo">Repository / technische Vorgaben (optional)</label><input type="text" id="repo" maxlength="500" placeholder="URL, Stack, Konventionen"><label for="agent">Zielagent</label><select id="agent"><option>Agent-neutral</option><option>Claude Code</option><option>Codex</option><option>GitHub Copilot</option><option>Cursor</option></select><div class="row"><button id="plan" class="primary">Arbeitsaufträge generieren</button><button id="json" disabled>tasks.json</button><button id="backlog" disabled>BACKLOG.md</button><button id="copyAll" disabled>Alle kopieren</button></div><p id="planStatus" class="status" role="status"></p><div id="planOutput"></div></section></div></main>
+/* Layout und Designsystem nach dem Stitch-Entwurf „SpecIt Redesign“ (Farben, Typografie, Flächen). */
+:root{
+  --surface:#faf9f5;--surface-low:#f4f4f0;--surface-mid:#eeeeea;--surface-high:#e8e8e4;--card:#fff;
+  --ink:#1a1c1a;--ink-soft:#414845;--outline:#717974;--outline-soft:#c1c8c3;
+  --primary:#002218;--primary-container:#15382c;--secondary:#346853;--mint:#b7efd4;--on-mint:#1a503c;
+  --error:#ba1a1a;--error-container:#fdf1cf;--on-error-container:#6b4200;--warn-line:#c77700;
+  --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --heading:#002218;--on-primary:#fff;--tint:var(--tint);--top-bg:rgba(250,249,245,.94);
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.03);
+  font:14px/1.57 var(--sans);color:var(--ink);background:var(--surface);
+}
+/* Dunkles Thema nach der Stitch-Fassung „Dark Glass“ */
+:root[data-theme=dark]{
+  --surface:#111317;--surface-low:#1a1c20;--surface-mid:#22252a;--surface-high:#2c2f34;--card:#17191d;
+  --ink:#e2e2e8;--ink-soft:#bbcabf;--outline:#86948a;--outline-soft:#3c4a42;
+  --primary:#4edea3;--primary-container:#4edea3;--secondary:#45dfa4;--mint:#123d2e;--on-mint:#7ee6bd;
+  --error:#ffb4ab;--error-container:#3a2d0d;--on-error-container:#f3d28a;--warn-line:#d19a2e;
+  --heading:#f1f3f2;--on-primary:#003824;--tint:#12281f;--top-bg:rgba(17,19,23,.92);
+  --shadow:0 0 0 1px rgba(255,255,255,.06);color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column}
+h1,h2,h3,p{margin:0}
+h1{font-size:32px;line-height:40px;letter-spacing:-.015em;font-weight:600;color:var(--heading)}
+h2{font-size:18px;line-height:24px;font-weight:600}
+h3{font-size:14px;line-height:22px;font-weight:700}
+button,input,textarea,select{font:inherit;color:inherit}
+.hidden{display:none!important}
+.mono,.eyebrow,.chip,.btn,.pill,.field-label,.meta{font-family:var(--mono)}
+.eyebrow{font-size:11px;line-height:14px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:var(--outline)}
+.meta{font-size:11px;line-height:16px;letter-spacing:.02em;color:var(--outline)}
+.muted{color:var(--ink-soft)}
+.card{background:var(--card);border-radius:8px;box-shadow:var(--shadow);padding:24px}
+:focus-visible{outline:2px solid var(--secondary);outline-offset:2px}
+
+/* Buttons: genau eine primäre Aktion je Ansicht */
+.btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:6px;padding:9px 16px;font-size:12px;line-height:16px;font-weight:500;letter-spacing:.02em;background:var(--surface-low);cursor:pointer;text-decoration:none;color:var(--ink);white-space:nowrap}
+.btn:hover{background:var(--surface-high)}
+.btn.primary{background:var(--primary);color:var(--on-primary);font-weight:600;padding-inline:22px;box-shadow:0 2px 6px rgba(0,34,24,.25)}
+.btn.primary:hover{background:var(--primary-container)}
+.btn.ghost{background:transparent}
+.btn.ghost:hover{background:var(--surface-mid)}
+.btn.small{padding:6px 10px;font-size:11px}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.chip,.pill{display:inline-flex;align-items:center;gap:6px;border-radius:4px;padding:2px 7px;font-size:11px;line-height:16px;letter-spacing:.03em;font-weight:500;background:var(--surface-mid);color:var(--ink-soft);white-space:nowrap}
+.chip.ok{background:var(--mint);color:var(--on-mint);font-weight:600}
+.chip.warn{background:var(--error-container);color:var(--on-error-container);font-weight:600}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--secondary)}
+
+/* Formularfelder */
+.field-label{display:block;font-size:11px;line-height:14px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:var(--ink-soft);margin-bottom:6px}
+input[type=text],input[type=number],textarea,select{width:100%;border:1px solid transparent;border-radius:6px;padding:10px 12px;background:var(--surface-low);box-shadow:inset 0 1px 2px rgba(0,0,0,.05)}
+input[type=text]:focus,input[type=number]:focus,textarea:focus,select:focus{outline:none;border-color:var(--secondary);background:var(--card);box-shadow:0 0 0 3px var(--mint)}
+textarea{resize:vertical;line-height:1.65;display:block}
+::placeholder{color:var(--outline);opacity:.8}
+
+/* Schalter */
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.03em;color:var(--ink-soft);user-select:none}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch .track{width:32px;height:18px;border-radius:9px;background:var(--outline-soft);position:relative;transition:background .15s;flex-shrink:0}
+.switch .track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.switch input:checked+.track{background:var(--secondary)}
+.switch input:checked+.track::after{transform:translateX(14px)}
+.switch input:focus-visible+.track{outline:2px solid var(--secondary);outline-offset:2px}
+.switch input:disabled+.track{opacity:.45}
+.switch:has(input:disabled){cursor:not-allowed}
+
+main{flex:1;width:100%;max-width:1480px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:24px}
+.status{font-family:var(--mono);font-size:12px;min-height:18px;color:var(--ink-soft)}
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.pagehead p{max-width:70ch;font-size:16px;line-height:26px;color:var(--ink-soft);margin-top:6px}
+.actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.spread{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* Phase 2: Spezifikation */
+.split{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:start}
+#spec{font-family:var(--mono);font-size:13px;line-height:1.75;min-height:520px;background:var(--card);box-shadow:var(--shadow);padding:24px}
+.side{display:flex;flex-direction:column;gap:16px}
+.check{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px}
+.check .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--outline-soft);display:grid;place-items:center;font-size:11px;font-weight:700;flex-shrink:0}
+.check.done .dot{border-color:var(--secondary);color:var(--secondary)}
+.check .name{flex:1}
+.link{border:0;background:none;padding:0;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.03em;color:var(--secondary);font-weight:600;text-decoration:none}
+.link:hover{color:var(--heading);text-decoration:underline}
+.banner{border-left:4px solid var(--warn-line);display:flex;align-items:center;gap:8px;border-radius:6px;padding:8px 12px;background:var(--error-container);color:var(--on-error-container);font-family:var(--mono);font-size:12px;font-weight:600}
+
+/* Phase 3: Agent Tasks und Stitch-Layouts */
+.layoutgrid{display:grid;grid-template-columns:140px 160px auto;gap:16px;align-items:end;justify-content:start;margin-top:16px}
+.linkrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding:10px 12px;border-radius:6px;background:var(--surface-low)}
+.linkrow a{font-family:var(--mono);font-size:12px;color:var(--secondary);overflow-wrap:anywhere;flex:1;min-width:200px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:16px}
+.shot{background:var(--card);border-radius:6px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.shot img{width:100%;aspect-ratio:4/3;object-fit:cover;object-position:top;display:block;background:var(--surface-mid)}
+.shot .cap{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.decisions{background:var(--error-container);color:var(--on-error-container);border-radius:6px;border-left:4px solid var(--warn-line);padding:16px 20px}
+.decisions ul{margin:8px 0 0;padding-left:18px}
+.wave{display:flex;flex-direction:column;gap:12px}
+.wavehead{display:flex;align-items:center;gap:10px;padding-bottom:6px;border-bottom:1px solid var(--outline-soft)}
+.wavegrid{display:flex;flex-direction:column;gap:12px}
+.toolbar{background:var(--surface-low);border-radius:8px;padding:10px 12px}
+.nested{background:var(--surface-low);border-radius:6px;padding:20px;margin-top:20px}
+.settings{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px}
+.task{padding:20px;display:flex;flex-direction:column;gap:10px}
+.task .id{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--secondary)}
+.task pre{margin:10px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface-low);padding:14px;border-radius:6px;font:12px/1.65 var(--mono);max-height:420px;overflow:auto}
+summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--secondary)}
+
+.foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:10px 24px;background:var(--surface-low);font-family:var(--mono);font-size:11px;color:var(--outline)}
+.foot .pill{background:transparent;padding:0}
+
+/* Kopfzeile mit Schritt-Leiste (immer sichtbar) */
+.top{position:sticky;top:0;z-index:10;background:var(--top-bg);backdrop-filter:blur(8px);box-shadow:0 1px 8px rgba(0,0,0,.05)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 24px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.wordmark{font-size:22px;line-height:28px;font-weight:700;letter-spacing:-.02em;color:var(--heading)}
+.wordmark span{color:var(--secondary)}
+.brand .rule{width:1px;height:20px;background:var(--outline-soft)}
+#project{font-family:var(--mono);font-size:13px;font-weight:500;background:transparent;box-shadow:none;padding:5px 8px;width:200px}
+#project:hover{background:var(--surface-mid)}
+.tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.phases{display:flex;align-items:center;gap:4px;padding:4px;border-radius:8px;background:var(--surface-low);overflow-x:auto;max-width:100%}
+.phase{display:flex;align-items:center;gap:8px;border:0;background:transparent;border-radius:6px;padding:7px 12px;cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--ink-soft);white-space:nowrap}
+.phase:hover{color:var(--ink)}
+.phase .num{font-weight:600}
+.phase.done .num{color:var(--secondary)}
+.phase[aria-current=page]{background:var(--primary-container);color:var(--on-primary);font-weight:600}
+.phase[aria-current=page] .chip{background:rgba(128,128,128,.28);color:var(--on-primary)}
+.arrow{color:var(--outline-soft);font-family:var(--mono);font-size:11px;flex-shrink:0}
+
+/* Schritt 1: Idee */
+.hero{max-width:920px;margin:24px auto 0;width:100%;display:flex;flex-direction:column;gap:24px}
+.hero .intro{text-align:center}
+.hero h1{font-size:44px;line-height:52px;letter-spacing:-.02em;font-weight:700}
+.hero .intro p{font-size:18px;line-height:30px;color:var(--ink-soft);max-width:60ch;margin:12px auto 0}
+#idea{font-size:18px;line-height:28px;padding:18px 20px;min-height:92px;resize:none}
+.examples{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.example{border:0;border-radius:6px;padding:14px 16px;background:var(--surface-low);cursor:pointer;text-align:left;font-size:14px;color:var(--ink-soft)}
+.example:hover{background:var(--surface-high);color:var(--ink)}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--surface-low);border-radius:8px;padding:16px}
+.how>div{background:var(--card);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.how p{font-size:13px;color:var(--ink-soft)}
+kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;border-radius:3px;background:var(--surface-mid);color:var(--ink-soft);letter-spacing:.04em}
+.btn.primary kbd{background:rgba(128,128,128,.28);color:var(--on-primary)}
+
+/* Schritt 2: Fragen */
+.interview{display:grid;grid-template-columns:minmax(0,7fr) minmax(320px,5fr);gap:24px;align-items:start}
+.column{display:flex;flex-direction:column;gap:16px;min-width:0}
+.ideabox{background:var(--surface-low);border-radius:8px;padding:16px 20px;display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.ideabox blockquote{margin:6px 0 0;font-size:16px;line-height:26px}
+.gauge{display:flex;flex-direction:column;gap:14px}
+.gauge .value{font-size:32px;line-height:36px;font-weight:700;color:var(--heading);font-variant-numeric:tabular-nums}
+.level{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.level .seg{display:flex;flex-direction:column;gap:6px;min-width:0}
+.level .tube{height:10px;border-radius:3px;background:var(--surface-mid);overflow:hidden}
+.level .fill{height:100%;background:var(--secondary);border-radius:3px;transition:width .35s ease}
+.level .seg.full .fill{background:var(--primary-container)}
+.level .name{display:flex;justify-content:space-between;gap:4px;font-family:var(--mono);font-size:10px;letter-spacing:.02em;color:var(--outline);overflow:hidden;white-space:nowrap}
+.level .seg.full .name{color:var(--secondary);font-weight:600}
+.effort{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:12px 16px;border-radius:6px;background:var(--surface-low);font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
+.effort b{color:var(--heading);font-weight:700}
+.effort .eyebrow{display:block;margin-bottom:2px}
+.quick{background:var(--surface-low);border-radius:8px;padding:10px 12px}
+.row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:8px;box-shadow:var(--shadow);padding:12px 16px;font-size:14px}
+.row .q{color:var(--ink-soft)}
+.row .a{font-weight:700;flex:1;min-width:0}
+.row.fresh{box-shadow:0 0 0 2px var(--mint),var(--shadow)}
+.active{border-top:4px solid var(--primary-container);display:flex;flex-direction:column;gap:16px}
+.active h2{font-size:22px;line-height:28px;color:var(--heading)}
+.opt{display:flex;align-items:center;gap:14px;width:100%;border:1px solid transparent;border-radius:6px;padding:14px 16px;background:var(--surface-low);cursor:pointer;text-align:left;font-size:16px}
+.opt:hover{background:var(--surface-high)}
+.opt .key{width:24px;height:24px;border-radius:4px;display:grid;place-items:center;flex-shrink:0;font-family:var(--mono);font-size:12px;background:var(--surface-high);color:var(--ink-soft)}
+.opt .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.opt .why{font-size:13px;color:var(--ink-soft)}
+.opt .mark{width:20px;height:20px;border-radius:50%;border:2px solid var(--outline-soft);display:grid;place-items:center;flex-shrink:0;font-size:12px;font-weight:700;color:transparent}
+.opt.multi .mark{border-radius:4px}
+.opt[aria-checked=true]{background:var(--tint);border-color:var(--mint)}
+.opt[aria-checked=true] .key{background:var(--primary-container);color:var(--on-primary)}
+.opt[aria-checked=true] .mark{border-color:var(--secondary);background:var(--secondary);color:var(--on-primary)}
+.upcoming{background:var(--card);border-radius:8px;box-shadow:var(--shadow);padding:16px 20px;opacity:.72;cursor:pointer;border:0;text-align:left;width:100%;display:flex;flex-direction:column;gap:10px}
+.upcoming:hover{opacity:1}
+.upcoming .title{font-size:16px;font-weight:600;color:var(--ink-soft)}
+.outline h3{display:flex;align-items:center;gap:8px;font-size:16px}
+.outline section{padding:12px 0;border-top:1px solid var(--surface-mid)}
+.outline section:first-of-type{border-top:0}
+.outline ul{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--ink-soft)}
+.outline li{margin:4px 0}
+.outline li.fresh{background:var(--tint);border-radius:4px;box-shadow:0 0 0 4px var(--tint);color:var(--ink)}
+.outline .empty{font-size:13px;font-style:italic;color:var(--outline);margin-top:4px}
+.sticky{position:sticky;top:84px;max-height:calc(100vh - 110px);overflow-y:auto}
+
+/* Dunkles Thema nach dem Stitch-Screen „Fragen (Dark Mode)“: feine Konturen statt Schatten, Mint als Fokusrahmen */
+:root[data-theme=dark] .active{border:2px solid var(--primary)}
+:root[data-theme=dark] .opt{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+:root[data-theme=dark] .opt[aria-checked=true]{border-color:var(--primary);box-shadow:none}
+:root[data-theme=dark] .chip{box-shadow:inset 0 0 0 1px rgba(255,255,255,.09)}
+:root[data-theme=dark] .chip.ok{box-shadow:inset 0 0 0 1px rgba(78,222,163,.4)}
+:root[data-theme=dark] .chip.warn{box-shadow:inset 0 0 0 1px rgba(209,154,46,.45)}
+:root[data-theme=dark] .btn{box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+:root[data-theme=dark] .btn.primary,:root[data-theme=dark] .btn.ghost{box-shadow:none}
+:root[data-theme=dark] .top{box-shadow:0 1px 0 rgba(255,255,255,.07)}
+:root[data-theme=dark] .level .seg.full .fill{background:var(--primary)}
+:root[data-theme=dark] .level .fill{background:#2f9f78}
+@media(max-width:1180px){.interview,.split{grid-template-columns:1fr}.sticky{position:static;max-height:none}}
+@media(max-width:760px){
+  main{padding:16px;gap:16px}
+  .bar{padding:10px 16px}
+  .phase .chip,.arrow{display:none}
+  h1{font-size:24px;line-height:32px}
+  .hero h1{font-size:30px;line-height:38px}
+  .card{padding:16px}
+  .examples,.how,.settings{grid-template-columns:1fr}
+  .layoutgrid{grid-template-columns:1fr 1fr}
+  .level .name{font-size:9px}
+  #spec{min-height:360px;padding:16px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <div class="brand">
+      <span class="wordmark">Spec<span>It.</span></span>
+      <span class="rule" aria-hidden="true"></span>
+      <input id="project" type="text" maxlength="100" placeholder="Projektname" aria-label="Projektname">
+    </div>
+    <nav class="phases" id="phases" aria-label="Schritte"></nav>
+    <div class="tools">
+      <span id="mode" class="pill" role="status">Demo-Modus</span>
+      <label class="switch"><input type="checkbox" id="ai"><span class="track"></span><span>Claude aktivieren</span></label>
+      <button id="theme" class="btn ghost" type="button" aria-pressed="false">Dunkel</button>
+      <button id="reset" class="btn ghost" type="button">+ Neu</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Schritt 1 · Idee -->
+  <div id="phase0" class="hero hidden">
+    <div class="intro">
+      <span class="eyebrow" style="color:var(--secondary)">Schritt 1 · Idee</span>
+      <h1 style="margin-top:10px">Was willst du bauen?</h1>
+      <p>Ein Satz genügt. Den Rest erfragen wir – mit Vorschlägen, die du nur bestätigen musst.</p>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:16px">
+      <div class="spread"><label class="field-label" for="idea" style="margin:0">Deine Idee in einem Satz</label><span class="meta" id="ideaCount"></span></div>
+      <textarea id="idea" rows="2" maxlength="2000" placeholder="z. B. Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost"></textarea>
+      <div class="spread">
+        <span class="status" id="ideaStatus" role="status"></span>
+        <button id="derive" class="btn primary" type="button"><span id="deriveLabel">Fragen ableiten →</span> <kbd>Enter</kbd></button>
+      </div>
+    </div>
+    <div class="notebox spread" id="aiHint"><span id="aiHintText"></span><button id="aiHintOn" class="btn small" type="button" style="background:var(--card)">Claude aktivieren</button></div>
+    <div>
+      <p class="eyebrow" style="text-align:center;margin-bottom:10px">Oder mit einem Beispiel starten</p>
+      <div class="examples" id="examples"></div>
+      <p style="text-align:center;margin-top:16px"><button class="link" type="button" data-phase="2">Vorhandene Spezifikation einfügen</button></p>
+    </div>
+    <div class="how">
+      <div><span class="eyebrow" style="color:var(--secondary)">01 · Idee</span><h3>Einen Satz schreiben</h3><p>Die grobe Idee reicht. Keine Vorformatierung nötig.</p></div>
+      <div><span class="eyebrow">02 · Fragen</span><h3>Vorschläge bestätigen</h3><p>Zu jeder Frage ist ein passender Standard vorausgewählt. Ein Klick genügt.</p></div>
+      <div><span class="eyebrow">03 · Ergebnis</span><h3>Spec und Tasks erhalten</h3><p>SPEC.md und Arbeitsaufträge für Coding-Agenten.</p></div>
+    </div>
+  </div>
+
+  <!-- Schritt 2 · Fragen -->
+  <div id="phase1" class="interview hidden">
+    <div class="column">
+      <div class="ideabox">
+        <div><span class="eyebrow" style="color:var(--secondary)">Ursprüngliche Idee</span><blockquote id="ideaQuote"></blockquote></div>
+        <button class="btn small" type="button" data-phase="0" style="background:var(--card)">Bearbeiten</button>
+      </div>
+      <section class="card gauge" aria-labelledby="gaugeTitle">
+        <div class="spread" style="align-items:flex-end">
+          <div><span class="eyebrow" id="gaugeTitle">Minimal-Konzept</span><div class="value" id="gaugeValue">0 %</div></div>
+          <span class="meta" id="gaugeCaption"></span>
+        </div>
+        <div class="level" id="level" role="meter" aria-labelledby="gaugeTitle" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+        <p class="meta" style="text-align:right;margin-top:-6px">Schwelle: 100 % = implementierungsfähig</p>
+        <div class="effort" id="effort"></div>
+      </section>
+      <div class="spread quick">
+        <span class="meta" id="quickHint">Vorschläge passen? Dann alle offenen Fragen auf einmal beantworten.</span>
+        <div class="actions"><button id="more" class="btn small" type="button">Weitere Fragen ableiten</button><button id="acceptAll" class="btn" type="button">Alle Standards übernehmen</button></div>
+      </div>
+      <p id="busy" class="status" role="status"></p>
+      <div id="questions" class="column" style="gap:12px"></div>
+      <div id="extraBox">
+        <button id="extraOpen" class="link" type="button">+ Etwas fehlt? Eigene Anforderung ergänzen</button>
+        <div id="extraForm" class="actions hidden" style="margin-top:8px"><input type="text" id="extraInput" maxlength="500" placeholder="Eine Anforderung in einem Satz" aria-label="Eigene Anforderung" style="flex:1;min-width:220px;background:var(--card)"><button id="extraAdd" class="btn" type="button">Ergänzen</button></div>
+      </div>
+    </div>
+    <aside class="card sticky column" aria-labelledby="liveTitle">
+      <div class="spread"><h2 id="liveTitle" style="color:var(--heading)">Spezifikation (live)</h2><div class="actions" id="counters"></div></div>
+      <p class="meta">Wächst mit jeder Antwort. Übernommene Standards bleiben als Annahmen gekennzeichnet.</p>
+      <div class="outline" id="outline"></div>
+      <div class="spread" style="background:var(--surface-low);border-radius:6px;padding:12px"><span class="meta" id="nextHint"></span><button id="toSpec" class="btn" type="button">Spezifikation erstellen →</button></div>
+    </aside>
+  </div>
+
+  <!-- Schritt 3 · Spezifikation -->
+  <div id="phase2" class="hidden" style="display:flex;flex-direction:column;gap:20px">
+    <div class="pagehead">
+      <div><h1>Spezifikation</h1><p>Der konsolidierte Entwurf aus Idee und Antworten. Annahmen und offene Entscheidungen prüfen, direkt bearbeiten oder eine vorhandene Spezifikation einfügen.</p></div>
+      <div class="actions"><button id="specDownload" class="btn" type="button">↓ SPEC.md</button><button id="generate" class="btn primary" type="button">Konzept generieren</button></div>
+    </div>
+    <div class="actions"><span class="chip" id="specBadge"></span><span id="specStatus" role="status" class="status"></span></div>
+    <div class="split">
+      <div>
+        <div class="spread" style="margin-bottom:8px"><label class="field-label" for="spec" style="margin:0">Bearbeitbare Spezifikation</label><span class="meta">SPEC.md · Markdown</span></div>
+        <textarea id="spec" rows="22" maxlength="50000" placeholder="Spezifikation generieren oder hier einfügen …"></textarea>
+        <p class="meta" id="specCount" style="text-align:right;margin-top:6px"></p>
+      </div>
+      <div class="side">
+        <div class="card" style="padding:20px">
+          <div class="spread" style="margin-bottom:8px"><span class="eyebrow">Minimal-Konzept</span><span class="meta" id="readyCount"></span></div>
+          <div id="checklist"></div>
+        </div>
+        <div class="notebox"><span class="eyebrow">Dein Aufwand</span><p id="effortSide" class="mono" style="font-size:12px;margin-top:6px"></p></div>
+      </div>
+    </div>
+    <div class="spread"><button class="btn" type="button" data-phase="1">← Fragen</button><button id="toTasks" class="btn" type="button" data-phase="3">Weiter zu Agent Tasks →</button></div>
+  </div>
+
+  <!-- Schritt 4 · Agent Tasks -->
+  <div id="phase3" class="hidden" style="display:flex;flex-direction:column;gap:20px">
+    <div class="pagehead">
+      <div><h1>Agent Task Builder</h1><p>Zerlege die Spezifikation in delegierbare Aufgaben mit Abhängigkeiten, Akzeptanzkriterien, Tests und Zuständigkeiten. Agenten werden dabei nicht automatisch gestartet.</p></div>
+    </div>
+    <div id="planStale" class="banner hidden" role="status">VERALTET – bitte neu generieren.</div>
+    <div class="spread toolbar">
+      <button id="plan" class="btn primary" type="button">Arbeitsaufträge generieren</button>
+      <div class="actions"><span class="eyebrow">Export</span><button id="json" class="btn" type="button" disabled>↓ tasks.json</button><button id="backlog" class="btn" type="button" disabled>↓ BACKLOG.md</button><button id="copyAll" class="btn" type="button" disabled>Alle kopieren</button></div>
+    </div>
+    <div class="card">
+      <span class="eyebrow">Konfiguration</span>
+      <div class="settings" style="margin-top:12px">
+        <div><label class="field-label" for="repo">Repository / technische Vorgaben (optional)</label><input type="text" id="repo" maxlength="500" placeholder="URL, Stack, Konventionen"></div>
+        <div><label class="field-label" for="agent">Zielagent</label><select id="agent"><option>Agent-neutral</option><option>Claude Code</option><option>Codex</option><option>GitHub Copilot</option><option>Cursor</option></select></div>
+      </div>
+      <section class="nested" aria-labelledby="layoutTitle">
+        <div class="spread">
+          <div><h2 id="layoutTitle">UI-Layouts mit Stitch <span class="chip">optional</span></h2><p class="muted" id="layoutHint" style="font-size:13px;margin-top:4px">Erzeugt Layout-Entwürfe aus der Spezifikation. Die Spezifikation wird dafür an Google Stitch gesendet.</p></div>
+          <label class="switch"><input type="checkbox" id="layoutOn" disabled><span class="track"></span><span>Layout-Erstellung über Stitch aktivieren</span></label>
+        </div>
+        <div id="layoutBody" class="hidden">
+          <div class="layoutgrid">
+            <div><label class="field-label" for="layoutCount">Anzahl Varianten</label><input type="number" id="layoutCount" min="1" max="5" step="1" inputmode="numeric" required style="background:var(--card)"></div>
+            <div><label class="field-label" for="layoutDevice">Gerät</label><select id="layoutDevice" style="background:var(--card)"><option value="DESKTOP">Desktop</option><option value="MOBILE">Mobil</option></select></div>
+            <button id="layoutRun" class="btn" type="button" style="background:var(--card)">Layouts generieren</button>
+          </div>
+          <p id="layoutStatus" class="status" role="status" style="margin-top:12px"></p>
+          <div id="layoutLinkRow" class="linkrow hidden" style="background:var(--card)">
+            <span class="eyebrow">Stitch-Projekt</span>
+            <a id="layoutLink" target="_blank" rel="noopener noreferrer"></a>
+            <button id="layoutCopy" class="btn small" type="button">Link kopieren</button>
+          </div>
+          <div id="layoutGallery" class="gallery"></div>
+        </div>
+      </section>
+    </div>
+    <p id="planStatus" class="status" role="status"></p>
+    <div id="planOutput" style="display:flex;flex-direction:column;gap:24px"></div>
+    <div><button class="btn" type="button" data-phase="2">← Spezifikation</button></div>
+  </div>
+</main>
+
+<footer class="foot"><span class="pill">Entwurf wird lokal im Browser gespeichert</span><span id="privacy">Demo ohne API. Bei aktiver KI werden Projektdaten an Anthropic gesendet. Keine vertraulichen Daten eingeben.</span></footer>
+
 <script type="module">
+// Thema früh setzen: gespeicherte Wahl, sonst Systemeinstellung
+let theme=null;try{theme=localStorage.getItem('specit-theme')}catch{}
+if(theme!=='dark'&&theme!=='light')theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+function applyTheme(){document.documentElement.dataset.theme=theme;const b=document.getElementById('theme');b.textContent=theme==='dark'?'Hell':'Dunkel';b.setAttribute('aria-pressed',String(theme==='dark'));b.setAttribute('aria-label','Zum '+(theme==='dark'?'hellen':'dunklen')+' Thema wechseln')}
+applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('specit-theme',theme)}catch{}applyTheme()};
+
 import {validatePlan,renderTask,renderBacklog} from '/planner.mjs';
-const $=id=>document.getElementById(id),sections=['Projektidee & Ziel','Nutzer & Kontext','Funktionen & Regeln','UX & Ablauf','Technik & Grenzen','Qualität & Betrieb'];
-const blank=()=>({project:'',step:0,fields:sections.map(()=>({text:'',qa:[],note:''})),spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null});
-let s=blank();try{const saved=JSON.parse(localStorage.getItem('specit-v2'));if(saved&&Array.isArray(saved.fields)&&saved.fields.length===6&&saved.fields.every(f=>typeof f.text==='string'&&Array.isArray(f.qa))&&Number.isInteger(saved.step)&&saved.step>=0&&saved.step<6){s={...s,...saved};if(s.plan)s.plan=validatePlan(s.plan)}}catch{s=blank()}
-let available=false,active=false,timer,revision=0,pending=false,lastSignature='';
-function save(){try{localStorage.setItem('specit-v2',JSON.stringify(s))}catch{$('busy').textContent='Lokales Speichern nicht möglich.'}}
+import {topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,summary,coverage} from '/interview.mjs';
+
+const $=id=>document.getElementById(id);
+const phaseNames=['Idee','Fragen','Spezifikation','Agent Tasks'];
+const exampleIdeas=[
+  ['Pair Pressure','Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost'],
+  ['Lesezeit','Ein Lesetagebuch, das gelesene Bücher mit kurzen Notizen sammelt und an ungelesene erinnert'],
+  ['Schichtwechsel','Ein Schichtplan für ein kleines Café, in dem Mitarbeitende Schichten untereinander tauschen können'],
+  ['Haushaltsbuch','Ein Haushaltsbuch, das Ausgaben per Schnelleingabe erfasst und Monatsbudgets überwacht']
+];
+const blank=()=>({project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+
+let s=blank();
+try{
+  const saved=JSON.parse(localStorage.getItem('specit-v3'));
+  if(saved&&typeof saved.idea==='string'&&typeof saved.spec==='string'){
+    s={...s,...saved,questions:cleanQuestions(saved.questions||[]),extras:cleanExtras(saved.extras)};
+    if(s.plan)s.plan=validatePlan(s.plan);
+    if(![0,1,2,3].includes(s.phase))s.phase=0;
+    if(!Number.isInteger(s.active)||s.active>=s.questions.length)s.active=-1;
+    if(!Number.isInteger(s.clicks)||s.clicks<0)s.clicks=0;
+    s.last=-1;
+    if(!Number.isInteger(s.layoutCount)||s.layoutCount<1||s.layoutCount>5)s.layoutCount=3;
+    if(!['DESKTOP','MOBILE'].includes(s.layoutDevice))s.layoutDevice='DESKTOP';
+    if(!s.layout||typeof s.layout.url!=='string'||!s.layout.url.startsWith('https://stitch.withgoogle.com/projects/')||!Array.isArray(s.layout.screens))s.layout=null;
+  }
+}catch{s=blank()}
+
+let available=false,provider=null,statusLoaded=false,stitch=false,active=false,layoutBusy=false,revision=0;
+// Auswahl der gerade aktiven Frage, bis sie bestätigt wird
+let pick=[],custom='',customOpen=false;
+
+function save(){try{localStorage.setItem('specit-v3',JSON.stringify(s))}catch{$('busy').textContent='Lokales Speichern nicht möglich.'}}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
-function progress(){const count=s.fields.filter(f=>f.text.trim()||f.qa.some(q=>q.answer.trim())).length;$('progress').value=count;$('progressText').textContent=count+' von 6 Schritten';[...$('nav').children].forEach((b,i)=>b.textContent=(s.fields[i].text.trim()?'✓ ':'')+(i+1)+'. '+sections[i])}
+function button(text,cls,onclick){const b=node('button',text,cls);b.type='button';b.onclick=onclick;return b}
+const words=t=>(t.trim().match(/\S+/g)||[]).length;
+const digest=t=>{let h=5381;for(let i=0;i<t.length;i++)h=(h*33^t.charCodeAt(i))>>>0;return t.length+':'+h};
+const plural=(n,one,many)=>n+' '+(n===1?one:many);
 function ctx(){return {repo:s.repo,agent:s.agent}}
 function stale(){return s.plan&&(s.spec!==s.planSpec||JSON.stringify(ctx())!==JSON.stringify(s.planContext)||s.dirty)}
-function planUI(){
- const p=s.plan,old=!!stale();for(const id of ['json','backlog','copyAll'])$(id).disabled=!p||old;
- $('planStatus').textContent=p?(s.planSource==='claude'?'Claude-Plan':'DEMO: generisches Arbeitsgerüst')+(old?' · VERALTET – bitte neu generieren.':' · '+p.tasks.length+' Aufgaben · '+p.waves.length+' Abhängigkeitsstufen · '+p.blocked.length+' durch Entscheidungen blockiert'):'';
- const out=$('planOutput');out.replaceChildren();if(!p)return;
- out.append(node('p',p.summary),node('h3','Offene Entscheidungen'));
- for(const d of p.decisions)out.append(node('p','• '+d,'warn'));
- out.append(node('h3','Abhängigkeitsstufen'));p.waves.forEach((w,i)=>out.append(node('p','Stufe '+(i+1)+': '+w.join(' · '))));
- out.append(node('p','Gleiche Stufe bedeutet nur potenziell parallel. Dateikonflikte und Schnittstellen vor Start prüfen.','small'));
- for(const t of p.tasks){
-  const box=node('div',undefined,'task'),blocked=p.blocked.includes(t.id),details=node('details');
-  box.append(node('h3',t.id+' · '+t.title),node('p',t.goal),node('p','Abhängigkeiten: '+(t.dependsOn.join(', ')||'keine')+(blocked?' · BLOCKIERT':''),blocked?'warn':'small'));
-  details.append(node('summary','Vollständiger Agent-Auftrag'),node('pre',renderTask(t,p,s.planSpec,s.planContext||{})));
-  const row=node('div',undefined,'row'),copy=node('button','Prompt kopieren'),dl=node('button','Markdown');
-  copy.disabled=dl.disabled=old;copy.onclick=()=>copyText(renderTask(t,p,s.planSpec,s.planContext||{}),$('planStatus'));dl.onclick=()=>download(t.id+'.md',renderTask(t,p,s.planSpec,s.planContext||{}));row.append(copy,dl);box.append(details,row);out.append(box);
- }
+function layoutActive(){return !!(s.layoutOn&&s.layout&&s.layout.screens.length)}
+function exportCtx(){return {...(s.planContext||{}),...(layoutActive()?{layoutUrl:s.layout.url}:{})}}
+function firstOpen(from=0){const n=s.questions.length;for(let k=0;k<n;k++){const i=(from+k)%n;if(s.questions[i].state==='open')return i}return -1}
+
+/* Aufwand des Menschen gegenüber dem Ergebnis – nur gezählte Tatsachen */
+function effort(){
+  const typed=words(s.idea)+s.questions.reduce((n,q)=>n+words(q.custom),0)+s.extras.reduce((n,x)=>n+words(x),0);
+  const sum=summary(s.questions),cov=coverage(s.questions);
+  return {typed,clicks:s.clicks,facts:sum.decided+sum.defaults+s.extras.length,topics:cov.perTopic.filter(x=>x>0).length,specWords:words(s.spec)};
 }
-function statuses(){ $('specStatus').textContent=s.spec?(s.dirty?'Eingaben geändert – Spezifikation prüfen/aktualisieren.':(s.specSource==='demo'?'Demo-Entwurf':s.specSource==='claude'?'Claude-Entwurf':'Manuelle Spezifikation')):'';planUI();}
-function changed(){revision++;if(s.spec)s.dirty=true;progress();statuses();save();schedule();}
-function drawQuestions(){const f=s.fields[s.step],out=$('questions');out.replaceChildren();$('note').textContent=f.note||'Noch keine Rückfragen. Schritt prüfen oder Claude aktivieren.';f.qa.forEach((q,i)=>{const box=node('div',undefined,'question'),label=node('label',q.question),a=node('textarea');a.id='q'+i;label.htmlFor=a.id;a.rows=2;a.maxLength=2500;a.placeholder='Antwort – leer = offen';a.value=q.answer;a.oninput=()=>{q.answer=a.value;changed()};box.append(label,a);out.append(box)})}
-function render(){clearTimeout(timer);$('project').value=s.project;$('entry').value=s.fields[s.step].text;$('title').textContent=sections[s.step];$('stepNo').textContent='Schritt '+(s.step+1)+' / 6';$('prev').disabled=s.step===0;$('next').textContent=s.step===5?'Zum Ergebnis ↓':'Weiter →';$('nav').replaceChildren();sections.forEach((t,i)=>{const b=node('button',t);b.setAttribute('aria-current',i===s.step?'step':'false');b.onclick=()=>go(i);$('nav').append(b)});$('spec').value=s.spec;$('repo').value=s.repo;$('agent').value=s.agent;progress();drawQuestions();statuses();save()}
-function go(i){revision++;s.step=i;render();schedule()}
-function payload(mode){return {mode,step:s.step,project:s.project,fields:s.fields.map(f=>({text:f.text,qa:f.qa})),ai:$('ai').checked}}
-function schedule(){clearTimeout(timer);if($('ai').checked&&s.fields[s.step].text.trim())timer=setTimeout(()=>review(false),2200)}
-function lock(v,msg=''){active=v;$('busy').textContent=msg;for(const id of ['review','generate','plan'])$(id).disabled=v}
-async function call(data){const r=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});const x=await r.json();if(!r.ok)throw Error(x.error||'Anfrage fehlgeschlagen.');return x}
-function unlock(){lock(false);if(pending){pending=false;schedule()}}
-async function review(manual){clearTimeout(timer);if(active){pending=true;return}if(!manual&&!s.fields[s.step].text.trim())return;const data=payload('review'),sig=JSON.stringify(data),rev=revision;if(!manual&&sig===lastSignature)return;lock(true,'Schritt wird analysiert …');try{const r=await call(data);if(rev!==revision){pending=true;return}const f=s.fields[s.step],seen=new Set(f.qa.map(q=>q.question.toLowerCase()));let added=0;for(const q of r.questions){if(f.qa.length<24&&!seen.has(q.toLowerCase())){f.qa.push({question:q,answer:''});seen.add(q.toLowerCase());added++}}if(added&&s.spec)s.dirty=true;f.note=r.note||'Keine weiteren Fragen.';lastSignature=JSON.stringify(payload('review'));drawQuestions();statuses();save()}catch(e){$('note').textContent=e.message}finally{unlock()}}
-$('project').oninput=e=>{s.project=e.target.value;changed()};$('entry').oninput=e=>{s.fields[s.step].text=e.target.value;changed()};$('prev').onclick=()=>go(Math.max(0,s.step-1));$('next').onclick=()=>s.step===5?$('specSection').scrollIntoView({behavior:'smooth'}):go(s.step+1);$('review').onclick=()=>review(true);
-$('ai').onchange=()=>{revision++;lastSignature='';$('mode').textContent=$('ai').checked?'Claude aktiv':'Demo-Modus';clearTimeout(timer);schedule()};
-$('generate').onclick=async()=>{if(active)return;clearTimeout(timer);if(!s.fields.some(f=>f.text.trim()||f.qa.some(q=>q.answer.trim()))){$('specStatus').textContent='Bitte zuerst Anforderungen erfassen.';return}const rev=revision;lock(true,'Spezifikation wird erstellt …');$('specStatus').textContent='Spezifikation wird erstellt …';try{const r=await call(payload('final'));if(rev!==revision){$('specStatus').textContent='Eingaben geändert. Erneut starten.';return}s.spec=r.markdown;s.specSource=r.source;s.dirty=false;$('spec').value=s.spec;statuses();save()}catch(e){$('specStatus').textContent=e.message}finally{unlock()}};
-$('spec').oninput=e=>{revision++;s.spec=e.target.value;s.specSource='manual';s.dirty=false;statuses();save()};
+function effortText(){
+  const e=effort();
+  return plural(e.typed,'Wort','Wörter')+' getippt · '+plural(e.clicks,'Klick','Klicks')+' → '+plural(e.facts,'Festlegung','Festlegungen')+' in '+e.topics+' von 6 Themen'+(e.specWords?' · '+e.specWords.toLocaleString('de-DE')+' Wörter Spezifikation':'');
+}
+
+/* ---------- Schritt-Leiste ---------- */
+function phasesUI(){
+  const old=!!stale(),cov=coverage(s.questions).percent;
+  const info=[
+    {done:!!s.idea.trim(),chip:''},
+    {done:s.questions.length>0&&cov===100,chip:s.questions.length?cov+' %':''},
+    {done:!!s.spec&&!s.dirty,chip:s.spec&&s.dirty?'prüfen':'',warn:true},
+    {done:!!s.plan&&!old,chip:s.plan?(old?'veraltet':s.plan.tasks.length+' Tasks'):'',warn:old}
+  ];
+  const bar=$('phases');bar.replaceChildren();
+  info.forEach((p,i)=>{
+    if(i)bar.append(node('span','→','arrow'));
+    const b=button(undefined,'phase'+(p.done?' done':''),()=>setPhase(i));
+    b.setAttribute('aria-current',i===s.phase?'page':'false');
+    b.append(node('span',p.done&&i!==s.phase?'✓':String(i+1),'num'),node('span',phaseNames[i]));
+    if(p.chip)b.append(node('span',p.chip,'chip'+(p.warn?' warn':'')));
+    bar.append(b);
+  });
+  [0,1,2,3].forEach(i=>$('phase'+i).classList.toggle('hidden',i!==s.phase));
+  // Genau eine primäre Aktion je Ansicht
+  const ready=!!s.spec.trim()&&!s.dirty,allAnswered=s.questions.length>0&&firstOpen()<0;
+  $('generate').classList.toggle('primary',!ready);$('toTasks').classList.toggle('primary',ready);
+  $('toSpec').classList.toggle('primary',allAnswered);
+}
+function setPhase(i){s.phase=i;if(i===1&&s.active<0)activate(firstOpen(),false);renderAll();window.scrollTo({top:0})}
+for(const b of document.querySelectorAll('[data-phase]'))b.onclick=()=>setPhase(Number(b.dataset.phase));
+
+/* ---------- Schritt 1: Idee ---------- */
+function ideaUI(){
+  $('ideaCount').textContent=plural(words(s.idea),'Wort','Wörter');
+  const same=s.questions.length>0&&s.idea.trim()===s.askedIdea;
+  $('deriveLabel').textContent=same?'Weiter zu den Fragen →':s.questions.length?'Fragen neu ableiten →':'Fragen ableiten →';
+}
+async function derive(more){
+  if(active)return;
+  const idea=s.idea.trim(),status=more?$('busy'):$('ideaStatus');
+  if(!idea){$('ideaStatus').textContent='Bitte die Idee in einem Satz beschreiben.';$('idea').focus();return}
+  if(!more&&s.questions.length&&idea===s.askedIdea){setPhase(1);return}
+  if(!more&&s.questions.some(q=>q.state!=='open')&&!confirm('Die Idee wurde geändert. Vorhandene Fragen und Antworten ersetzen?'))return;
+  const rev=revision;lock(true);status.textContent=more?'Weitere Fragen werden abgeleitet …':'Fragen werden abgeleitet …';
+  try{
+    const r=await call({mode:'questions',idea,project:s.project,questions:more?s.questions:[],ai:$('ai').checked});
+    if(rev!==revision){status.textContent='Eingaben geändert. Erneut starten.';return}
+    const fresh=cleanQuestions(r.questions);
+    if(more){
+      const known=new Set(s.questions.map(q=>q.question.toLowerCase())),added=fresh.filter(q=>!known.has(q.question.toLowerCase()));
+      s.questions=[...s.questions,...added].slice(0,40);
+      status.textContent=added.length?plural(added.length,'weitere Frage','weitere Fragen')+' ergänzt.':'Keine weiteren Fragen nötig.';
+      if(added.length&&s.spec)s.dirty=true;
+    }else{
+      if(!fresh.length)throw Error('Es konnten keine Fragen abgeleitet werden. Bitte erneut versuchen.');
+      s.questions=fresh;s.askedIdea=idea;s.extras=[];s.clicks=0;s.last=-1;status.textContent='';
+      if(s.spec)s.dirty=true;
+    }
+    s.qSource=r.source;s.phase=1;activate(firstOpen(),false);renderAll();if(!more)window.scrollTo({top:0});
+  }catch(e){status.textContent=e.message}finally{lock(false)}
+}
+$('idea').oninput=e=>{s.idea=e.target.value;revision++;if(s.spec)s.dirty=true;ideaUI();statuses();save()};
+$('idea').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();derive(false)}};
+$('derive').onclick=()=>derive(false);
+$('more').onclick=()=>derive(true);
+exampleIdeas.forEach(([name,idea])=>$('examples').append(button(idea,'example',()=>{
+  if((s.spec||s.questions.length)&&!confirm('Aktuellen Entwurf ersetzen?'))return;
+  const x=blank();x.project=name;x.idea=idea;replaceState(x);derive(false);
+})));
+
+/* ---------- Schritt 2: Fragen ---------- */
+function activate(i,focus=true){
+  s.active=i;const q=s.questions[i];
+  pick=q?(q.state!=='open'?[...q.choice]:[...q.defaults]):[];custom=q?q.custom:'';customOpen=!!custom;
+  if(focus){questionsUI();document.querySelector('.opt[aria-checked=true],.opt')?.focus({preventScroll:true})}
+}
+function choose(i){
+  const q=s.questions[s.active];if(!q)return;
+  if(q.multi)pick=pick.includes(i)?pick.filter(x=>x!==i):[...pick,i].sort();
+  else{pick=[i];customOpen=false;custom=''}
+  questionsUI();document.querySelectorAll('.opt')[i]?.focus({preventScroll:true});
+}
+function touched(){revision++;if(s.spec)s.dirty=true}
+function confirmAnswer(){
+  const i=s.active,q=s.questions[i];if(!q)return;
+  const text=customOpen?custom.trim():'';
+  if(!pick.length&&!text){$('busy').textContent='Bitte eine Option wählen oder eine eigene Antwort eingeben.';return}
+  s.questions[i]={...q,state:'decided',choice:[...pick],custom:text};s.last=i;s.clicks++;touched();$('busy').textContent='';
+  const next=firstOpen(i);activate(next,false);renderAll();
+  (document.querySelector('.opt[aria-checked=true],.opt')||$('toSpec')).focus({preventScroll:true});
+  document.querySelector('.active')?.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function skip(){const n=s.questions.length;let next=-1;for(let k=1;k<n;k++){const i=(s.active+k)%n;if(s.questions[i].state==='open'){next=i;break}}if(next>=0)activate(next)}
+function acceptAll(){
+  if(firstOpen()<0)return;
+  s.questions=s.questions.map(q=>q.state==='open'?acceptDefault(q):q);s.clicks++;s.last=-1;touched();activate(-1,false);renderAll();$('toSpec').focus();
+}
+function optionButton(q,i){
+  const on=pick.includes(i),b=button(undefined,'opt'+(q.multi?' multi':''),()=>choose(i)),body=node('span',undefined,'body'),head=node('span');
+  b.setAttribute('role',q.multi?'checkbox':'radio');b.setAttribute('aria-checked',String(on));
+  head.append(q.options[i]+' ');
+  if(q.defaults.includes(i)){head.append(node('span','Standard','chip ok'));body.append(head);if(q.reason)body.append(node('span',q.reason,'why'))}else body.append(head);
+  b.append(node('span',String(i+1),'key'),body,node('span','✓','mark'));return b;
+}
+function questionsUI(){
+  const out=$('questions'),n=s.questions.length;out.replaceChildren();
+  s.questions.forEach((q,i)=>{
+    if(i===s.active){
+      const card=node('section',undefined,'card active'),opts=node('div'),foot=node('div',undefined,'spread'),hints=node('span',undefined,'meta'),acts=node('div',undefined,'actions');
+      card.append(node('span','Frage '+(i+1)+' von '+n+' · '+topics[q.topic]+(q.multi?' · Mehrfachauswahl':''),'eyebrow'),node('h2',q.question));
+      opts.setAttribute('role',q.multi?'group':'radiogroup');opts.setAttribute('aria-label',q.question);opts.style.cssText='display:flex;flex-direction:column;gap:8px';
+      q.options.forEach((_,k)=>opts.append(optionButton(q,k)));
+      const own=button(undefined,'opt'+(q.multi?' multi':''),()=>{customOpen=!customOpen;if(customOpen&&!q.multi)pick=[];if(!customOpen&&!pick.length)pick=[...q.defaults];questionsUI();$('customAnswer')?.focus()});
+      own.setAttribute('role',q.multi?'checkbox':'radio');own.setAttribute('aria-checked',String(customOpen));
+      own.append(node('span',String(q.options.length+1),'key'),node('span','Eigene Antwort …','body'),node('span','✓','mark'));opts.append(own);
+      if(customOpen){const input=node('input');input.type='text';input.id='customAnswer';input.maxLength=500;input.value=custom;input.placeholder='Eigene Antwort in einem Satz';input.setAttribute('aria-label','Eigene Antwort');input.oninput=()=>{custom=input.value};opts.append(input)}
+      hints.append(node('kbd','1–'+(q.options.length+1)),' wählen  ',node('kbd','Enter'),' bestätigen');
+      if(firstOpen(i+1)!==i&&s.questions.filter(x=>x.state==='open').length>(q.state==='open'?1:0))acts.append(button('Überspringen','btn',skip));
+      acts.append(button(firstOpen(i+1)===i||firstOpen(i+1)<0?'Übernehmen':'Übernehmen & weiter →','btn primary',confirmAnswer));
+      foot.append(hints,acts);card.append(opts,foot);out.append(card);
+    }else if(q.state!=='open'){
+      const row=node('div',undefined,'row'+(i===s.last?' fresh':''));
+      row.append(node('span',q.state==='decided'?'✓ Entschieden':'Annahme (Standard)','chip'+(q.state==='decided'?' ok':'')),node('span',q.question,'q'),node('span',answerOf(q),'a'));
+      const edit=button('ändern','link',()=>activate(i));edit.setAttribute('aria-label',q.question+' ändern');row.append(edit);out.append(row);
+    }else{
+      const next=button(undefined,'upcoming',()=>activate(i)),chips=node('span',undefined,'actions');
+      q.options.forEach((o,k)=>chips.append(node('span',o+(q.defaults.includes(k)?' · Standard':''),'chip'+(q.defaults.includes(k)?' ok':''))));
+      next.append(node('span','Frage '+(i+1)+' von '+n+' · '+topics[q.topic],'eyebrow'),node('span',q.question,'title'),chips);out.append(next);
+    }
+  });
+}
+function gaugeUI(){
+  const cov=coverage(s.questions),sum=summary(s.questions),answered=sum.decided+sum.defaults;
+  $('gaugeValue').textContent=cov.percent+' %';$('level').setAttribute('aria-valuenow',cov.percent);
+  $('level').setAttribute('aria-valuetext',cov.percent+' Prozent des Minimal-Konzepts');
+  $('gaugeCaption').textContent=answered+' von '+sum.total+' Fragen beantwortet'+(cov.percent===100?' · implementierungsfähig':sum.open?' · '+sum.open+' offen':'');
+  const level=$('level');level.replaceChildren();
+  topics.forEach((t,i)=>{
+    const seg=node('div',undefined,'seg'+(cov.perTopic[i]===1?' full':'')),tube=node('div',undefined,'tube'),fill=node('div',undefined,'fill');
+    fill.style.width=Math.round(cov.perTopic[i]*100)+'%';tube.append(fill);const name=node('span',undefined,'name');name.append(node('span',t),node('span',Math.round(cov.perTopic[i]*100)+'%'));seg.append(tube,name);level.append(seg);
+  });
+  const e=effort(),box=$('effort'),input=node('div'),result=node('div'),b=(n,label)=>{const x=node('span');x.append(node('b',String(n)),' '+label);return x};
+  input.append(node('span','Deine Eingabe','eyebrow'),b(e.typed,e.typed===1?'Wort':'Wörter'),' · ',b(e.clicks,e.clicks===1?'Klick':'Klicks'));
+  result.append(node('span','Daraus entstanden','eyebrow'),b(e.facts,e.facts===1?'Festlegung':'Festlegungen'),' · ',b(e.topics,'von 6 Themen'));
+  box.replaceChildren(input,node('span','→','arrow'),result);
+  $('acceptAll').textContent='Alle Standards übernehmen'+(sum.open?' ('+sum.open+' offen)':'');$('acceptAll').disabled=!sum.open;
+  $('quickHint').textContent=sum.open?'Vorschläge passen? Dann alle offenen Fragen auf einmal beantworten.':'Alle Fragen beantwortet. Antworten bleiben einzeln änderbar.';
+  $('more').classList.toggle('hidden',!$('ai').checked);
+  $('ideaQuote').textContent='„'+(s.askedIdea||s.idea.trim())+'“';
+  // Live-Gliederung
+  const c=$('counters');c.replaceChildren(node('span','Entschieden: '+sum.decided,'chip ok'),node('span','Standards: '+sum.defaults,'chip'),node('span','Offen: '+sum.open,'chip'+(sum.open?' warn':'')));
+  const outline=$('outline');outline.replaceChildren();
+  topics.forEach((t,i)=>{
+    const own=s.questions.map((q,k)=>[q,k]).filter(([q])=>q.topic===i),open=own.filter(([q])=>q.state==='open').length,sec=node('section'),h=node('h3',(i+1)+'. '+t+' ');
+    h.append(node('span',!own.length?'keine Fragen':open===0?'vollständig':open===own.length?'offen':'teilweise','chip'+(own.length&&open===0?' ok':'')));sec.append(h);
+    const done=own.filter(([q])=>q.state!=='open');
+    if(done.length){const ul=node('ul');for(const [q,k] of done){const li=node('li',undefined,k===s.last?'fresh':'');li.append(q.question+' ',node('b',answerOf(q)));if(q.state==='default')li.append(' ',node('span','Annahme (Standard)','chip'));ul.append(li)}sec.append(ul)}
+    if(open)sec.append(node('p',plural(open,'Frage','Fragen')+' ausstehend','empty'));
+    outline.append(sec);
+  });
+  if(s.extras.length){const sec=node('section'),ul=node('ul');sec.append(node('h3','Zusätzliche Anforderungen'),ul);s.extras.forEach((x,k)=>{const li=node('li',x+' ');const del=button('entfernen','link',()=>{s.extras.splice(k,1);touched();renderAll()});li.append(del);ul.append(li)});outline.append(sec)}
+  $('nextHint').textContent=sum.open?'Offene Fragen erscheinen in der Spezifikation als offene Entscheidungen.':'Alle Fragen beantwortet.';
+  // Seitenleiste in Schritt 3
+  const list=$('checklist');list.replaceChildren();
+  topics.forEach((t,i)=>{const full=cov.perTopic[i]===1,row=node('div',undefined,'check'+(full?' done':''));row.append(node('span',full?'✓':'','dot'),node('span',t,'name'),node('span',Math.round(cov.perTopic[i]*100)+' %','meta'));list.append(row)});
+  $('readyCount').textContent=cov.percent+' %';$('effortSide').textContent=effortText();
+}
+$('acceptAll').onclick=acceptAll;
+$('extraOpen').onclick=()=>{$('extraForm').classList.toggle('hidden');$('extraInput').focus()};
+function addExtra(){const v=$('extraInput').value.trim();if(!v||s.extras.length>=10)return;s.extras.push(v.slice(0,500));$('extraInput').value='';touched();renderAll()}
+$('extraAdd').onclick=addExtra;
+$('extraInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();addExtra()}};
+$('toSpec').onclick=()=>{setPhase(2);if(!s.spec.trim()||s.dirty)generate()};
+document.addEventListener('keydown',e=>{
+  if(s.phase!==1||s.active<0||e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;
+  const t=e.target instanceof Element?e.target:document.body,q=s.questions[s.active],typing=t.matches('input,textarea,select');
+  if(e.key==='Enter'){
+    if(t.id!=='customAnswer'&&(typing||(t.matches('button,a')&&!t.classList.contains('opt'))))return;
+    e.preventDefault();confirmAnswer();return;
+  }
+  if(typing)return;
+  const n=Number(e.key);
+  if(Number.isInteger(n)&&n>=1&&n<=q.options.length){e.preventDefault();choose(n-1)}
+});
+
+/* ---------- Schritt 3 / 4: Status ---------- */
+function statuses(){
+  $('specBadge').textContent=s.spec?(s.specSource==='demo'?'Demo-Entwurf':s.specSource==='claude'?'Claude-Entwurf':'Manuelle Spezifikation'):'Noch kein Entwurf';
+  $('specStatus').textContent=s.spec&&s.dirty?'⚠ Eingaben geändert – Spezifikation prüfen/aktualisieren.':'';
+  $('specStatus').className=s.spec&&s.dirty?'banner':'status';
+  $('specCount').textContent=s.spec.length.toLocaleString('de-DE')+' / 50.000';
+  $('specDownload').disabled=!s.spec;
+  planUI();layoutNote();phasesUI();
+}
+function planUI(){
+  const p=s.plan,old=!!stale();
+  for(const id of ['json','backlog','copyAll'])$(id).disabled=!p||old;
+  $('planStale').classList.toggle('hidden',!old);
+  $('planStatus').textContent=p?(s.planSource==='claude'?'Claude-Plan':'DEMO: generisches Arbeitsgerüst')+' · '+p.tasks.length+' Aufgaben · '+p.waves.length+' Abhängigkeitsstufen · '+p.blocked.length+' durch Entscheidungen blockiert':'';
+  const out=$('planOutput');out.replaceChildren();if(!p)return;
+  out.append(node('p',p.summary,'muted'));
+  if(p.decisions.length){
+    const box=node('div',undefined,'decisions'),ul=node('ul');box.append(node('h3','Offene Entscheidungen'),ul);
+    for(const d of p.decisions)ul.append(node('li',d));out.append(box);
+  }
+  out.append(node('p','Gleiche Stufe bedeutet nur potenziell parallel. Dateikonflikte und Schnittstellen vor Start prüfen.','meta'));
+  const byId=new Map(p.tasks.map(t=>[t.id,t]));
+  p.waves.forEach((w,i)=>{
+    const wave=node('section',undefined,'wave'),head=node('div',undefined,'wavehead'),grid=node('div',undefined,'wavegrid');
+    head.append(node('h2','Stufe '+(i+1)),node('span',plural(w.length,'Aufgabe','Aufgaben'),'chip'));wave.append(head,grid);
+    for(const id of w){
+      const t=byId.get(id),blocked=p.blocked.includes(t.id),box=node('article',undefined,'card task'),top=node('div',undefined,'spread'),deps=node('div',undefined,'actions'),details=node('details'),row=node('div',undefined,'actions');
+      top.append(node('span',t.id,'id'));if(blocked)top.append(node('span','BLOCKIERT','chip warn'));
+      deps.append(node('span','Abhängigkeiten:','meta'));
+      if(t.dependsOn.length)for(const d of t.dependsOn)deps.append(node('span',d,'chip'));else deps.append(node('span','keine','meta'));
+      const text=()=>renderTask(t,p,s.planSpec,exportCtx());
+      details.append(node('summary','Vollständiger Agent-Auftrag'));
+      details.ontoggle=()=>{if(details.open&&!details.querySelector('pre'))details.append(node('pre',text()))};
+      const copy=button('Prompt kopieren','btn small',()=>copyText(text(),$('planStatus'))),dl=button('↓ Markdown','btn small',()=>download(t.id+'.md',text()));
+      copy.disabled=dl.disabled=old;row.append(copy,dl);box.append(top,node('h3',t.title),node('p',t.goal,'muted'),deps,details,row);grid.append(box);
+    }
+    out.append(wave);
+  });
+}
+
+/* ---------- Server ---------- */
+function lock(v){active=v;for(const id of ['derive','more','generate','plan'])$(id).disabled=v}
+async function post(url,data){
+  const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});
+  const x=await r.json();if(!r.ok)throw Error(x.error||'Anfrage fehlgeschlagen.');return x;
+}
+const call=data=>post('/api/spec',data);
+async function generate(){
+  if(active)return;
+  const note=t=>{$('specStatus').className='status';$('specStatus').textContent=t};
+  if(!s.idea.trim()){note('Bitte zuerst eine Idee eingeben oder eine Spezifikation einfügen.');return}
+  const rev=revision;lock(true);note('Spezifikation wird erstellt …');
+  let message='';
+  try{
+    const r=await call({mode:'final',idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked});
+    if(rev!==revision)message='Eingaben geändert. Erneut starten.';
+    else{s.spec=r.markdown;s.specSource=r.source;s.dirty=false;$('spec').value=s.spec;save()}
+  }catch(e){message=e.message}finally{lock(false)}
+  renderAll();if(message)note(message);
+}
+$('generate').onclick=generate;
+$('project').oninput=e=>{s.project=e.target.value;touched();statuses();save()};
+function aiUI(){
+  const on=$('ai').checked;
+  $('mode').textContent=on?'Claude aktiv':available?'Demo-Modus · Claude verfügbar':'Demo-Modus';
+  $('aiHintText').textContent=on?'Claude aktiv: Die Fragen werden auf deine Idee zugeschnitten'+(provider==='claude-code'?' (über dein lokales Claude Code).':'.')
+    :available?'Demo-Modus: allgemeiner Fragenkatalog, für jede Idee gleich. Mit Claude werden die Fragen auf deine Idee zugeschnitten.'
+    :statusLoaded?'Kein Claude-Zugang gefunden. Entweder ANTHROPIC_API_KEY in .env setzen oder Claude Code installieren und anmelden, dann SpecIt neu starten. Bis dahin: Demo mit allgemeinem Fragenkatalog.':'Demo-Modus: allgemeiner Fragenkatalog.';
+  $('aiHintOn').classList.toggle('hidden',on||!available);
+  $('privacy').textContent=on?'Claude aktiv: Projektdaten werden an Anthropic gesendet. Keine vertraulichen Daten eingeben.':'Demo ohne KI. Bei aktivem Claude werden Projektdaten an Anthropic gesendet. Keine vertraulichen Daten eingeben.';
+  gaugeUI();
+}
+function setAi(on){
+  if(on&&!available){$('ai').checked=false;aiUI();setPhase(0);$('aiHint').scrollIntoView({block:'center'});$('aiHint').classList.add('banner');return}
+  $('aiHint').classList.remove('banner');$('ai').checked=on;try{localStorage.setItem('specit-ai',on?'1':'0')}catch{}
+  aiUI();
+}
+$('ai').onchange=()=>setAi($('ai').checked);
+$('aiHintOn').onclick=()=>setAi(true);
+$('spec').oninput=e=>{revision++;s.spec=e.target.value;s.specSource='manual';s.dirty=false;statuses();$('effortSide').textContent=effortText();save()};
 for(const id of ['repo','agent'])$(id).oninput=e=>{revision++;s[id]=e.target.value;statuses();save()};
-$('plan').onclick=async()=>{if(active)return;clearTimeout(timer);if(!s.spec.trim()||s.dirty){$('planStatus').textContent='Bitte eine aktuelle Spezifikation erzeugen oder manuell aktualisieren.';return}const rev=revision,context=ctx();lock(true,'Arbeitsaufträge werden erstellt …');$('planStatus').textContent='Arbeitsaufträge werden erstellt …';try{const r=await call({mode:'plan',spec:s.spec,...context,ai:$('ai').checked});if(rev!==revision){$('planStatus').textContent='Eingaben geändert. Erneut starten.';return}s.plan=validatePlan(r.plan);s.planSource=r.source;s.planSpec=s.spec;s.planContext=context;planUI();save()}catch(e){$('planStatus').textContent=e.message}finally{unlock()}};
+$('plan').onclick=async()=>{
+  if(active)return;
+  if(!s.spec.trim()||s.dirty){$('planStatus').textContent='Bitte eine aktuelle Spezifikation erzeugen oder manuell aktualisieren.';return}
+  const rev=revision,context=ctx();lock(true);$('planStatus').textContent='Arbeitsaufträge werden erstellt …';
+  try{
+    const r=await call({mode:'plan',spec:s.spec,...context,ai:$('ai').checked});
+    if(rev!==revision){$('planStatus').textContent='Eingaben geändert. Erneut starten.';return}
+    s.plan=validatePlan(r.plan);s.planSource=r.source;s.planSpec=s.spec;s.planContext=context;statuses();save();
+  }catch(e){$('planStatus').textContent=e.message}finally{lock(false)}
+};
+
+/* ---------- Stitch-Layouts ---------- */
+function layoutNote(){
+  const l=s.layout;if(layoutBusy||!l||!l.screens.length)return;
+  $('layoutStatus').textContent=plural(l.screens.length,'Layout-Variante','Layout-Varianten')+(l.spec!==digest(s.spec)?' · basieren auf einer älteren Spezifikation – bei Bedarf neu generieren.':' · Verweis wird in die Agent-Aufträge übernommen.');
+}
+function layoutUI(){
+  const on=s.layoutOn&&stitch,l=s.layout;
+  $('layoutOn').disabled=!stitch;$('layoutOn').checked=on;
+  $('layoutBody').classList.toggle('hidden',!on);$('layoutRun').disabled=layoutBusy;
+  $('layoutLinkRow').classList.toggle('hidden',!l);
+  if(l){$('layoutLink').href=l.url;$('layoutLink').textContent=l.url}
+  const out=$('layoutGallery');out.replaceChildren();
+  (l?l.screens:[]).forEach((sc,i)=>{
+    const src='/api/layout/file?name='+encodeURIComponent(sc.image),box=node('figure',undefined,'shot'),img=node('img'),cap=node('figcaption',undefined,'cap'),row=node('div',undefined,'actions'),open=node('a','Öffnen','btn small');
+    box.style.margin='0';img.src=src;img.alt='Layout-Variante '+(i+1)+': '+sc.title;img.loading='lazy';
+    open.href=src;open.target='_blank';open.rel='noopener';row.append(open);
+    if(sc.html){const html=node('a','↓ HTML','btn small');html.href='/api/layout/file?name='+encodeURIComponent(sc.html);html.download='layout-variante-'+(i+1)+'.html';row.append(html)}
+    cap.append(node('h3','Variante '+(i+1)),node('span',sc.title,'meta'),row);box.append(img,cap);out.append(box);
+  });
+  if(!layoutBusy&&!(l&&l.screens.length))$('layoutStatus').textContent='';
+  layoutNote();
+}
+$('layoutOn').onchange=e=>{s.layoutOn=e.target.checked;layoutUI();if(s.plan)planUI();save()};
+$('layoutCount').oninput=e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=1&&n<=5){s.layoutCount=n;save()}};
+$('layoutDevice').oninput=e=>{s.layoutDevice=e.target.value;save()};
+$('layoutCopy').onclick=()=>{if(s.layout)copyText(s.layout.url,$('layoutStatus'),'Link kopiert.')};
+$('layoutRun').onclick=async()=>{
+  if(layoutBusy)return;
+  const status=$('layoutStatus'),count=Number($('layoutCount').value);
+  if(!Number.isInteger(count)||count<1||count>5){status.textContent='Bitte Anzahl Varianten zwischen 1 und 5 angeben.';$('layoutCount').focus();return}
+  if(!s.spec.trim()||s.dirty){status.textContent='Bitte zuerst eine aktuelle Spezifikation erzeugen.';return}
+  const spec=s.spec,project=s.project,deviceType=s.layoutDevice;
+  layoutBusy=true;$('layoutRun').disabled=true;
+  try{
+    if(!s.layout){
+      status.textContent='Stitch-Projekt wird angelegt …';
+      const p=await post('/api/layout',{action:'project',project});
+      s.layout={projectId:p.projectId,url:p.url,screens:[],known:[],spec:''};save();layoutUI();
+    }
+    const l=s.layout,projectId=l.projectId;l.known=l.known||[];
+    status.textContent='Layout 1 von '+count+' wird erzeugt. Das dauert meist einige Minuten …';
+    const screens=(await post('/api/layout',{action:'generate',projectId,project,spec,deviceType,known:l.known})).screens.slice(0,count);
+    if(s.layout!==l)return;
+    l.screens=screens;l.spec=digest(spec);l.known=[...l.known,...screens.map(x=>x.id)].slice(-50);save();layoutUI();
+    if(screens.length<count){
+      status.textContent=plural(count-screens.length,'weitere Variante wird','weitere Varianten werden')+' erzeugt …';
+      const more=(await post('/api/layout',{action:'variants',projectId,screenId:screens[0].id,count:count-screens.length,deviceType,known:l.known})).screens.slice(0,count-screens.length);
+      if(s.layout!==l)return;
+      l.screens=[...screens,...more];l.known=[...l.known,...more.map(x=>x.id)].slice(-50);save();
+    }
+    layoutBusy=false;layoutUI();if(s.plan)planUI();
+  }catch(e){layoutBusy=false;layoutUI();status.textContent=e.message}
+  finally{layoutBusy=false;$('layoutRun').disabled=false}
+};
+
+/* ---------- Export ---------- */
 function download(name,content){const url=URL.createObjectURL(new Blob([content],{type:'text/plain;charset=utf-8'}));const a=node('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-async function copyText(t,status){try{await navigator.clipboard.writeText(t);status.textContent='Kopiert.'}catch{status.textContent='Kopieren nicht möglich. Bitte Markdown herunterladen.'}}
+async function copyText(t,status,ok='Kopiert.'){try{await navigator.clipboard.writeText(t);status.textContent=ok}catch{status.textContent='Kopieren nicht möglich. Bitte manuell markieren oder herunterladen.'}}
 $('specDownload').onclick=()=>{if(s.spec)download('SPEC.md',s.spec)};
-$('json').onclick=()=>{if(s.plan&&!stale())download('tasks.json',JSON.stringify({source:s.planSource,context:s.planContext,spec:s.planSpec,...s.plan},null,2))};
-$('backlog').onclick=()=>{if(s.plan&&!stale())download('BACKLOG.md',renderBacklog(s.plan,s.planSpec,s.planContext))};
-$('copyAll').onclick=()=>{if(s.plan&&!stale())copyText(renderBacklog(s.plan,s.planSpec,s.planContext),$('planStatus'))};
-function replace(next){if((s.spec||s.plan||s.fields.some(f=>f.text.trim()||f.qa.length))&&!confirm('Aktuellen Entwurf ersetzen?'))return;revision++;s=next;lastSignature='';render();schedule()}
-$('reset').onclick=()=>replace(blank());$('example').onclick=()=>{const x=blank();x.project='Pair Pressure';['Wöchentliche 20-minütige Kennenlerngespräche im Team.','Spielleiter und wechselnde Teilnehmer.','Neue Paarungen priorisieren; Gesprächsimpulse, Radar, Timer.','Anwesenheit wählen, auslosen, bestätigen.','HTML, CSS, JavaScript; lokale Speicherung.','Randfälle und Begegnungshistorie testen.'].forEach((t,i)=>x.fields[i].text=t);replace(x)};
-render();fetch('/api/status').then(r=>r.json()).then(r=>{available=r.available;$('ai').disabled=!available;$('mode').textContent=available?'Claude verfügbar · Demo aktiv':'Demo-Modus';if(!available)$('privacy').textContent='Kein API-Key. Demo nutzt feste Fragen und generische Tasks. Siehe README.'}).catch(()=>{$('mode').textContent='Server nicht erreichbar'});
-</script></body></html>
+$('json').onclick=()=>{if(s.plan&&!stale())download('tasks.json',JSON.stringify({source:s.planSource,context:exportCtx(),spec:s.planSpec,...s.plan},null,2))};
+$('backlog').onclick=()=>{if(s.plan&&!stale())download('BACKLOG.md',renderBacklog(s.plan,s.planSpec,exportCtx()))};
+$('copyAll').onclick=()=>{if(s.plan&&!stale())copyText(renderBacklog(s.plan,s.planSpec,exportCtx()),$('planStatus'))};
+
+function replaceState(next){revision++;next.layoutOn=s.layoutOn;next.layoutCount=s.layoutCount;next.layoutDevice=s.layoutDevice;s=next;pick=[];custom='';customOpen=false;renderAll()}
+$('reset').onclick=()=>{if((s.spec||s.plan||s.idea.trim()||s.questions.length)&&!confirm('Aktuellen Entwurf verwerfen und neu beginnen?'))return;replaceState(blank());$('idea').focus()};
+
+function renderAll(){
+  $('project').value=s.project;if($('idea').value!==s.idea)$('idea').value=s.idea;
+  if($('spec').value!==s.spec)$('spec').value=s.spec;
+  $('repo').value=s.repo;$('agent').value=s.agent;$('layoutCount').value=s.layoutCount;$('layoutDevice').value=s.layoutDevice;
+  ideaUI();questionsUI();gaugeUI();statuses();layoutUI();save();
+}
+if(s.phase===1&&s.active<0)activate(firstOpen(),false);else if(s.active>=0)activate(s.active,false);
+renderAll();
+fetch('/api/status').then(r=>r.json()).then(r=>{
+  available=!!r.available;provider=r.provider||null;statusLoaded=true;stitch=!!r.stitch;
+  let wanted=false;try{wanted=localStorage.getItem('specit-ai')==='1'}catch{}
+  $('ai').checked=available&&wanted;aiUI();
+  if(!stitch)$('layoutHint').textContent='Kein STITCH_API_KEY konfiguriert. Schlüssel in .env setzen und neu starten, siehe README.';
+  layoutUI();
+}).catch(()=>{$('mode').textContent='Server nicht erreichbar'});
+aiUI();
+</script>
+</body>
+</html>
