@@ -37,7 +37,13 @@ export function buildLiveConcept(s={},context={}){
   const device=['DESKTOP','MOBILE','BOTH'].includes(s.layoutDevice)?s.layoutDevice:'DESKTOP';
   const theme=['LIGHT','DARK','BOTH'].includes(s.layoutTheme)?s.layoutTheme:'LIGHT';
   const p=profiles.find(x=>x.match.test(idea))||generic;
-  const requested=functions.filter(([,re])=>re.test(idea)).map(([k])=>k);
+  // A small conservative negation check; this is heuristic, not language understanding.
+  const chunks=idea.split(/[.;\n]|\b(?:aber|sondern)\b/iu);
+  const requested=functions.filter(([,re])=>chunks.some(part=>{
+    const found=part.match(re);if(!found)return false;
+    const before=part.slice(Math.max(0,found.index-32),found.index);
+    return !/\b(?:ohne|kein(?:e[nsrm]?)?|nicht)\s+(?:[\p{L}-]+\s+){0,2}$/iu.test(before);
+  })).map(([k])=>k);
   const primary=p!==generic?p.primary:(requested[0]||'list');
   // Explicitly requested features never disappear when the target time is reduced.
   const kinds=[...new Set([primary,...requested])];
@@ -116,7 +122,7 @@ export function mountLivePreview(root){
   const heading=el('div',undefined,'lfq-top'),brand=el('strong'),hint=el('span','Simulation · Beispieldaten','lfq-muted');heading.append(brand,hint);
   const nav=el('nav',undefined,'lfq-nav');nav.setAttribute('aria-label','Vorschau-Bereiche');
   const main=el('div',undefined,'lfq-main');app.append(heading,nav,main);
-  const briefBox=el('details'),briefTitle=el('summary','Lokaler Entwurfsauftrag · live');briefBox.append(briefTitle,brief);
+  const briefBox=el('details'),briefTitle=el('summary','Lokaler Entwurfsauftrag · live');briefBox.open=true;briefBox.append(briefTitle,brief);
   root.append(notice,app,briefBox);
   let model=null,rows=[],active='',signature='',contentKey='',counter=0,query='',selected=null,showForm=false,pairs=[],dark=false;
   const btn=(label,fn,primary=false)=>{const b=el('button',label,primary?'lfq-primary':undefined);b.type='button';b.onclick=fn;return b};
@@ -196,9 +202,9 @@ export function mountLivePreview(root){
     signature=sig;
     // Clearing the idea or changing the detected domain drops sandbox-only state.
     if(!model||model.domain!==m.domain||!m.idea||!model.idea)reset(m);
-    model=m;root.closest('details').hidden=!m.idea;if(!m.idea){contentKey='';main.replaceChildren();brief.textContent='';return}
+    model=m;const panel=root.closest('details');if(panel)panel.hidden=!m.idea;else root.hidden=!m.idea;if(!m.idea){contentKey='';main.replaceChildren();brief.textContent='';return}
     if(!m.views.some(v=>v.id===active)){active=m.primary;selected=null;showForm=false;query=''}
-    notice.textContent=(m.scopeConflict?'Zielumfang prüfen · ':'')+(m.autonomy===0?'Alle nicht bestätigten Festlegungen bleiben offen. ':'')+'Lokaler, vorläufiger Entwurf – keine echte Datenhaltung.';
+    notice.textContent=m.title+' · '+m.views.length+' '+(m.views.length===1?'Bereich':'Bereiche')+' · '+(m.scopeConflict?'Zielumfang prüfen · ':'')+(m.autonomy===0?'Alle nicht bestätigten Festlegungen bleiben offen. ':'')+'Vorläufiger Entwurf – keine echte Datenhaltung.';
     brief.textContent=m.descriptions.map(([k,v])=>k+': '+v).join('\n');
     draw();
   }};
