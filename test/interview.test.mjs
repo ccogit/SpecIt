@@ -1,6 +1,60 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage } from '../interview.mjs';
+import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant } from '../interview.mjs';
+
+test('autonomy decides a share of the questions itself and gives them back when lowered', () => {
+  const qs = demoQuestions(), n = qs.length;
+  assert.equal(summary(applyAutonomy(qs, 0)).open, n, 'question-led: nothing assumed');
+  assert.equal(summary(applyAutonomy(qs, 100)).defaults, n, 'auto mode: nothing asked');
+  const half = applyAutonomy(qs, 50);
+  assert.equal(summary(half).open, Math.round(n / 2));
+  assert.ok(half.slice(0, Math.round(n / 2)).every(q => q.state === 'open'), 'the first, weightiest questions stay with the user');
+  // Eine eigene Antwort und ein von Hand übernommener Standard bleiben, wenn der Grad sinkt.
+  const mine = applyAutonomy(qs, 100).map((q, i) => (i === n - 1 ? { ...q, state: 'decided' } : i === n - 2 ? { ...q, auto: false } : q));
+  const back = applyAutonomy(cleanQuestions(mine), 0);
+  assert.deepEqual(back.map(q => q.state).slice(-2), ['default', 'decided']);
+  assert.equal(summary(back).open, n - 2);
+});
+test('without AI the decisions on goal, users and features stay with the user', () => {
+  const qs = demoQuestions().map((q, i) => (i === 0 ? acceptDefault(q) : q));
+  const relevant = demoRelevant(qs);
+  assert.ok(relevant.length > 0 && !relevant.includes(0), 'answered questions are not open decisions');
+  assert.ok(relevant.every(i => qs[i].topic <= 2) && qs.every((q, i) => relevant.includes(i) === (q.state === 'open' && q.topic <= 2)));
+});
+test('target duration appears in the demo spec and in the prompt frame', () => {
+  const qs = demoQuestions().map(acceptDefault);
+  assert.ok(demoSpec('P', 'Idee', qs, [], '3 Tage').includes('**Ziel-Entwicklungsdauer** 3 Tage'));
+  assert.ok(!demoSpec('P', 'Idee', qs).includes('Ziel-Entwicklungsdauer'));
+  const changed = qs.map((q, i) => (i === 0 ? { ...q, state: 'decided' } : q));
+  assert.equal(reviseDemo(demoSpec('P', 'Idee', qs, [], '3 Tage'), 'P', 'Idee', qs, changed, [], 0, '3 Tage'), demoSpec('P', 'Idee', changed, [], '3 Tage'));
+  assert.ok(framePrompt(100, '').includes('Auto-Modus') && framePrompt(0, '').includes('keinerlei') && framePrompt(40, '2 Wochen').includes('2 Wochen'));
+});
+
+test('edits apply only when every find occurs exactly once', () => {
+  assert.equal(applyEdits('a b c', [{ find: 'b', replace: 'x' }, { find: 'c', replace: '' }]), 'a x ');
+  assert.equal(applyEdits('a b b', [{ find: 'b', replace: 'x' }]), null, 'ambiguous');
+  assert.equal(applyEdits('a b c', [{ find: 'z', replace: 'x' }]), null, 'missing');
+  assert.equal(applyEdits('a b c', [{ find: 'b', replace: 'b' }]), null, 'no change');
+  assert.equal(applyEdits('a b c', []), null);
+  assert.equal(applyEdits('a b c', [{ find: 'b' }]), null);
+});
+test('changing an answer revises the demo spec without regenerating edited text', () => {
+  const before = demoQuestions().map(acceptDefault);
+  const after = before.map((q, i) => (i === 2 ? { ...q, state: 'decided', choice: [0] } : q));
+  const spec = demoSpec('P', 'Idee', before);
+  const revised = reviseDemo(spec, 'P', 'Idee', before, after, [], 2);
+  assert.equal(revised, demoSpec('P', 'Idee', after));
+  assert.ok(revised.includes(specLine(after[2])) && !revised.includes(specLine(before[2])));
+  // Von Hand ergänzter Entwurf: nur die Zeile der Frage wird ersetzt, der Zusatz bleibt.
+  const edited = spec + '\n\n## Notizen\nBleibt stehen.';
+  const partial = reviseDemo(edited, 'P', 'Idee', before, after, [], 2);
+  assert.ok(partial.endsWith('Bleibt stehen.') && partial.includes(specLine(after[2])) && !partial.includes(specLine(before[2])));
+  assert.equal(reviseDemo('# Ganz anderer Text', 'P', 'Idee', before, after, [], 2), null);
+  // Offene Frage beantworten: wandert aus den offenen Entscheidungen in ihr Thema.
+  const open = before.map((q, i) => (i === 2 ? { ...q, state: 'open', choice: [] } : q));
+  const answered = reviseDemo(demoSpec('P', 'Idee', open), 'P', 'Idee', open, after, [], 2);
+  assert.ok(answered.split('## Offene Entscheidungen')[1].includes('Keine.'));
+});
 
 test('demo catalog covers every topic with valid defaults', () => {
   const qs = demoQuestions();

@@ -13,7 +13,7 @@
   --error:#ba1a1a;--error-container:#fdf1cf;--on-error-container:#6b4200;--warn-line:#c77700;
   --sans:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
-  --heading:#002218;--on-primary:#fff;--tint:var(--tint);--top-bg:rgba(250,249,245,.94);
+  --heading:#002218;--on-primary:#fff;--tint:#e9f5ee;--top-bg:rgba(250,249,245,.94);
   --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.03);
   font:14px/1.57 var(--sans);color:var(--ink);background:var(--surface);
 }
@@ -73,7 +73,7 @@ textarea{resize:vertical;line-height:1.65;display:block}
 .switch input:disabled+.track{opacity:.45}
 .switch:has(input:disabled){cursor:not-allowed}
 
-main{flex:1;width:100%;max-width:1480px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:24px}
+main{flex:1;width:100%;max-width:max(1200px,88vw);margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:24px}
 .status{font-family:var(--mono);font-size:12px;min-height:18px;color:var(--ink-soft)}
 .pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
 .pagehead p{max-width:70ch;font-size:16px;line-height:26px;color:var(--ink-soft);margin-top:6px}
@@ -81,13 +81,47 @@ main{flex:1;width:100%;max-width:1480px;margin:0 auto;padding:24px;display:flex;
 .spread{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
 /* Phase 2: Spezifikation */
-.split{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:start}
+.split{display:grid;grid-template-columns:minmax(0,3fr) minmax(420px,2fr);gap:24px;align-items:start}
 #spec{font-family:var(--mono);font-size:13px;line-height:1.75;min-height:520px;background:var(--card);box-shadow:var(--shadow);padding:24px}
 .side{display:flex;flex-direction:column;gap:16px}
-.check{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px}
-.check .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--outline-soft);display:grid;place-items:center;font-size:11px;font-weight:700;flex-shrink:0}
-.check.done .dot{border-color:var(--secondary);color:var(--secondary)}
-.check .name{flex:1}
+/* Fragen-Katalog neben der Spezifikation: Frage aufklappen, Antwort ändern */
+.catpanel{padding:0}
+.catpanel>summary{display:flex;align-items:center;gap:12px;padding:16px 20px;list-style:none;border-radius:8px;color:var(--heading);font-family:var(--sans)}
+.catpanel>summary::-webkit-details-marker{display:none}
+.catpanel>summary::before{content:"▸";font-family:var(--mono);font-size:14px;color:var(--outline);transition:transform .15s}
+.catpanel[open]>summary::before{transform:rotate(90deg)}
+.catpanel>summary:hover{background:var(--surface-low)}
+.catpanel>summary h2{flex:1;font-size:16px;color:var(--heading)}
+.catpanel>p{padding:0 20px}
+.catpanel>div{padding:0 20px 20px}
+.catgroup{display:flex;align-items:center;gap:10px;width:100%;border:0;border-top:1px solid var(--surface-mid);border-radius:0;background:none;padding:11px 6px;cursor:pointer;text-align:left}
+.catgroup:hover{background:var(--surface-low)}
+.catgroup::before{content:"▸";font-family:var(--mono);font-size:12px;color:var(--outline);transition:transform .15s}
+.catgroup[aria-expanded=true]::before{transform:rotate(90deg)}
+.catgroup .eyebrow{flex:1}
+.catgroup[aria-expanded=true] .eyebrow{color:var(--secondary)}
+.catgroup+.catitem{border-top:0}
+.catitem{margin-left:18px}
+.catitem{border-top:1px solid var(--surface-mid)}
+.catitem.fresh{box-shadow:inset 3px 0 0 var(--secondary)}
+.cathd{display:flex;align-items:flex-start;gap:10px;width:100%;border:0;border-radius:4px;background:none;padding:9px 6px;cursor:pointer;text-align:left;font-size:13px;line-height:1.45}
+.cathd:hover{background:var(--surface-low)}
+.cathd .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.cathd .q{color:var(--ink-soft)}
+.catitem.open .cathd .q{color:var(--heading);font-weight:600}
+.cathd .sign{font-family:var(--mono);color:var(--outline)}
+.catbody{display:flex;flex-direction:column;gap:6px;padding:2px 6px 12px}
+.catbody .opt{padding:8px 10px;font-size:13px;gap:10px}
+.catbody .opt:disabled{opacity:.55;cursor:progress}
+.catbody .own{display:flex;gap:6px}
+.catbody input{padding:7px 10px;font-size:13px;flex:1;min-width:0}
+/* Änderungen durch eine neue Antwort: Hinweisleiste und zeitweise hervorgehobene Stellen */
+.changebar{position:sticky;top:calc(var(--top-h,64px) + 8px);z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-left:4px solid var(--secondary);border-radius:6px;padding:10px 14px;margin-bottom:8px;background:var(--mint);color:var(--on-mint);font-size:13px;box-shadow:var(--shadow)}
+.changebar .what{flex:1;min-width:200px}
+.changebar .btn{background:var(--card)}
+.md :is(h2,h3,h4,h5,h6,p,li,tr,pre){transition:background-color 1.4s ease,box-shadow 1.4s ease}
+.md :is(h2,h3,h4,h5,h6){scroll-margin-top:calc(var(--top-h,64px) + 72px)}
+.md .changed{background:var(--mint);box-shadow:0 0 0 5px var(--mint);border-radius:2px;transition:none}
 .link{border:0;background:none;padding:0;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.03em;color:var(--secondary);font-weight:600;text-decoration:none}
 .link:hover{color:var(--heading);text-decoration:underline}
 .banner{border-left:4px solid var(--warn-line);display:flex;align-items:center;gap:8px;border-radius:6px;padding:8px 12px;background:var(--error-container);color:var(--on-error-container);font-family:var(--mono);font-size:12px;font-weight:600}
@@ -136,17 +170,12 @@ summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;co
 .arrow{color:var(--outline-soft);font-family:var(--mono);font-size:11px;flex-shrink:0}
 
 /* Schritt 1: Idee */
-.hero{max-width:920px;margin:24px auto 0;width:100%;display:flex;flex-direction:column;gap:24px}
+.hero{max-width:min(1280px,100%);margin:24px auto 0;width:100%;display:flex;flex-direction:column;gap:24px}
 .hero .intro{text-align:center}
 .hero h1{font-size:44px;line-height:52px;letter-spacing:-.02em;font-weight:700}
 .hero .intro p{font-size:18px;line-height:30px;color:var(--ink-soft);max-width:60ch;margin:12px auto 0}
-#idea{font-size:18px;line-height:28px;padding:18px 20px;min-height:92px;resize:none}
-.examples{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.example{border:0;border-radius:6px;padding:14px 16px;background:var(--surface-low);cursor:pointer;text-align:left;font-size:14px;color:var(--ink-soft)}
-.example:hover{background:var(--surface-high);color:var(--ink)}
-.how{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--surface-low);border-radius:8px;padding:16px}
-.how>div{background:var(--card);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:6px}
-.how p{font-size:13px;color:var(--ink-soft)}
+#idea{font-size:18px;line-height:28px;padding:18px 20px;min-height:220px;resize:vertical}
+input[type=range]{width:100%;margin:12px 0 6px;accent-color:var(--secondary);cursor:pointer}
 kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;border-radius:3px;background:var(--surface-mid);color:var(--ink-soft);letter-spacing:.04em}
 .btn.primary kbd{background:rgba(128,128,128,.28);color:var(--on-primary)}
 
@@ -169,8 +198,11 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
 .effort .eyebrow{display:block;margin-bottom:2px}
 .quick{background:var(--surface-low);border-radius:8px;padding:10px 12px}
 .row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:8px;box-shadow:var(--shadow);padding:12px 16px;font-size:14px}
+/* Badges gleich breit, damit alle Fragen an derselben Stelle beginnen; Frage in Zeile 1, gewählte Antwort in Zeile 2 */
+.row>.chip{width:150px;flex-shrink:0;justify-content:center}
+.row .qa{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .row .q{color:var(--ink-soft)}
-.row .a{font-weight:700;flex:1;min-width:0}
+.row .a{font-weight:700}
 .row.fresh{box-shadow:0 0 0 2px var(--mint),var(--shadow)}
 .active{border-top:4px solid var(--primary-container);display:flex;flex-direction:column;gap:16px}
 .active h2{font-size:22px;line-height:28px;color:var(--heading)}
@@ -192,9 +224,10 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
 .outline section:first-of-type{border-top:0}
 .outline ul{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--ink-soft)}
 .outline li{margin:4px 0}
+.outline li .ans{display:block}
 .outline li.fresh{background:var(--tint);border-radius:4px;box-shadow:0 0 0 4px var(--tint);color:var(--ink)}
 .outline .empty{font-size:13px;font-style:italic;color:var(--outline);margin-top:4px}
-.sticky{position:sticky;top:84px;max-height:calc(100vh - 110px);overflow-y:auto}
+.sticky{position:sticky;top:calc(var(--top-h,60px) + 24px);max-height:calc(100vh - var(--top-h,60px) - 48px);overflow-y:auto}
 
 /* Dunkles Thema nach dem Stitch-Screen „Fragen (Dark Mode)“: feine Konturen statt Schatten, Mint als Fokusrahmen */
 :root[data-theme=dark] .active{border:2px solid var(--primary)}
@@ -208,6 +241,36 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
 :root[data-theme=dark] .top{box-shadow:0 1px 0 rgba(255,255,255,.07)}
 :root[data-theme=dark] .level .seg.full .fill{background:var(--primary)}
 :root[data-theme=dark] .level .fill{background:#2f9f78}
+/* Umschalter Ansicht / Bearbeiten und gerenderte Spezifikation */
+.seg{display:inline-flex;padding:3px;border-radius:6px;background:var(--surface-mid);gap:2px}
+.seg button{border:0;border-radius:4px;padding:5px 14px;background:transparent;cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--heading);font-weight:600;box-shadow:var(--shadow)}
+.md{background:var(--card);border-radius:6px;box-shadow:var(--shadow);padding:32px 40px;min-height:520px;font-size:15px;line-height:1.7;overflow-wrap:anywhere}
+.md>*{max-width:76ch}
+.md>.tablewrap,.md>pre{max-width:none}
+.md>:first-child{margin-top:0}
+.md h2{font-size:28px;line-height:36px;font-weight:700;letter-spacing:-.015em;color:var(--heading);margin:0 0 16px}
+.md h3{font-size:19px;line-height:26px;font-weight:700;color:var(--heading);margin:32px 0 10px;padding-top:20px;border-top:1px solid var(--surface-mid)}
+.md h4{font-size:15px;line-height:22px;font-weight:700;color:var(--heading);margin:22px 0 6px}
+.md h5,.md h6{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin:18px 0 6px}
+.md p{margin:0 0 12px}
+.md ul,.md ol{margin:0 0 12px;padding-left:22px}
+.md li{margin:4px 0}
+.md li>ul,.md li>ol{margin:4px 0 0}
+.md em{color:var(--ink-soft)}
+.md a{color:var(--secondary)}
+.md code{font-family:var(--mono);font-size:.88em;background:var(--surface-mid);border-radius:3px;padding:1px 5px}
+.md pre{background:var(--surface-low);border-radius:6px;padding:14px 16px;overflow-x:auto;margin:0 0 12px}
+.md pre code{background:none;padding:0;font-size:12.5px;line-height:1.6}
+.md blockquote{margin:0 0 14px;padding:10px 16px;border-left:4px solid var(--outline-soft);background:var(--surface-low);border-radius:0 6px 6px 0;color:var(--ink-soft)}
+.md blockquote>:last-child{margin-bottom:0}
+.md hr{border:0;border-top:1px solid var(--surface-mid);margin:24px 0}
+.md .tablewrap{overflow-x:auto;margin:0 0 14px}
+.md table{border-collapse:collapse;font-size:14px;min-width:60%}
+.md th,.md td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--surface-mid)}
+.md th{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);border-bottom-color:var(--outline-soft)}
+.md .placeholder{color:var(--outline);font-style:italic}
+
 @media(max-width:1180px){.interview,.split{grid-template-columns:1fr}.sticky{position:static;max-height:none}}
 @media(max-width:760px){
   main{padding:16px;gap:16px}
@@ -216,12 +279,36 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
   h1{font-size:24px;line-height:32px}
   .hero h1{font-size:30px;line-height:38px}
   .card{padding:16px}
-  .examples,.how,.settings{grid-template-columns:1fr}
+  .settings{grid-template-columns:1fr}
   .layoutgrid{grid-template-columns:1fr 1fr}
   .level .name{font-size:9px}
   #spec{min-height:360px;padding:16px}
+  .md{padding:20px 16px;min-height:360px}
 }
-@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+/* Arbeitsanzeige unter der Kopfzeile: sichtbar, solange Claude (oder Stitch) etwas erzeugt */
+.working{position:relative;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 24px 15px;color:#eafff5;font-size:14px;overflow:hidden;
+  background:linear-gradient(110deg,#00140e 0%,#063526 30%,#12805d 50%,#063526 70%,#00140e 100%);background-size:240% 100%;animation:flow 3.6s linear infinite}
+/* Lichtschein, der langsam über die Fläche zieht */
+.working::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 40%,rgba(183,239,212,.16) 50%,transparent 60%);background-size:300% 100%;animation:flow 2.2s linear infinite;pointer-events:none}
+.working b{font-size:15px;font-weight:600;letter-spacing:.01em}
+.working #workingHint{flex:1;min-width:160px;color:rgba(234,255,245,.72);font-size:13px}
+/* Pegel aus vier Balken: zeigt Aktivität, ohne wie ein Ladekreis zu wirken */
+.working .pulse{display:inline-flex;align-items:center;gap:3px;height:20px;flex-shrink:0}
+.working .pulse i{width:4px;height:100%;border-radius:2px;background:#7ee6bd;transform-origin:center;animation:level 1.1s ease-in-out infinite;box-shadow:0 0 8px rgba(126,230,189,.7)}
+.working .pulse i:nth-child(2){animation-delay:.15s}
+.working .pulse i:nth-child(3){animation-delay:.3s}
+.working .pulse i:nth-child(4){animation-delay:.45s}
+.working .timer{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;padding:3px 10px;border-radius:999px;background:rgba(0,0,0,.32);box-shadow:inset 0 0 0 1px rgba(126,230,189,.35);color:#b7efd4}
+/* Leuchtender Schweif am unteren Rand */
+.working .stripe{position:absolute;left:0;bottom:0;height:3px;width:28%;border-radius:3px;background:linear-gradient(90deg,transparent,#4edea3 60%,#fff);box-shadow:0 0 12px 1px rgba(78,222,163,.9);animation:slide 1.5s cubic-bezier(.45,.05,.55,.95) infinite}
+@keyframes flow{from{background-position:120% 0}to{background-position:-120% 0}}
+@keyframes level{0%,100%{transform:scaleY(.3);opacity:.6}50%{transform:scaleY(1);opacity:1}}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(360%)}}
+.toast{position:fixed;left:50%;bottom:48px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:14px;padding:10px 12px 10px 18px;border-radius:8px;background:var(--primary);color:var(--on-primary);font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.toast .btn{background:var(--card);color:var(--ink)}
+.catacts{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+.catacts .btn{white-space:normal;text-align:left}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.working,.working::after,.working .pulse i{animation:none}.working .pulse i:nth-child(odd){transform:scaleY(.55)}.working .stripe{animation:none;width:100%}}
 </style>
 </head>
 <body>
@@ -237,9 +324,10 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
       <span id="mode" class="pill" role="status">Demo-Modus</span>
       <label class="switch"><input type="checkbox" id="ai"><span class="track"></span><span>Claude aktivieren</span></label>
       <button id="theme" class="btn ghost" type="button" aria-pressed="false">Dunkel</button>
-      <button id="reset" class="btn ghost" type="button">+ Neu</button>
+      <button id="reset" class="btn ghost" type="button" title="Idee, Modus, Dauer, alle Antworten, Spezifikation und Agent Tasks leeren">↺ Zurücksetzen</button>
     </div>
   </div>
+  <div id="working" class="working hidden" role="status" aria-live="polite"><span class="pulse" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b id="workingText"></b><span id="workingHint"></span><span id="workingTime" class="timer" aria-hidden="true"></span><span class="stripe" aria-hidden="true"></span></div>
 </header>
 
 <main>
@@ -248,27 +336,34 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
     <div class="intro">
       <span class="eyebrow" style="color:var(--secondary)">Schritt 1 · Idee</span>
       <h1 style="margin-top:10px">Was willst du bauen?</h1>
-      <p>Ein Satz genügt. Den Rest erfragen wir – mit Vorschlägen, die du nur bestätigen musst.</p>
+      <p>Ein Satz genügt. Wie viel SpecIt danach selbst entscheidet, legst du mit dem Modus fest.</p>
     </div>
     <div class="card" style="display:flex;flex-direction:column;gap:16px">
       <div class="spread"><label class="field-label" for="idea" style="margin:0">Deine Idee in einem Satz</label><span class="meta" id="ideaCount"></span></div>
-      <textarea id="idea" rows="2" maxlength="2000" placeholder="z. B. Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost"></textarea>
+      <textarea id="idea" rows="7" maxlength="2000" placeholder="z. B. Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost. Ein Satz genügt – mehr Details sind willkommen (Umschalt+Enter für eine neue Zeile)."></textarea>
       <div class="spread">
         <span class="status" id="ideaStatus" role="status"></span>
         <button id="derive" class="btn primary" type="button"><span id="deriveLabel">Fragen ableiten →</span> <kbd>Enter</kbd></button>
       </div>
     </div>
-    <div class="notebox spread" id="aiHint"><span id="aiHintText"></span><button id="aiHintOn" class="btn small" type="button" style="background:var(--card)">Claude aktivieren</button></div>
-    <div>
-      <p class="eyebrow" style="text-align:center;margin-bottom:10px">Oder mit einem Beispiel starten</p>
-      <div class="examples" id="examples"></div>
-      <p style="text-align:center;margin-top:16px"><button class="link" type="button" data-phase="2">Vorhandene Spezifikation einfügen</button></p>
+    <div class="card" style="display:flex;flex-direction:column;gap:24px">
+      <div>
+        <div class="spread"><label class="field-label" for="autonomy" style="margin:0">Modus</label><span class="meta" id="autonomyValue"></span></div>
+        <input type="range" id="autonomy" min="0" max="5" step="1" list="autonomyTicks">
+        <datalist id="autonomyTicks"><option value="0"></option><option value="1"></option><option value="2"></option><option value="3"></option><option value="4"></option><option value="5"></option></datalist>
+        <div class="spread meta"><span>fragt bei allem nach</span><span>entscheidet alles selbst</span></div>
+        <p id="autonomyText" style="font-size:15px;margin-top:12px" aria-live="polite"></p>
+      </div>
+      <div>
+        <label class="field-label" for="durValue">Ziel-Entwicklungsdauer (optional)</label>
+        <div class="actions">
+          <input type="number" id="durValue" min="1" max="999" step="1" inputmode="numeric" placeholder="–" style="width:96px">
+          <select id="durUnit" aria-label="Einheit der Ziel-Entwicklungsdauer" style="width:140px"><option>Stunden</option><option>Tage</option><option>Wochen</option></select>
+          <span class="meta" style="flex:1;min-width:220px">Zeit, die die Entwicklung mit KI und Coding-Agenten dauern darf. Der Umfang der Spezifikation wird darauf zugeschnitten.</span>
+        </div>
+      </div>
     </div>
-    <div class="how">
-      <div><span class="eyebrow" style="color:var(--secondary)">01 · Idee</span><h3>Einen Satz schreiben</h3><p>Die grobe Idee reicht. Keine Vorformatierung nötig.</p></div>
-      <div><span class="eyebrow">02 · Fragen</span><h3>Vorschläge bestätigen</h3><p>Zu jeder Frage ist ein passender Standard vorausgewählt. Ein Klick genügt.</p></div>
-      <div><span class="eyebrow">03 · Ergebnis</span><h3>Spec und Tasks erhalten</h3><p>SPEC.md und Arbeitsaufträge für Coding-Agenten.</p></div>
-    </div>
+    <p style="text-align:center"><button class="link" type="button" id="pasteSpec">Vorhandene Spezifikation einfügen</button></p>
   </div>
 
   <!-- Schritt 2 · Fragen -->
@@ -309,21 +404,33 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
   <!-- Schritt 3 · Spezifikation -->
   <div id="phase2" class="hidden" style="display:flex;flex-direction:column;gap:20px">
     <div class="pagehead">
-      <div><h1>Spezifikation</h1><p>Der konsolidierte Entwurf aus Idee und Antworten. Annahmen und offene Entscheidungen prüfen, direkt bearbeiten oder eine vorhandene Spezifikation einfügen.</p></div>
+      <div><h1>Spezifikation</h1><p>Der konsolidierte Entwurf aus Idee und Antworten. Annahmen und offene Entscheidungen prüfen, Antworten im Fragen-Katalog ändern, direkt bearbeiten oder eine vorhandene Spezifikation einfügen.</p></div>
       <div class="actions"><button id="specDownload" class="btn" type="button">↓ SPEC.md</button><button id="generate" class="btn primary" type="button">Konzept generieren</button></div>
     </div>
     <div class="actions"><span class="chip" id="specBadge"></span><span id="specStatus" role="status" class="status"></span></div>
     <div class="split">
       <div>
-        <div class="spread" style="margin-bottom:8px"><label class="field-label" for="spec" style="margin:0">Bearbeitbare Spezifikation</label><span class="meta">SPEC.md · Markdown</span></div>
-        <textarea id="spec" rows="22" maxlength="50000" placeholder="Spezifikation generieren oder hier einfügen …"></textarea>
+        <div class="spread" style="margin-bottom:8px">
+          <label class="field-label" for="spec" style="margin:0">SPEC.md</label>
+          <div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">Bearbeiten</button></div>
+        </div>
+        <div id="changeBar" class="changebar hidden" role="status"></div>
+        <article id="specView" class="md" aria-label="Spezifikation, Ansicht"></article>
+        <textarea id="spec" class="hidden" rows="22" maxlength="50000" placeholder="Spezifikation generieren oder hier einfügen …"></textarea>
         <p class="meta" id="specCount" style="text-align:right;margin-top:6px"></p>
       </div>
-      <div class="side">
-        <div class="card" style="padding:20px">
-          <div class="spread" style="margin-bottom:8px"><span class="eyebrow">Minimal-Konzept</span><span class="meta" id="readyCount"></span></div>
-          <div id="checklist"></div>
-        </div>
+      <div class="side sticky">
+        <!-- Zwei gleich aufgebaute, einklappbare Felder: beantwortete Fragen und offene Entscheidungen -->
+        <details class="card catpanel">
+          <summary><h2>Fragen-Katalog</h2><span class="meta" id="readyCount"></span></summary>
+          <p class="meta">Frage anklicken und Antwort ändern – die Spezifikation passt sich an, geänderte Stellen werden hervorgehoben.</p>
+          <div id="catalog"></div>
+        </details>
+        <details class="card catpanel">
+          <summary><h2>Offene Entscheidungen</h2><span class="meta" id="openCount"></span></summary>
+          <p class="meta">Entscheidung anklicken und Alternative wählen – die Spezifikation passt sich an, geänderte Stellen werden hervorgehoben.</p>
+          <div id="openList"></div>
+        </details>
         <div class="notebox"><span class="eyebrow">Dein Aufwand</span><p id="effortSide" class="mono" style="font-size:12px;margin-top:6px"></p></div>
       </div>
     </div>
@@ -373,6 +480,7 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
   </div>
 </main>
 
+<div id="toast" class="toast hidden" role="status"></div>
 <footer class="foot"><span class="pill">Entwurf wird lokal im Browser gespeichert</span><span id="privacy">Demo ohne API. Bei aktiver KI werden Projektdaten an Anthropic gesendet. Keine vertraulichen Daten eingeben.</span></footer>
 
 <script type="module">
@@ -383,17 +491,24 @@ function applyTheme(){document.documentElement.dataset.theme=theme;const b=docum
 applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('specit-theme',theme)}catch{}applyTheme()};
 
 import {validatePlan,renderTask,renderBacklog} from '/planner.mjs';
-import {topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,summary,coverage} from '/interview.mjs';
+import {topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage} from '/interview.mjs';
+import {renderMarkdown} from '/markdown.mjs';
 
-const $=id=>document.getElementById(id);
+const $=id=>document.getElementById(id),pageTitle=document.title;
+// Höhe der Kopfzeile (bricht bei schmalem Fenster um) für alles, was darunter haften bleibt
+new ResizeObserver(([e])=>document.documentElement.style.setProperty('--top-h',Math.round(e.target.offsetHeight)+'px')).observe(document.querySelector('.top'));
 const phaseNames=['Idee','Fragen','Spezifikation','Agent Tasks'];
-const exampleIdeas=[
-  ['Pair Pressure','Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost'],
-  ['Lesezeit','Ein Lesetagebuch, das gelesene Bücher mit kurzen Notizen sammelt und an ungelesene erinnert'],
-  ['Schichtwechsel','Ein Schichtplan für ein kleines Café, in dem Mitarbeitende Schichten untereinander tauschen können'],
-  ['Haushaltsbuch','Ein Haushaltsbuch, das Ausgaben per Schnelleingabe erfasst und Monatsbudgets überwacht']
+// Modus in sechs Stufen (autonomy = Stufe × 20): von „fragt bei allem nach“ bis „entscheidet alles selbst“
+const levels=[
+  ['fragt bei allem nach','Keine Annahmen, keine Standards: Jede Frage beantwortest du selbst, nichts ist vorausgewählt.'],
+  ['fragt bei fast allem nach','Nur Nebensächliches wird selbst entschieden und als Annahme gekennzeichnet.'],
+  ['fragt bei allen wichtigen Entscheidungen nach','Detailfragen werden selbst entschieden und als Annahme gekennzeichnet.'],
+  ['fragt nur bei richtungsweisenden Entscheidungen nach','Alles Übrige wird selbst entschieden und als Annahme gekennzeichnet.'],
+  ['fragt nur bei den wenigen grundlegenden Entscheidungen nach','Fast alles wird selbst entschieden und als Annahme gekennzeichnet.'],
+  ['entscheidet alles selbst','Auto-Modus ohne Rückfragen: Alles wird als Annahme gekennzeichnet und die Spezifikation direkt erstellt.']
 ];
-const blank=()=>({project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+// durValue/durUnit: Ziel-Entwicklungsdauer
+const blank=()=>({autonomy:40,durValue:'',durUnit:'Tage',project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -407,6 +522,9 @@ try{
     s.last=-1;
     if(!Number.isInteger(s.layoutCount)||s.layoutCount<1||s.layoutCount>5)s.layoutCount=3;
     if(!['DESKTOP','MOBILE'].includes(s.layoutDevice))s.layoutDevice='DESKTOP';
+    s.autonomy=Number.isFinite(s.autonomy)&&s.autonomy>=0&&s.autonomy<=100?Math.round(s.autonomy/20)*20:40;
+    if(!Number.isInteger(s.durValue)||s.durValue<1||s.durValue>999)s.durValue='';
+    if(!['Stunden','Tage','Wochen'].includes(s.durUnit))s.durUnit='Tage';
     if(!s.layout||typeof s.layout.url!=='string'||!s.layout.url.startsWith('https://stitch.withgoogle.com/projects/')||!Array.isArray(s.layout.screens))s.layout=null;
   }
 }catch{s=blank()}
@@ -414,6 +532,12 @@ try{
 let available=false,provider=null,statusLoaded=false,stitch=false,active=false,layoutBusy=false,revision=0;
 // Auswahl der gerade aktiven Frage, bis sie bestätigt wird
 let pick=[],custom='',customOpen=false;
+// Darstellung der Spezifikation: gerenderte Ansicht oder Markdown-Editor
+let specMode='view';
+// Fragen-Katalog in Schritt 3: aufgeklappte Frage samt Auswahl; zuletzt geänderte Antwort mit dem Stand davor
+let catOpen=-1,catPick=[],catCustom='',change=null,flashTimer=0;
+// Aufgeklappte Unterrubriken der beiden Felder: 'a'+Thema (beantwortet) bzw. 'o'+Thema (offen)
+const catGroups=new Set();
 
 function save(){try{localStorage.setItem('specit-v3',JSON.stringify(s))}catch{$('busy').textContent='Lokales Speichern nicht möglich.'}}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
@@ -422,6 +546,11 @@ const words=t=>(t.trim().match(/\S+/g)||[]).length;
 const digest=t=>{let h=5381;for(let i=0;i<t.length;i++)h=(h*33^t.charCodeAt(i))>>>0;return t.length+':'+h};
 const plural=(n,one,many)=>n+' '+(n===1?one:many);
 function ctx(){return {repo:s.repo,agent:s.agent}}
+// Rahmen für jede Anfrage: Autonomiegrad und Ziel-Entwicklungsdauer als Text („3 Tage“)
+const duration=()=>s.durValue?s.durValue+' '+(s.durValue===1?{Stunden:'Stunde',Tage:'Tag',Wochen:'Woche'}[s.durUnit]:s.durUnit):'';
+const frame=()=>({autonomy:s.autonomy,duration:duration()});
+// Bei 0 gibt es keine Standards: nichts ist vorausgewählt oder als Vorschlag markiert
+const suggest=()=>s.autonomy>0;
 function stale(){return s.plan&&(s.spec!==s.planSpec||JSON.stringify(ctx())!==JSON.stringify(s.planContext)||s.dirty)}
 function layoutActive(){return !!(s.layoutOn&&s.layout&&s.layout.screens.length)}
 function exportCtx(){return {...(s.planContext||{}),...(layoutActive()?{layoutUrl:s.layout.url}:{})}}
@@ -469,17 +598,33 @@ for(const b of document.querySelectorAll('[data-phase]'))b.onclick=()=>setPhase(
 function ideaUI(){
   $('ideaCount').textContent=plural(words(s.idea),'Wort','Wörter');
   const same=s.questions.length>0&&s.idea.trim()===s.askedIdea;
-  $('deriveLabel').textContent=same?'Weiter zu den Fragen →':s.questions.length?'Fragen neu ableiten →':'Fragen ableiten →';
+  $('deriveLabel').textContent=same?'Weiter zu den Fragen →':s.autonomy===100?'Spezifikation erstellen →':s.questions.length?'Fragen neu ableiten →':'Fragen ableiten →';
+  // Modus als Stufe mit Bedeutung statt als Prozentwert
+  const level=s.autonomy/20,[title,text]=levels[level],n=s.questions.length,ask=Math.round(n*(1-s.autonomy/100)),who=$('ai').checked?'Claude':'SpecIt';
+  $('autonomyValue').textContent='Stufe '+(level+1)+' von '+levels.length;
+  $('autonomy').setAttribute('aria-valuetext',who+' '+title);
+  $('autonomyText').replaceChildren(node('b',who+' '+title+'.'),' '+text+(n&&level>0&&level<5?' Derzeit '+(ask===1?'geht 1 von '+n+' Fragen':'gehen '+ask+' von '+n+' Fragen')+' an dich.':''));
 }
+$('autonomy').oninput=e=>{
+  s.autonomy=Number(e.target.value)*20;
+  const next=applyAutonomy(s.questions,s.autonomy);
+  if(next.some((q,i)=>q.state!==s.questions[i].state)){s.questions=next;change=null;s.last=-1;touched();activate(firstOpen(),false)}
+  renderAll();
+};
+for(const id of ['durValue','durUnit'])$(id).oninput=()=>{
+  const n=Number($('durValue').value);s.durValue=Number.isInteger(n)&&n>=1&&n<=999?n:'';s.durUnit=$('durUnit').value;
+  touched();ideaUI();statuses();save();
+};
 async function derive(more){
   if(active)return;
   const idea=s.idea.trim(),status=more?$('busy'):$('ideaStatus');
   if(!idea){$('ideaStatus').textContent='Bitte die Idee in einem Satz beschreiben.';$('idea').focus();return}
   if(!more&&s.questions.length&&idea===s.askedIdea){setPhase(1);return}
   if(!more&&s.questions.some(q=>q.state!=='open')&&!confirm('Die Idee wurde geändert. Vorhandene Fragen und Antworten ersetzen?'))return;
-  const rev=revision;lock(true);status.textContent=more?'Weitere Fragen werden abgeleitet …':'Fragen werden abgeleitet …';
+  const rev=revision;lock(true,more?'Weitere Fragen werden abgeleitet':'Fragen werden abgeleitet');status.textContent=more?'Weitere Fragen werden abgeleitet …':'Fragen werden abgeleitet …';
+  let auto=false;
   try{
-    const r=await call({mode:'questions',idea,project:s.project,questions:more?s.questions:[],ai:$('ai').checked});
+    const r=await call({mode:'questions',idea,project:s.project,questions:more?s.questions:[],ai:$('ai').checked,...frame()});
     if(rev!==revision){status.textContent='Eingaben geändert. Erneut starten.';return}
     const fresh=cleanQuestions(r.questions);
     if(more){
@@ -489,25 +634,24 @@ async function derive(more){
       if(added.length&&s.spec)s.dirty=true;
     }else{
       if(!fresh.length)throw Error('Es konnten keine Fragen abgeleitet werden. Bitte erneut versuchen.');
-      s.questions=fresh;s.askedIdea=idea;s.extras=[];s.clicks=0;s.last=-1;status.textContent='';
+      s.questions=fresh;s.askedIdea=idea;s.extras=[];s.clicks=0;s.last=-1;change=null;catOpen=-1;status.textContent='';
       if(s.spec)s.dirty=true;
     }
-    s.qSource=r.source;s.phase=1;activate(firstOpen(),false);renderAll();if(!more)window.scrollTo({top:0});
+    // Je nach Modus entscheidet SpecIt einen Teil der Fragen selbst; im Auto-Modus alle, dann geht es direkt zur Spezifikation.
+    s.questions=applyAutonomy(s.questions,s.autonomy);auto=!more&&firstOpen()<0;
+    s.qSource=r.source;s.phase=auto?2:1;activate(firstOpen(),false);renderAll();if(!more)window.scrollTo({top:0});
   }catch(e){status.textContent=e.message}finally{lock(false)}
+  if(auto)generate();
 }
 $('idea').oninput=e=>{s.idea=e.target.value;revision++;if(s.spec)s.dirty=true;ideaUI();statuses();save()};
 $('idea').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();derive(false)}};
 $('derive').onclick=()=>derive(false);
 $('more').onclick=()=>derive(true);
-exampleIdeas.forEach(([name,idea])=>$('examples').append(button(idea,'example',()=>{
-  if((s.spec||s.questions.length)&&!confirm('Aktuellen Entwurf ersetzen?'))return;
-  const x=blank();x.project=name;x.idea=idea;replaceState(x);derive(false);
-})));
 
 /* ---------- Schritt 2: Fragen ---------- */
 function activate(i,focus=true){
   s.active=i;const q=s.questions[i];
-  pick=q?(q.state!=='open'?[...q.choice]:[...q.defaults]):[];custom=q?q.custom:'';customOpen=!!custom;
+  pick=q?(q.state!=='open'?[...q.choice]:suggest()?[...q.defaults]:[]):[];custom=q?q.custom:'';customOpen=!!custom;
   if(focus){questionsUI();document.querySelector('.opt[aria-checked=true],.opt')?.focus({preventScroll:true})}
 }
 function choose(i){
@@ -535,7 +679,7 @@ function optionButton(q,i){
   const on=pick.includes(i),b=button(undefined,'opt'+(q.multi?' multi':''),()=>choose(i)),body=node('span',undefined,'body'),head=node('span');
   b.setAttribute('role',q.multi?'checkbox':'radio');b.setAttribute('aria-checked',String(on));
   head.append(q.options[i]+' ');
-  if(q.defaults.includes(i)){head.append(node('span','Standard','chip ok'));body.append(head);if(q.reason)body.append(node('span',q.reason,'why'))}else body.append(head);
+  if(suggest()&&q.defaults.includes(i)){head.append(node('span','Standard','chip ok'));body.append(head);if(q.reason)body.append(node('span',q.reason,'why'))}else body.append(head);
   b.append(node('span',String(i+1),'key'),body,node('span','✓','mark'));return b;
 }
 function questionsUI(){
@@ -546,7 +690,7 @@ function questionsUI(){
       card.append(node('span','Frage '+(i+1)+' von '+n+' · '+topics[q.topic]+(q.multi?' · Mehrfachauswahl':''),'eyebrow'),node('h2',q.question));
       opts.setAttribute('role',q.multi?'group':'radiogroup');opts.setAttribute('aria-label',q.question);opts.style.cssText='display:flex;flex-direction:column;gap:8px';
       q.options.forEach((_,k)=>opts.append(optionButton(q,k)));
-      const own=button(undefined,'opt'+(q.multi?' multi':''),()=>{customOpen=!customOpen;if(customOpen&&!q.multi)pick=[];if(!customOpen&&!pick.length)pick=[...q.defaults];questionsUI();$('customAnswer')?.focus()});
+      const own=button(undefined,'opt'+(q.multi?' multi':''),()=>{customOpen=!customOpen;if(customOpen&&!q.multi)pick=[];if(!customOpen&&!pick.length&&suggest())pick=[...q.defaults];questionsUI();$('customAnswer')?.focus()});
       own.setAttribute('role',q.multi?'checkbox':'radio');own.setAttribute('aria-checked',String(customOpen));
       own.append(node('span',String(q.options.length+1),'key'),node('span','Eigene Antwort …','body'),node('span','✓','mark'));opts.append(own);
       if(customOpen){const input=node('input');input.type='text';input.id='customAnswer';input.maxLength=500;input.value=custom;input.placeholder='Eigene Antwort in einem Satz';input.setAttribute('aria-label','Eigene Antwort');input.oninput=()=>{custom=input.value};opts.append(input)}
@@ -556,11 +700,12 @@ function questionsUI(){
       foot.append(hints,acts);card.append(opts,foot);out.append(card);
     }else if(q.state!=='open'){
       const row=node('div',undefined,'row'+(i===s.last?' fresh':''));
-      row.append(node('span',q.state==='decided'?'✓ Entschieden':'Annahme (Standard)','chip'+(q.state==='decided'?' ok':'')),node('span',q.question,'q'),node('span',answerOf(q),'a'));
+      const qa=node('span',undefined,'qa');qa.append(node('span',q.question,'q'),node('span',answerOf(q),'a'));
+      row.append(node('span',q.state==='decided'?'✓ Entschieden':'Annahme (Standard)','chip'+(q.state==='decided'?' ok':'')),qa);
       const edit=button('ändern','link',()=>activate(i));edit.setAttribute('aria-label',q.question+' ändern');row.append(edit);out.append(row);
     }else{
       const next=button(undefined,'upcoming',()=>activate(i)),chips=node('span',undefined,'actions');
-      q.options.forEach((o,k)=>chips.append(node('span',o+(q.defaults.includes(k)?' · Standard':''),'chip'+(q.defaults.includes(k)?' ok':''))));
+      q.options.forEach((o,k)=>{const std=suggest()&&q.defaults.includes(k);chips.append(node('span',o+(std?' · Standard':''),'chip'+(std?' ok':'')))});
       next.append(node('span','Frage '+(i+1)+' von '+n+' · '+topics[q.topic],'eyebrow'),node('span',q.question,'title'),chips);out.append(next);
     }
   });
@@ -580,7 +725,8 @@ function gaugeUI(){
   result.append(node('span','Daraus entstanden','eyebrow'),b(e.facts,e.facts===1?'Festlegung':'Festlegungen'),' · ',b(e.topics,'von 6 Themen'));
   box.replaceChildren(input,node('span','→','arrow'),result);
   $('acceptAll').textContent='Alle Standards übernehmen'+(sum.open?' ('+sum.open+' offen)':'');$('acceptAll').disabled=!sum.open;
-  $('quickHint').textContent=sum.open?'Vorschläge passen? Dann alle offenen Fragen auf einmal beantworten.':'Alle Fragen beantwortet. Antworten bleiben einzeln änderbar.';
+  $('acceptAll').classList.toggle('hidden',!suggest());
+  $('quickHint').textContent=!sum.open?'Alle Fragen beantwortet. Antworten bleiben einzeln änderbar.':suggest()?'Vorschläge passen? Dann alle offenen Fragen auf einmal beantworten.':'Fragen-geleitet: Jede Frage beantwortest du selbst, ohne Vorauswahl.';
   $('more').classList.toggle('hidden',!$('ai').checked);
   $('ideaQuote').textContent='„'+(s.askedIdea||s.idea.trim())+'“';
   // Live-Gliederung
@@ -590,16 +736,178 @@ function gaugeUI(){
     const own=s.questions.map((q,k)=>[q,k]).filter(([q])=>q.topic===i),open=own.filter(([q])=>q.state==='open').length,sec=node('section'),h=node('h3',(i+1)+'. '+t+' ');
     h.append(node('span',!own.length?'keine Fragen':open===0?'vollständig':open===own.length?'offen':'teilweise','chip'+(own.length&&open===0?' ok':'')));sec.append(h);
     const done=own.filter(([q])=>q.state!=='open');
-    if(done.length){const ul=node('ul');for(const [q,k] of done){const li=node('li',undefined,k===s.last?'fresh':'');li.append(q.question+' ',node('b',answerOf(q)));if(q.state==='default')li.append(' ',node('span','Annahme (Standard)','chip'));ul.append(li)}sec.append(ul)}
+    if(done.length){const ul=node('ul');for(const [q,k] of done){const li=node('li',undefined,k===s.last?'fresh':'');const ans=node('span',undefined,'ans');ans.append(node('b',answerOf(q)));if(q.state==='default')ans.append(' ',node('span','Annahme (Standard)','chip'));li.append(q.question,ans);ul.append(li)}sec.append(ul)}
     if(open)sec.append(node('p',plural(open,'Frage','Fragen')+' ausstehend','empty'));
     outline.append(sec);
   });
   if(s.extras.length){const sec=node('section'),ul=node('ul');sec.append(node('h3','Zusätzliche Anforderungen'),ul);s.extras.forEach((x,k)=>{const li=node('li',x+' ');const del=button('entfernen','link',()=>{s.extras.splice(k,1);touched();renderAll()});li.append(del);ul.append(li)});outline.append(sec)}
   $('nextHint').textContent=sum.open?'Offene Fragen erscheinen in der Spezifikation als offene Entscheidungen.':'Alle Fragen beantwortet.';
   // Seitenleiste in Schritt 3
-  const list=$('checklist');list.replaceChildren();
-  topics.forEach((t,i)=>{const full=cov.perTopic[i]===1,row=node('div',undefined,'check'+(full?' done':''));row.append(node('span',full?'✓':'','dot'),node('span',t,'name'),node('span',Math.round(cov.perTopic[i]*100)+' %','meta'));list.append(row)});
-  $('readyCount').textContent=cov.percent+' %';$('effortSide').textContent=effortText();
+  $('effortSide').textContent=effortText();
+  catalogUI();
+}
+
+/* ---------- Schritt 3: Fragen-Katalog neben der Spezifikation ---------- */
+function syncCat(){const q=s.questions[catOpen];if(!q){catOpen=-1;catPick=[];catCustom='';return}catPick=q.state!=='open'?[...q.choice]:q.multi&&suggest()?[...q.defaults]:[];catCustom=q.custom}
+function catalogUI(){
+  // Zwei gleich aufgebaute Felder: beantwortete Fragen (Katalog) und noch offene (Entscheidungen), beide nach Thema
+  const cat=$('catalog'),pend=$('openList'),all=s.questions.map((q,i)=>[q,i]),nOpen=all.filter(([q])=>q.state==='open').length;
+  cat.replaceChildren();pend.replaceChildren();
+  if(catOpen>=s.questions.length)catOpen=-1;
+  $('readyCount').textContent=(all.length-nOpen)+' beantwortet';$('openCount').textContent=nOpen+' offen';
+  if(nOpen){
+    // Sammelaktionen: alles oder nur das Unwichtige von SpecIt entscheiden lassen
+    const acts=node('div',undefined,'catacts'),every=button('Triff alle selbst','btn small',()=>decideOpen(false)),minor=button('Triff die unwichtigen selbst, frag nur nach den relevanten','btn small',()=>decideOpen(true));
+    every.title='SpecIt übernimmt für jede offene Entscheidung den Standard und kennzeichnet ihn als Annahme.';
+    minor.title='SpecIt entscheidet alles von geringer Tragweite selbst; die wirklich relevanten Entscheidungen bleiben offen und bei dir.';
+    every.disabled=minor.disabled=active;acts.append(every,minor);pend.append(acts);
+  }
+  for(const [out,pending] of [[cat,false],[pend,true]])topics.forEach((t,ti)=>{
+    const own=all.filter(([q])=>q.topic===ti&&(q.state==='open')===pending);
+    if(!own.length)return;
+    // Unterrubrik je Thema, zunächst eingeklappt; die Rubrik der gerade bearbeiteten Frage bleibt offen
+    const key=(pending?'o':'a')+ti,holds=own.some(([,i])=>i===catOpen);if(holds)catGroups.add(key);
+    const shown=catGroups.has(key),group=button(undefined,'catgroup',()=>{
+      if(shown){catGroups.delete(key);if(holds){catOpen=-1;syncCat()}}else catGroups.add(key);
+      catalogUI();side().querySelector('[data-g="'+key+'"]')?.focus({preventScroll:true});
+    });
+    group.dataset.g=key;group.setAttribute('aria-expanded',String(shown));group.append(node('span',t,'eyebrow'),node('span',String(own.length),'meta'));out.append(group);
+    if(!shown)return;
+    for(const [q,i] of own){
+      const open=i===catOpen,item=node('div',undefined,'catitem'+(open?' open':'')+(change&&change.ids.includes(i)?' fresh':'')),head=button(undefined,'cathd',()=>{catOpen=open?-1:i;syncCat();catalogUI();side().querySelector('[data-q="'+i+'"]')?.focus({preventScroll:true})}),body=node('span',undefined,'body'),answer=node('span');
+      head.dataset.q=i;head.setAttribute('aria-expanded',String(open));
+      if(q.state==='open')answer.append(node('span','offen','chip warn'),' ',node('span',plural(q.options.length,'Alternative','Alternativen'),'meta'));else{answer.append(node('b',answerOf(q)));if(q.state==='default')answer.append(' ',node('span','Annahme','chip'))}
+      body.append(node('span',q.question,'q'),answer);head.append(body,node('span',open?'–':'+','sign'));item.append(head);
+      if(open){
+        const box=node('div',undefined,'catbody'),opts=node('div'),row=node('div',undefined,'own'),input=node('input');
+        opts.setAttribute('role',q.multi?'group':'radiogroup');opts.setAttribute('aria-label',q.question);opts.style.cssText='display:flex;flex-direction:column;gap:6px';
+        q.options.forEach((o,k)=>{
+          const b=button(undefined,'opt'+(q.multi?' multi':''),()=>{
+            if(!q.multi){applyAnswer(i,[k],'');return}
+            catPick=catPick.includes(k)?catPick.filter(x=>x!==k):[...catPick,k].sort();catalogUI();side().querySelectorAll('.catbody .opt')[k]?.focus({preventScroll:true});
+          }),label=node('span',undefined,'body');
+          b.setAttribute('role',q.multi?'checkbox':'radio');b.setAttribute('aria-checked',String(catPick.includes(k)));b.disabled=active;
+          const line=node('span',o+' ');if(suggest()&&q.defaults.includes(k))line.append(node('span','Standard','chip ok'));label.append(line);
+          b.append(label,node('span','✓','mark'));opts.append(b);
+        });
+        input.type='text';input.maxLength=500;input.value=catCustom;input.placeholder='Eigene Antwort';input.setAttribute('aria-label','Eigene Antwort zu: '+q.question);input.oninput=()=>{catCustom=input.value};
+        const text=()=>catCustom.trim().replace(/\s+/g,' '),ok=button('Übernehmen','btn small',()=>applyAnswer(i,q.multi||!text()?catPick:[],text()));
+        ok.disabled=active;input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();ok.click()}};
+        row.append(input,ok);box.append(opts,row);
+        if(q.multi)box.append(node('span','Mehrfachauswahl – mit „Übernehmen“ bestätigen.','meta'));
+        item.append(box);
+      }
+      out.append(item);
+    }
+  });
+  if(!cat.children.length)cat.append(node('p',s.questions.length?'Noch keine beantworteten Fragen.':'Noch keine Fragen. In Schritt 1 eine Idee eingeben und Fragen ableiten.','meta'));
+  if(!nOpen)pend.append(node('p','Keine offenen Entscheidungen.','meta'));
+  // Das Feld mit der gerade bearbeiteten Frage aufklappen (sie wechselt beim Beantworten das Feld)
+  const panel=side().querySelector('.catitem.open')?.closest('details');if(panel)panel.open=true;
+  if($('ai').checked&&s.spec.trim()){const more=button('+ Offene Entscheidungen aus der Spezifikation ableiten','link',deriveDecisions);more.style.marginTop='12px';more.disabled=active;pend.append(more)}
+}
+const side=()=>document.querySelector('#phase2 .side');
+function specNote(t,warn){$('specStatus').className=warn?'banner':'status';$('specStatus').textContent=t}
+// Offene Entscheidungen der Spezifikation als Fragen mit Alternativen in den Katalog holen (nur mit Claude)
+async function deriveDecisions(keepChange){
+  if(active||!$('ai').checked||!s.spec.trim())return;
+  if(s.questions.length>=40){specNote('Der Fragen-Katalog ist voll (40 Fragen).');return}
+  const rev=revision;lock(true,'Alternativen für offene Entscheidungen werden abgeleitet');catalogUI();specNote('Alternativen für offene Entscheidungen werden abgeleitet …');
+  let message='';
+  try{
+    const r=await call({mode:'decisions',spec:s.spec,project:s.project,questions:s.questions,ai:true});
+    if(rev!==revision)message='Eingaben geändert. Erneut starten.';
+    else{
+      const known=new Set(s.questions.map(q=>q.question.toLowerCase())),added=cleanQuestions(r.questions).filter(q=>!known.has(q.question.toLowerCase())).map(q=>({...q,state:'open',choice:[],custom:''}));
+      const before=s.questions.length;s.questions=[...s.questions,...added].slice(0,40);const n=s.questions.length-before;
+      if(n&&keepChange!==true)change=null;
+      message=n?plural(n,'offene Entscheidung','offene Entscheidungen')+' mit Alternativen in den Fragen-Katalog übernommen.':'Keine weiteren offenen Entscheidungen in der Spezifikation gefunden.';
+    }
+  }catch(e){message=e.message}finally{lock(false)}
+  renderAll();specNote(message);
+}
+// Antwort aus dem Katalog übernehmen und die Spezifikation nachziehen
+async function applyAnswer(i,choice,text){
+  const q=s.questions[i];if(!q||active)return;
+  if(!choice.length&&!text){$('specStatus').className='status';$('specStatus').textContent='Bitte eine Option wählen oder eine eigene Antwort eingeben.';return}
+  if(q.state==='decided'&&q.custom===text&&q.choice.join()===[...choice].join())return;
+  const was=answerOf(q)||'offen';s.last=i;catOpen=i;
+  await commitAnswers(s.questions.map((x,k)=>k===i?{...x,state:'decided',choice:[...choice],custom:text}:x),[i],()=>({title:q.question,detail:was+' → '+answerOf(s.questions[i])}));
+}
+// „Triff alle selbst“ / „Triff die unwichtigen selbst“: offene Entscheidungen mit ihrem Standard als Annahme übernehmen
+async function decideOpen(onlyMinor){
+  if(active)return;
+  let ids=s.questions.map((q,i)=>i).filter(i=>s.questions[i].state==='open');if(!ids.length)return;
+  if(onlyMinor){
+    lock(true,'Relevanz der offenen Entscheidungen wird eingeschätzt');catalogUI();
+    try{const relevant=new Set((await call({mode:'triage',idea:s.idea,project:s.project,questions:s.questions,ai:$('ai').checked,...frame()})).relevant);ids=ids.filter(i=>!relevant.has(i))}
+    catch(e){lock(false);catalogUI();specNote(e.message,true);return}
+    lock(false);
+    if(!ids.length){catalogUI();specNote('Alle offenen Entscheidungen sind als relevant eingestuft – sie bleiben bei dir.');return}
+  }
+  const set=new Set(ids),left=s.questions.filter(q=>q.state==='open').length-ids.length;catOpen=-1;
+  await commitAnswers(s.questions.map((q,i)=>set.has(i)?{...acceptDefault(q),auto:true}:q),ids,()=>({title:plural(ids.length,'Entscheidung','Entscheidungen')+' von SpecIt getroffen',detail:'als Annahme gekennzeichnet'+(left?' · '+plural(left,'relevante bleibt','relevante bleiben')+' bei dir':'')}));
+}
+// Geänderte Antworten übernehmen und die Spezifikation nachziehen; ids = geänderte Fragen, label = Text der Hinweisleiste
+async function commitAnswers(next,ids,label){
+  const prev={questions:s.questions,spec:s.spec,specSource:s.specSource,dirty:s.dirty},i=ids.length===1?ids[0]:-1;
+  s.questions=next;s.clicks++;revision++;change=null;
+  syncCat();if(s.active>=0)activate(s.active,false);
+  if(!prev.spec.trim()){renderAll();return}
+  const rev=revision,ai=$('ai').checked,base={idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,...frame()};
+  // Vollständig neu erzeugen nur, wo das den Entwurf nicht entwertet: nie bei von Hand geschriebenen Spezifikationen.
+  const regen=prev.specSource==='demo'||(prev.specSource==='claude'&&ai);
+  let md=null,source=prev.specSource,message='';
+  lock(true,'Spezifikation wird angepasst');renderAll();specNote('Spezifikation wird angepasst …');
+  try{
+    if(!prev.dirty)md=(await call({...base,mode:'revise',previous:prev.questions,index:i,spec:prev.spec,ai})).markdown??null;
+    if(md===null&&regen){const r=await call({...base,mode:'final',ai:prev.specSource==='claude'});md=r.markdown;source=r.source}
+  }catch(e){message=e.message}finally{lock(false)}
+  if(md!==null&&rev===revision){
+    s.spec=md;s.specSource=source;s.dirty=false;$('spec').value=md;specMode='view';
+    change={ids,...label(),prev,old:prev.spec,until:0,scroll:false};
+    renderAll();flash();
+    side().querySelector('.catitem.open')?.scrollIntoView({block:'nearest'});
+    // Eine neue Antwort kann neue offene Entscheidungen aufwerfen; auch die bekommen Alternativen.
+    if(source==='claude'&&ai&&s.autonomy<100)await deriveDecisions(true);
+  }else{
+    s.dirty=true;renderAll();
+    if(message){$('specStatus').className='banner';$('specStatus').textContent='⚠ Antwort übernommen, Spezifikation nicht angepasst: '+message}
+  }
+}
+// Vergleicht die Textbausteine der alten und neuen Spezifikation und markiert neue oder geänderte.
+const unitSel='h2,h3,h4,h5,h6,p,li,tr,pre';
+function unitText(e){if(e.tagName!=='LI')return e.tagName+e.textContent.trim();const c=e.cloneNode(true);for(const x of c.querySelectorAll('ul,ol'))x.remove();return 'LI'+c.textContent.trim()}
+function markChanges(view,oldSpec,show){
+  const box=node('div'),left=new Map(),hits=[];box.append(renderMarkdown(oldSpec,document));
+  for(const e of box.querySelectorAll(unitSel)){const t=unitText(e);left.set(t,(left.get(t)||0)+1)}
+  for(const e of view.querySelectorAll(unitSel)){const t=unitText(e),n=left.get(t)||0;if(n)left.set(t,n-1);else{hits.push(e);if(show)e.classList.add('changed')}}
+  let gone=0;for(const n of left.values())gone+=n;
+  return {hits,removed:Math.max(0,gone-hits.length)};
+}
+function flash(){
+  if(!change)return;
+  change.until=Date.now()+9000;change.scroll=true;clearTimeout(flashTimer);
+  flashTimer=setTimeout(()=>{for(const e of document.querySelectorAll('#specView .changed'))e.classList.remove('changed')},9000);
+  specUI();
+}
+function undoChange(){
+  if(!change||active)return;
+  const p=change.prev;s.questions=p.questions;s.spec=p.spec;s.specSource=p.specSource;s.dirty=p.dirty;revision++;change=null;
+  $('spec').value=s.spec;syncCat();if(s.active>=0)activate(s.active,false);renderAll();
+}
+function changeUI(view){
+  const bar=$('changeBar');bar.classList.toggle('hidden',!view||!change);
+  if(!view||!change)return;
+  const m=markChanges(view,change.old,Date.now()<change.until),what=node('span',undefined,'what'),acts=node('div',undefined,'actions');
+  what.append(node('b',change.title),' '+change.detail+' · '+(m.hits.length?plural(m.hits.length,'Stelle','Stellen')+' geändert':'keine sichtbare Änderung')+(m.removed?', '+m.removed+' entfernt':''));
+  if(m.hits.length)acts.append(button('Stellen zeigen','btn small',flash));
+  const close=button('×','btn small',()=>{change=null;renderAll()});close.setAttribute('aria-label','Hinweis schließen');
+  acts.append(button('Rückgängig','btn small',undoChange),close);bar.replaceChildren(what,acts);
+  if(change.scroll&&m.hits[0]){
+    change.scroll=false;const r=m.hits[0].getBoundingClientRect();
+    if(r.top<150||r.bottom>innerHeight-24)m.hits[0].scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  }
 }
 $('acceptAll').onclick=acceptAll;
 $('extraOpen').onclick=()=>{$('extraForm').classList.toggle('hidden');$('extraInput').focus()};
@@ -620,12 +928,27 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- Schritt 3 / 4: Status ---------- */
+function specUI(){
+  const edit=specMode==='edit';
+  $('modeView').setAttribute('aria-pressed',String(!edit));$('modeEdit').setAttribute('aria-pressed',String(edit));
+  $('spec').classList.toggle('hidden',!edit);$('specView').classList.toggle('hidden',edit);
+  if(change&&(change.ids.some(i=>!s.questions[i])||!s.spec.trim()))change=null;
+  if(edit){changeUI(null);return}
+  const view=$('specView');
+  if(s.spec.trim())view.replaceChildren(renderMarkdown(s.spec,document));
+  else view.replaceChildren(node('p','Noch keine Spezifikation. „Konzept generieren“ wählen oder über „Bearbeiten“ eine vorhandene Spezifikation einfügen.','placeholder'));
+  changeUI(view);
+}
+function setSpecMode(mode,focus){specMode=mode;specUI();if(focus)(mode==='edit'?$('spec'):$('modeEdit')).focus()}
+$('modeView').onclick=()=>setSpecMode('view');
+$('modeEdit').onclick=()=>setSpecMode('edit',true);
 function statuses(){
   $('specBadge').textContent=s.spec?(s.specSource==='demo'?'Demo-Entwurf':s.specSource==='claude'?'Claude-Entwurf':'Manuelle Spezifikation'):'Noch kein Entwurf';
   $('specStatus').textContent=s.spec&&s.dirty?'⚠ Eingaben geändert – Spezifikation prüfen/aktualisieren.':'';
   $('specStatus').className=s.spec&&s.dirty?'banner':'status';
   $('specCount').textContent=s.spec.length.toLocaleString('de-DE')+' / 50.000';
   $('specDownload').disabled=!s.spec;
+  if(specMode==='view')specUI();
   planUI();layoutNote();phasesUI();
 }
 function planUI(){
@@ -660,7 +983,25 @@ function planUI(){
 }
 
 /* ---------- Server ---------- */
-function lock(v){active=v;for(const id of ['derive','more','generate','plan'])$(id).disabled=v}
+// Sperrt die Aktionen und zeigt unter der Kopfzeile, dass und woran gerade gearbeitet wird (mit laufender Sekundenanzeige),
+// damit eine längere Claude-Anfrage nicht wie ein Hänger aussieht.
+let workTimer=0,showTimer=0,workSince=0;
+function working(text){
+  const bar=$('working');clearInterval(workTimer);clearTimeout(showTimer);
+  if(!text){bar.classList.add('hidden');document.title=pageTitle;return}
+  const who=$('ai').checked&&!text.startsWith('Stitch')?'Claude arbeitet':'SpecIt arbeitet';workSince=Date.now();
+  $('workingText').textContent=who+' · '+text+' …';
+  const tick=()=>{
+    const sec=Math.round((Date.now()-workSince)/1000),hint=sec>=8?'Das kann bis zu einer Minute oder länger dauern. Bitte das Fenster geöffnet lassen.':'Bitte das Fenster geöffnet lassen.';
+    $('workingTime').textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+    if($('workingHint').textContent!==hint)$('workingHint').textContent=hint;
+  };
+  // Erst nach einem Augenblick einblenden: Antworten ohne KI kommen sofort und sollen nicht aufblitzen.
+  tick();workTimer=setInterval(tick,1000);showTimer=setTimeout(()=>{bar.classList.remove('hidden');document.title='⏳ '+who+' – '+pageTitle},250);
+}
+function lock(v,text){active=v;for(const id of ['derive','more','generate','plan'])$(id).disabled=v;working(v?text||'Anfrage läuft':'')}
+// Schließen oder Neuladen während einer laufenden Anfrage nur nach Rückfrage des Browsers
+addEventListener('beforeunload',e=>{if(active||layoutBusy)e.preventDefault()});
 async function post(url,data){
   const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data)});
   const x=await r.json();if(!r.ok)throw Error(x.error||'Anfrage fehlgeschlagen.');return x;
@@ -670,40 +1011,43 @@ async function generate(){
   if(active)return;
   const note=t=>{$('specStatus').className='status';$('specStatus').textContent=t};
   if(!s.idea.trim()){note('Bitte zuerst eine Idee eingeben oder eine Spezifikation einfügen.');return}
-  const rev=revision;lock(true);note('Spezifikation wird erstellt …');
+  const rev=revision;lock(true,'Spezifikation wird erstellt');note('Spezifikation wird erstellt …');
   let message='';
   try{
-    const r=await call({mode:'final',idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked});
+    const r=await call({mode:'final',idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()});
     if(rev!==revision)message='Eingaben geändert. Erneut starten.';
-    else{s.spec=r.markdown;s.specSource=r.source;s.dirty=false;$('spec').value=s.spec;save()}
+    else{s.spec=r.markdown;s.specSource=r.source;s.dirty=false;change=null;$('spec').value=s.spec;specMode='view';save()}
   }catch(e){message=e.message}finally{lock(false)}
   renderAll();if(message)note(message);
+  // Was Claude in der Spezifikation offen lässt, gleich als Fragen mit Alternativen anbieten
+  // (nicht im Auto-Modus: dort entscheidet Claude sie selbst und es wird nicht rückgefragt)
+  else if(s.specSource==='claude'&&$('ai').checked&&s.autonomy<100)await deriveDecisions();
 }
 $('generate').onclick=generate;
+$('pasteSpec').onclick=()=>{setPhase(2);setSpecMode('edit',true)};
 $('project').oninput=e=>{s.project=e.target.value;touched();statuses();save()};
 function aiUI(){
   const on=$('ai').checked;
-  $('mode').textContent=on?'Claude aktiv':available?'Demo-Modus · Claude verfügbar':'Demo-Modus';
-  $('aiHintText').textContent=on?'Claude aktiv: Die Fragen werden auf deine Idee zugeschnitten'+(provider==='claude-code'?' (über dein lokales Claude Code).':'.')
-    :available?'Demo-Modus: allgemeiner Fragenkatalog, für jede Idee gleich. Mit Claude werden die Fragen auf deine Idee zugeschnitten.'
-    :statusLoaded?'Kein Claude-Zugang gefunden. Entweder ANTHROPIC_API_KEY in .env setzen oder Claude Code installieren und anmelden, dann SpecIt neu starten. Bis dahin: Demo mit allgemeinem Fragenkatalog.':'Demo-Modus: allgemeiner Fragenkatalog.';
-  $('aiHintOn').classList.toggle('hidden',on||!available);
+  $('mode').textContent=on?'Claude aktiv':available?'Demo-Modus · Claude verfügbar':statusLoaded?'Demo-Modus · kein Claude-Zugang':'Demo-Modus';
+  $('mode').title=on?'Fragen und Spezifikation werden von Claude auf die Idee zugeschnitten'+(provider==='claude-code'?' (über das lokale Claude Code).':'.')
+    :available?'Allgemeiner Fragenkatalog, für jede Idee gleich. Mit Claude werden die Fragen auf die Idee zugeschnitten.'
+    :'Kein Claude-Zugang gefunden: ANTHROPIC_API_KEY in .env setzen oder Claude Code installieren und anmelden, dann SpecIt neu starten.';
+  ideaUI();
   $('privacy').textContent=on?'Claude aktiv: Projektdaten werden an Anthropic gesendet. Keine vertraulichen Daten eingeben.':'Demo ohne KI. Bei aktivem Claude werden Projektdaten an Anthropic gesendet. Keine vertraulichen Daten eingeben.';
   gaugeUI();
 }
 function setAi(on){
-  if(on&&!available){$('ai').checked=false;aiUI();setPhase(0);$('aiHint').scrollIntoView({block:'center'});$('aiHint').classList.add('banner');return}
-  $('aiHint').classList.remove('banner');$('ai').checked=on;try{localStorage.setItem('specit-ai',on?'1':'0')}catch{}
+  if(on&&!available){$('ai').checked=false;aiUI();$('mode').textContent='Kein Claude-Zugang – siehe README';return}
+  $('ai').checked=on;try{localStorage.setItem('specit-ai',on?'1':'0')}catch{}
   aiUI();
 }
 $('ai').onchange=()=>setAi($('ai').checked);
-$('aiHintOn').onclick=()=>setAi(true);
-$('spec').oninput=e=>{revision++;s.spec=e.target.value;s.specSource='manual';s.dirty=false;statuses();$('effortSide').textContent=effortText();save()};
+$('spec').oninput=e=>{revision++;change=null;s.spec=e.target.value;s.specSource='manual';s.dirty=false;statuses();$('effortSide').textContent=effortText();save()};
 for(const id of ['repo','agent'])$(id).oninput=e=>{revision++;s[id]=e.target.value;statuses();save()};
 $('plan').onclick=async()=>{
   if(active)return;
   if(!s.spec.trim()||s.dirty){$('planStatus').textContent='Bitte eine aktuelle Spezifikation erzeugen oder manuell aktualisieren.';return}
-  const rev=revision,context=ctx();lock(true);$('planStatus').textContent='Arbeitsaufträge werden erstellt …';
+  const rev=revision,context=ctx();lock(true,'Arbeitsaufträge werden erstellt');$('planStatus').textContent='Arbeitsaufträge werden erstellt …';
   try{
     const r=await call({mode:'plan',spec:s.spec,...context,ai:$('ai').checked});
     if(rev!==revision){$('planStatus').textContent='Eingaben geändert. Erneut starten.';return}
@@ -743,7 +1087,7 @@ $('layoutRun').onclick=async()=>{
   if(!Number.isInteger(count)||count<1||count>5){status.textContent='Bitte Anzahl Varianten zwischen 1 und 5 angeben.';$('layoutCount').focus();return}
   if(!s.spec.trim()||s.dirty){status.textContent='Bitte zuerst eine aktuelle Spezifikation erzeugen.';return}
   const spec=s.spec,project=s.project,deviceType=s.layoutDevice;
-  layoutBusy=true;$('layoutRun').disabled=true;
+  layoutBusy=true;$('layoutRun').disabled=true;working('Stitch erzeugt Layouts');
   try{
     if(!s.layout){
       status.textContent='Stitch-Projekt wird angelegt …';
@@ -763,7 +1107,7 @@ $('layoutRun').onclick=async()=>{
     }
     layoutBusy=false;layoutUI();if(s.plan)planUI();
   }catch(e){layoutBusy=false;layoutUI();status.textContent=e.message}
-  finally{layoutBusy=false;$('layoutRun').disabled=false}
+  finally{layoutBusy=false;$('layoutRun').disabled=false;if(!active)working('')}
 };
 
 /* ---------- Export ---------- */
@@ -774,14 +1118,23 @@ $('json').onclick=()=>{if(s.plan&&!stale())download('tasks.json',JSON.stringify(
 $('backlog').onclick=()=>{if(s.plan&&!stale())download('BACKLOG.md',renderBacklog(s.plan,s.planSpec,exportCtx()))};
 $('copyAll').onclick=()=>{if(s.plan&&!stale())copyText(renderBacklog(s.plan,s.planSpec,exportCtx()),$('planStatus'))};
 
-function replaceState(next){revision++;next.layoutOn=s.layoutOn;next.layoutCount=s.layoutCount;next.layoutDevice=s.layoutDevice;s=next;pick=[];custom='';customOpen=false;renderAll()}
-$('reset').onclick=()=>{if((s.spec||s.plan||s.idea.trim()||s.questions.length)&&!confirm('Aktuellen Entwurf verwerfen und neu beginnen?'))return;replaceState(blank());$('idea').focus()};
+function replaceState(next){revision++;next.autonomy=s.autonomy;next.layoutOn=s.layoutOn;next.layoutCount=s.layoutCount;next.layoutDevice=s.layoutDevice;s=next;pick=[];custom='';customOpen=false;change=null;catOpen=-1;renderAll()}
+// Zurücksetzen mit einem Klick: alle Angaben und Antworten leeren, ohne Rückfrage – dafür kurz widerrufbar.
+let undoTimer=0;
+$('reset').onclick=()=>{
+  const before=s,fresh=blank(),toast=$('toast');
+  replaceState(fresh);s.autonomy=blank().autonomy;s.phase=0;catGroups.clear();renderAll();window.scrollTo({top:0});$('idea').focus();
+  const undo=button('Rückgängig','btn small',()=>{clearTimeout(undoTimer);toast.classList.add('hidden');revision++;s=before;change=null;catOpen=-1;if(s.active>=0)activate(s.active,false);renderAll()});
+  toast.replaceChildren(node('span','Alles zurückgesetzt.'),undo);toast.classList.remove('hidden');
+  clearTimeout(undoTimer);undoTimer=setTimeout(()=>toast.classList.add('hidden'),20000);
+};
 
 function renderAll(){
   $('project').value=s.project;if($('idea').value!==s.idea)$('idea').value=s.idea;
   if($('spec').value!==s.spec)$('spec').value=s.spec;
+  $('autonomy').value=s.autonomy/20;if(Number($('durValue').value)!==s.durValue)$('durValue').value=s.durValue;$('durUnit').value=s.durUnit;
   $('repo').value=s.repo;$('agent').value=s.agent;$('layoutCount').value=s.layoutCount;$('layoutDevice').value=s.layoutDevice;
-  ideaUI();questionsUI();gaugeUI();statuses();layoutUI();save();
+  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();save();
 }
 if(s.phase===1&&s.active<0)activate(firstOpen(),false);else if(s.active>=0)activate(s.active,false);
 renderAll();
@@ -793,6 +1146,8 @@ fetch('/api/status').then(r=>r.json()).then(r=>{
   layoutUI();
 }).catch(()=>{$('mode').textContent='Server nicht erreichbar'});
 aiUI();
+// Lebenszeichen: Solange diese Verbindung steht, läuft der Server. Wird die letzte Seite geschlossen, beendet er sich.
+new EventSource('/api/alive');
 </script>
 </body>
 </html>
