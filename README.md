@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo-specit.svg" alt="SpecIt logo" width="240">
+</p>
+
 # SpecIt.
 
 **From idea to actionable agent tasks.**
