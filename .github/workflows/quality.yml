@@ -31,3 +31,30 @@ jobs:
           SPECIT_NO_CLAUDE_CODE: '1'
           SPECIT_NO_CODEX: '1'
         run: npm test
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated browser test tools
+        run: npm install --no-save --ignore-scripts playwright@1.57.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Full desktop and mobile journey
+        env:
+          SPECIT_NO_CLAUDE_CODE: '1'
+          SPECIT_NO_CODEX: '1'
+        run: node scripts/browser-smoke.mjs
+      - name: Preserve review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-visual-review
+          path: .artifacts/studio
+          if-no-files-found: ignore
