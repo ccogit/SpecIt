@@ -8,6 +8,17 @@ Generischer Spec-Driven-Development-Assistent. Pair Pressure ist nur ein auswäh
 
 Node.js 22+; keine npm-Abhängigkeiten.
 
+### Windows (Doppelklick)
+
+1. Repository auschecken (`git clone https://github.com/ccogit/SpecIt.git`) oder ZIP entpacken.
+2. Falls noch nicht vorhanden, [Node.js 22 oder neuer](https://nodejs.org/) installieren.
+3. Im Projektordner `start-windows.cmd` doppelklicken. Das Skript prüft Node.js, lädt eine vorhandene `.env`, startet den lokalen Server und öffnet nach erfolgreichem Start den Standardbrowser. Ohne `.env` ist der Demo-Modus verfügbar, sofern kein API-Schlüssel in der Umgebung gesetzt ist.
+4. Das Konsolenfenster geöffnet lassen; mit `Strg+C` wird der Server beendet. Bei einem Startfehler bleibt die Fehlermeldung sichtbar. Der Standardport ist 3000 und kann über `PORT` in `.env` angepasst werden.
+
+Es sind weder Administratorrechte noch `npm install` noch eine Änderung der PowerShell-Ausführungsrichtlinie notwendig.
+
+### Terminal (plattformübergreifend)
+
 ```bash
 git clone https://github.com/ccogit/SpecIt.git
 cd SpecIt
