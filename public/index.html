@@ -1013,6 +1013,7 @@ body.merged.decqa #decDerive{margin-top:12px}
         <div class="spread"><span class="eyebrow">Skizze · live aus deiner Idee</span><span class="actions"><span class="meta" id="sketchNote"></span><button id="sketchPlay" class="btn small hidden" type="button" title="Zeigt, wie Agenten die Bereiche der Skizze bauen würden: erst das Grundgerüst, dann parallel.">▶ Bau-Vorschau</button><button id="sketchDevice" class="btn small hidden" type="button" aria-pressed="false">▯ Handy</button><button id="sketchRefine" class="btn small hidden" type="button" title="Claude zeichnet ohnehin live mit, sobald du einen Moment nichts änderst (verbraucht Claude-Kontingent). Hier beginnt er sofort von vorn.">✦ Von Claude zeichnen lassen</button></span></div>
         <div id="sketch" class="sketch"></div>
         <div id="sketchPalette" class="actions sketchpalette hidden"></div>
+        <details id="liveForgeQuick" class="lfq" open hidden><summary><span class="eyebrow">Bedienbarer Entwurf · LiveForge</span><span class="meta">Lokal · ohne KI-Aufruf</span></summary><div class="lfq-body" id="liveForgeBody"></div></details>
         <details class="promptview hidden" id="promptView"><summary><span class="eyebrow">Wirksamer Prompt</span><span class="meta" id="promptMeta"></span></summary><div id="promptBody" class="promptbody"></div></details>
       </div>
       <div class="spread">
@@ -1285,6 +1286,7 @@ applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?
 import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate} from '/planner.mjs';
 import { modulators, cleanSvg, cleanLogos,topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
+import {mountLivePreview} from '/liveforge.mjs';
 import {balance} from '/balance.mjs';
 
 const $=id=>document.getElementById(id),pageTitle=document.title;
@@ -1395,7 +1397,16 @@ let catOpen=-1,catPick=[],catCustom='',change=null;
 // Aufgeklappte Unterrubriken der beiden Felder: 'a'+Thema (beantwortet) bzw. 'o'+Thema (offen)
 const catGroups=new Set();
 
-function save(){try{localStorage.setItem('specit-v3',JSON.stringify(s))}catch{$('busy').textContent='Lokales Speichern nicht möglich.'}}
+// Local preview is deliberately independent of Claude, persistence and the SVG stream.
+let quickPreview=null,quickPhone=false;
+function refreshLiveForge(phone){
+  if(typeof phone==='boolean')quickPhone=phone;
+  if(s.phase!==0)return;
+  const root=$('liveForgeBody');if(!root)return;
+  if(!quickPreview)quickPreview=mountLivePreview(root);
+  quickPreview.update(s,{phone:quickPhone});
+}
+function save(){try{localStorage.setItem('specit-v3',JSON.stringify(s))}catch{$('busy').textContent='Lokales Speichern nicht möglich.'}refreshLiveForge()}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
 function button(text,cls,onclick){const b=node('button',text,cls);b.type='button';b.onclick=onclick;return b}
 const words=t=>(t.trim().match(/\S+/g)||[]).length;
@@ -2992,6 +3003,7 @@ async function runAuto(key,pass){
   finally{clearTimeout(job.timer);if(sketchAuto===job)sketchAuto=null;sketchUI()}
 }
 function sketchUI(){
+  refreshLiveForge(sketchPhone);
   const box=$('sketch'),idea=s.idea.trim(),note=$('sketchNote');
   $('sketchBox').classList.toggle('empty',!idea);promptUI();
   const tools=[$('sketchPlay'),$('sketchDevice'),$('sketchPalette')];
