@@ -434,6 +434,14 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
         <div class="notebox"><span class="eyebrow">Dein Aufwand</span><p id="effortSide" class="mono" style="font-size:12px;margin-top:6px"></p></div>
       </div>
     </div>
+    <section class="card" style="padding:20px" aria-labelledby="reuseTitle">
+      <div class="spread" style="gap:12px;flex-wrap:wrap">
+        <div><h2 id="reuseTitle">Open-Source-Wiederverwendung</h2><p class="meta">Geprüfte GitHub-Treffer, mögliche Funktionsabdeckung, Lizenz, Empfehlung und Risiken.</p></div>
+        <button id="reuseRun" class="btn" type="button">GitHub-Recherche starten</button>
+      </div>
+      <p id="reuseStatus" class="status" role="status"></p>
+      <div id="reuseOutput" style="display:grid;gap:12px;margin-top:12px"></div>
+    </section>
     <div class="spread"><button class="btn" type="button" data-phase="1">← Fragen</button><button id="toTasks" class="btn" type="button" data-phase="3">Weiter zu Agent Tasks →</button></div>
   </div>
 
@@ -508,7 +516,7 @@ const levels=[
   ['entscheidet alles selbst','Auto-Modus ohne Rückfragen: Alles wird als Annahme gekennzeichnet und die Spezifikation direkt erstellt.']
 ];
 // durValue/durUnit: Ziel-Entwicklungsdauer
-const blank=()=>({autonomy:40,durValue:'',durUnit:'Tage',project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({autonomy:40,durValue:'',durUnit:'Tage',project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null,reuse:null,reuseSpec:''});
 
 let s=blank();
 try{
@@ -516,6 +524,7 @@ try{
   if(saved&&typeof saved.idea==='string'&&typeof saved.spec==='string'){
     s={...s,...saved,questions:cleanQuestions(saved.questions||[]),extras:cleanExtras(saved.extras)};
     if(s.plan)s.plan=validatePlan(s.plan);
+    if(!s.reuse||!Array.isArray(s.reuse.projects)||typeof s.reuseSpec!=='string')s.reuse=null;
     if(![0,1,2,3].includes(s.phase))s.phase=0;
     if(!Number.isInteger(s.active)||s.active>=s.questions.length)s.active=-1;
     if(!Number.isInteger(s.clicks)||s.clicks<0)s.clicks=0;
@@ -545,7 +554,8 @@ function button(text,cls,onclick){const b=node('button',text,cls);b.type='button
 const words=t=>(t.trim().match(/\S+/g)||[]).length;
 const digest=t=>{let h=5381;for(let i=0;i<t.length;i++)h=(h*33^t.charCodeAt(i))>>>0;return t.length+':'+h};
 const plural=(n,one,many)=>n+' '+(n===1?one:many);
-function ctx(){return {repo:s.repo,agent:s.agent}}
+function selectedReuse(){return s.reuse&&s.reuseSpec===digest(s.spec)&&!s.dirty?s.reuse.projects.filter(p=>p.included).map(p=>({url:p.url,name:p.name,license:p.license,functions:p.functions})):[]}
+function ctx(){return {repo:s.repo,agent:s.agent,reuse:selectedReuse()}}
 // Rahmen für jede Anfrage: Autonomiegrad und Ziel-Entwicklungsdauer als Text („3 Tage“)
 const duration=()=>s.durValue?s.durValue+' '+(s.durValue===1?{Stunden:'Stunde',Tage:'Tag',Wochen:'Woche'}[s.durUnit]:s.durUnit):'';
 const frame=()=>({autonomy:s.autonomy,duration:duration()});
@@ -870,6 +880,7 @@ async function commitAnswers(next,ids,label){
     side().querySelector('.catitem.open')?.scrollIntoView({block:'nearest'});
     // Eine neue Antwort kann neue offene Entscheidungen aufwerfen; auch die bekommen Alternativen.
     if(source==='claude'&&ai&&s.autonomy<100)await deriveDecisions(true);
+    if(source==='claude'&&ai&&s.spec.trim()&&!s.dirty)await researchReuse();
   }else{
     s.dirty=true;renderAll();
     if(message){$('specStatus').className='banner';$('specStatus').textContent='⚠ Antwort übernommen, Spezifikation nicht angepasst: '+message}
@@ -949,7 +960,7 @@ function statuses(){
   $('specCount').textContent=s.spec.length.toLocaleString('de-DE')+' / 50.000';
   $('specDownload').disabled=!s.spec;
   if(specMode==='view')specUI();
-  planUI();layoutNote();phasesUI();
+  reuseUI();planUI();layoutNote();phasesUI();
 }
 function planUI(){
   const p=s.plan,old=!!stale();
@@ -999,7 +1010,7 @@ function working(text){
   // Erst nach einem Augenblick einblenden: Antworten ohne KI kommen sofort und sollen nicht aufblitzen.
   tick();workTimer=setInterval(tick,1000);showTimer=setTimeout(()=>{bar.classList.remove('hidden');document.title='⏳ '+who+' – '+pageTitle},250);
 }
-function lock(v,text){active=v;for(const id of ['derive','more','generate','plan'])$(id).disabled=v;working(v?text||'Anfrage läuft':'')}
+function lock(v,text){active=v;for(const id of ['derive','more','generate','plan','reuseRun'])$(id).disabled=v;working(v?text||'Anfrage läuft':'')}
 // Schließen oder Neuladen während einer laufenden Anfrage nur nach Rückfrage des Browsers
 addEventListener('beforeunload',e=>{if(active||layoutBusy)e.preventDefault()});
 async function post(url,data){
@@ -1022,6 +1033,7 @@ async function generate(){
   // Was Claude in der Spezifikation offen lässt, gleich als Fragen mit Alternativen anbieten
   // (nicht im Auto-Modus: dort entscheidet Claude sie selbst und es wird nicht rückgefragt)
   else if(s.specSource==='claude'&&$('ai').checked&&s.autonomy<100)await deriveDecisions();
+  if(!message&&s.specSource==='claude'&&$('ai').checked&&s.spec.trim()&&!s.dirty)await researchReuse();
 }
 $('generate').onclick=generate;
 $('pasteSpec').onclick=()=>{setPhase(2);setSpecMode('edit',true)};
@@ -1054,6 +1066,47 @@ $('plan').onclick=async()=>{
     s.plan=validatePlan(r.plan);s.planSource=r.source;s.planSpec=s.spec;s.planContext=context;statuses();save();
   }catch(e){$('planStatus').textContent=e.message}finally{lock(false)}
 };
+
+
+/* ---------- Reuse-first: Recherche nur mit echten GitHub-Daten und expliziter Auswahl ---------- */
+let reuseBusy=false;
+function reuseUI(){
+ const output=$('reuseOutput');output.replaceChildren();
+ const current=s.reuse&&s.reuseSpec===digest(s.spec)&&!s.dirty;
+ $('reuseRun').disabled=active||reuseBusy||!s.spec.trim()||s.dirty;
+ if(!s.spec.trim()){$('reuseStatus').textContent='Die Recherche startet nach Erstellung einer Spezifikation.';return}
+ if(!current){$('reuseStatus').textContent='Keine aktuelle Recherche. Eine geänderte Spezifikation erfordert eine neue Bewertung.';return}
+ const r=s.reuse;
+ $('reuseStatus').textContent=r.projects.length+' bewertete GitHub-Kandidaten.'+(r.warning?' '+r.warning:'')+(r.failures?.length?' Suchfehler: '+r.failures.join('; '):'');
+ for(const p of r.projects){
+   const card=node('article',undefined,'notebox');card.style.padding='16px';
+   const top=node('div',undefined,'spread');top.style.gap='8px';top.style.flexWrap='wrap';
+   const link=node('a',p.name||p.url);link.href=p.url;link.target='_blank';link.rel='noopener noreferrer';
+   top.append(link,node('span',p.decision,'chip'));
+   const meta=node('p','Lizenz: '+p.license+' · Sprache: '+(p.language||'unbekannt')+' · letzte Code-Aktivität: '+(p.updated||'unbekannt'),'meta');
+   const features=node('p','Mögliche Funktionsabdeckung: '+p.functions.join('; '));
+   const reason=node('p','Bewertung: '+(p.reason||'Weitergehende Prüfung erforderlich.'),'meta');
+   const risks=node('p','Risiken / Prüfbedarf: '+(p.risks||'Lizenz, Sicherheit, Funktionsfähigkeit und Passung prüfen.'),'meta');
+   const choice=node('label',undefined,'meta');choice.style.display='flex';choice.style.gap='8px';choice.style.alignItems='center';
+   const checkbox=node('input');checkbox.type='checkbox';checkbox.checked=!!p.included;
+   checkbox.onchange=()=>{p.included=checkbox.checked;revision++;statuses();save()};
+   choice.append(checkbox,document.createTextNode('Zur Überprüfung in die Agent-Tasks übernehmen'));
+   card.append(top,meta,features,reason,risks,choice);output.append(card);
+ }
+}
+async function researchReuse(){
+ if(reuseBusy||active||!s.spec.trim()||s.dirty)return;
+ if(!$('ai').checked){$('reuseStatus').textContent='Recherche und KI-Bewertung benötigen Claude. Demo erfindet keine Treffer.';return}
+ const rev=revision,spec=s.spec;reuseBusy=true;$('reuseRun').disabled=true;$('reuseStatus').textContent='GitHub-Recherche läuft …';
+ working('Open-Source-Projekte werden recherchiert');
+ try{
+   const result=await post('/api/reuse',{spec});
+   if(rev!==revision||spec!==s.spec){$('reuseStatus').textContent='Die Spezifikation wurde geändert; bitte Recherche erneut starten.';return}
+   s.reuse=result;s.reuseSpec=digest(spec);save();reuseUI();
+ }catch(e){$('reuseStatus').textContent='Recherche unvollständig: '+e.message+'. Daraus darf keine Neuentwicklungspflicht abgeleitet werden.'}
+ finally{reuseBusy=false;working('');$('reuseRun').disabled=active||!s.spec.trim()||s.dirty}
+}
+$('reuseRun').onclick=researchReuse;
 
 /* ---------- Stitch-Layouts ---------- */
 function layoutNote(){

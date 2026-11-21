@@ -3,6 +3,9 @@ import { readFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { validatePlan, demoPlan } from './planner.mjs';
+import { withSkills, skillStages } from './skills.mjs';
+import { validateTraceability } from './traceability.mjs';
+import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
 import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant } from './interview.mjs';
 import { withToc } from './markdown.mjs';
 import { stitchKey, createProject, generateLayout, generateVariants, downloadFile, isProjectId, isScreenId, isFileName, variantCount, device } from './stitch.mjs';
@@ -49,7 +52,7 @@ function validate(b){
  }
  if(b.mode==='plan'){
   if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
-  return {mode:b.mode,ai:b.ai===true,spec:b.spec,repo:String(b.repo||'').slice(0,500),agent:String(b.agent||'').slice(0,100)};
+  return {mode:b.mode,ai:b.ai===true,spec:b.spec,repo:String(b.repo||'').slice(0,500),agent:String(b.agent||'').slice(0,100),reuse:cleanSelections(b.reuse)};
  }
  if(typeof b.idea!=='string'||b.idea.length>2000)throw Error('Ungültige Idee.');
  if(!b.idea.trim())throw Error('Bitte zuerst die Idee in einem Satz beschreiben.');
@@ -81,28 +84,36 @@ async function claude(b){
  if(b.mode==='revise'){
   // Nur Ersetzungen anfordern statt das Dokument neu schreiben zu lassen; passt eine nicht, entscheidet der Browser (null).
   const changes=b.changed.map(i=>{const q=b.questions[i];return {topic:topics[q.topic],question:q.question,options:q.options,before:answerOf(b.previous[i])||'(offen)',after:answerOf(q)||'(offen)',assumption:q.state==='default'}});
-  const out=await ask(revisePrompt,{project:b.project,idea:b.idea,...(b.duration?{targetDuration:b.duration}:{}),changes,spec:b.spec},8000);
+  const out=await ask(withSkills('revise',revisePrompt),{project:b.project,idea:b.idea,...(b.duration?{targetDuration:b.duration}:{}),changes,spec:b.spec},8000);
   // Nach den Ersetzungen das Inhaltsverzeichnis neu bilden: Überschriften können sich geändert haben.
   try{const md=applyEdits(b.spec,parseJson(out).edits);return {markdown:md===null?null:withToc(md)}}catch{return {markdown:null}}
  }
  if(b.mode==='triage'){
   // Welche offenen Entscheidungen muss der Mensch treffen? id = Position in der Fragenliste.
   const open=b.questions.map((q,id)=>({id,topic:topics[q.topic],question:q.question,options:q.options,default:q.defaults.map(i=>q.options[i]).join('; '),state:q.state})).filter(q=>q.state==='open').map(({state,...q})=>q);
-  let parsed;try{parsed=parseJson(await ask(triagePrompt,{project:b.project,idea:b.idea,open},1500))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
+  let parsed;try{parsed=parseJson(await ask(withSkills('triage',triagePrompt),{project:b.project,idea:b.idea,open},1500))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
   const ids=new Set(open.map(q=>q.id));
   if(!Array.isArray(parsed.relevant))throw Error('Ungültiges Antwortformat.');
   return {source:'claude',relevant:[...new Set(parsed.relevant.filter(i=>ids.has(i)))]};
  }
  const more=b.mode==='questions'&&b.questions.length>0,decisions=b.mode==='decisions';
- const instruction=b.mode==='plan'?planPrompt:decisions?decisionPrompt:b.mode==='questions'?questionPrompt(more):'Erstelle eine verständliche Markdown-Spezifikation mit Ziel/Nicht-Zielen, Nutzern, priorisierten Anforderungen, Regeln, UX, Architektur und Schnittstellen, Qualität, Betrieb, Risiken, Akzeptanzkriterien und offenen Entscheidungen. Antworten mit state=decided sind bestätigte Vorgaben; state=default sind übernommene Standards und als Annahmen zu kennzeichnen; state=open sind offene Entscheidungen. Widersprüche benennen.'+framePrompt(b.autonomy,b.duration);
+ const instruction=b.mode==='plan'?planPrompt+' Berücksichtige nur ausdrücklich ausgewählte Open-Source-Optionen als zu prüfende Integrationskandidaten. Prüfe vor Übernahme Code, Lizenz, Wartung und Sicherheit anhand eines Audit/PoC. Nicht ausgewählte Vorschläge sind keine Vorgabe.':decisions?decisionPrompt:b.mode==='questions'?questionPrompt(more):'Erstelle eine verständliche Markdown-Spezifikation mit Ziel/Nicht-Zielen, Nutzern, priorisierten Anforderungen, Regeln, UX, Architektur und Schnittstellen, Qualität, Betrieb, Risiken, Akzeptanzkriterien und offenen Entscheidungen. Antworten mit state=decided sind bestätigte Vorgaben; state=default sind übernommene Standards und als Annahmen zu kennzeichnen; state=open sind offene Entscheidungen. Widersprüche benennen.'+framePrompt(b.autonomy,b.duration);
  const scope=b.mode==='questions'&&b.duration?' Die Ziel-Entwicklungsdauer (targetDuration, reine Entwicklungszeit mit KI und Coding-Agenten) begrenzt den Umfang: Wähle Standards, die in dieser Zeit umsetzbar sind.':'';
- const out=await ask(instruction+scope,decisions?{project:b.project,asked:b.questions.map(q=>q.question),spec:b.spec}:brief(b),b.mode==='questions'||decisions?3500:b.mode==='plan'?10000:5000);
+ const out=await ask(withSkills(b.mode,instruction+scope),decisions?{project:b.project,asked:b.questions.map(q=>q.question),spec:b.spec}:brief(b),b.mode==='questions'||decisions?3500:b.mode==='plan'?10000:5000);
  if(b.mode==='final')return {source:'claude',markdown:withToc(out)};
  let parsed;try{parsed=parseJson(out)}catch{throw Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.')}
- if(b.mode==='plan')return {source:'claude',plan:validatePlan(parsed)};
+ if(b.mode==='plan')return {source:'claude',plan:validateTraceability(b.spec,validatePlan(parsed))};
  if(!Array.isArray(parsed.questions))throw Error('Ungültiges Frageformat.');
  const asked=new Set(b.questions.map(q=>q.question.toLowerCase()));
  return {source:'claude',questions:cleanQuestions(parsed.questions).filter(q=>!asked.has(q.question.toLowerCase())).map(q=>({...q,state:'open',choice:[],custom:''})).slice(0,decisions?12:more?5:14)};
+}
+async function discoverReuse(b){
+ const queries=parseQueries(parseJson(await ask(withSkills('reuse',proposedQueryInstruction()),{spec:b.spec},1000)));
+ if(!queries.length)throw Error('Keine geeigneten GitHub-Suchbegriffe ableitbar.');
+ const found=await searchRepositories(queries);
+ if(!found.candidates.length)return {source:'github',queries,projects:[],failures:found.failures,warning:'Keine verifizierbaren Treffer; das ist kein Beleg, dass Neuentwicklung notwendig ist.'};
+ const ranked=parseJson(await ask(withSkills('reuse',rankingInstruction()),{spec:b.spec,candidates:found.candidates},4500));
+ return {source:'github',queries,projects:validateReuseAnalysis(ranked,found.candidates,b.spec),failures:found.failures};
 }
 function validateLayout(b){
  if(!b||!['project','generate','variants'].includes(b.action))throw Error('Ungültige Layout-Aktion.');
@@ -142,7 +153,7 @@ http.createServer(async(req,res)=>{
   return res.end(req.url==='/'?html:modules[req.url]);
  }
  if(req.method==='GET'&&req.url==='/api/alive')return alive(req,res);
- if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,stitch:!!stitchKey()});
+ if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,stitch:!!stitchKey(),skills:skillStages});
  if(req.method==='GET'&&req.url.startsWith('/api/layout/file?')){
   const query=new URL(req.url,'http://'+host).searchParams,name=query.get('name');
   if(!stitchKey()||!isFileName(name))return send(res,400,{error:'Ungültige Stitch-Datei.'});
@@ -153,7 +164,7 @@ http.createServer(async(req,res)=>{
    return res.end(file.body);
   }catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}
  }
- if(req.method!=='POST'||!['/api/spec','/api/layout'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
+ if(req.method!=='POST'||!['/api/spec','/api/layout','/api/reuse'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
  if(!['http://'+host+':'+port,'http://localhost:'+port].includes(req.headers.origin)||!String(req.headers['content-type']).startsWith('application/json'))return send(res,403,{error:'Nur lokale Anfragen erlaubt.'});
  let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>500000)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
  if(req.url==='/api/layout'){
@@ -161,6 +172,12 @@ http.createServer(async(req,res)=>{
   if(!stitchKey())return send(res,503,{error:'Kein Stitch API-Schlüssel konfiguriert.'});
   if(designing)return send(res,429,{error:'Eine Layout-Erstellung läuft bereits.'});
   designing=true;try{return send(res,200,await layout(job))}catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}finally{designing=false}
+ }
+ if(req.url==='/api/reuse'){
+  let spec;try{const b=JSON.parse(raw);if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Gültige Spezifikation erforderlich.');spec=b.spec;}catch(e){return send(res,400,{error:e.message})}
+  if(!key&&!hasCli)return send(res,503,{error:'Recherche benötigt Claude Code oder einen Anthropic API-Schlüssel.'});
+  if(busy)return send(res,429,{error:'Eine KI-Analyse läuft bereits.'});
+  busy=true;lastAI=Date.now();try{return send(res,200,await discoverReuse({spec}))}catch(e){return send(res,502,{error:e.message||'Recherche fehlgeschlagen.'})}finally{busy=false}
  }
  let data;try{data=validate(JSON.parse(raw))}catch(e){return send(res,400,{error:e.message})}
  if(data.mode==='revise'){
