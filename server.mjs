@@ -334,7 +334,7 @@ http.createServer(async(req,res)=>{
   return res.end(studioCss);
  }
  if(req.method==='GET'&&(req.url==='/'||modules[req.url])){
-  res.writeHead(200,{'Content-Type':req.url==='/'?'text/html; charset=utf-8':'text/javascript; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'"});
+  res.writeHead(200,{'Content-Type':req.url==='/'?'text/html; charset=utf-8':'text/javascript; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'"});
   return res.end(req.url==='/'?html:modules[req.url]);
  }
  if(req.method==='GET'&&req.url==='/api/alive')return alive(req,res);
