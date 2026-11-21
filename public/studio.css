@@ -346,3 +346,9 @@ main{width:100%;max-width:1500px;padding:37px clamp(20px,4vw,70px) 100px;gap:28p
   .studio-metric strong{font-size:20px}
   .studio-metric small{font-size:11px}
 }
+
+
+.advanced-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:0 24px 22px}
+.advanced-actions .meta{max-width:68ch}
+.advanced-actions .btn{margin-left:auto}
+@media(max-width:800px){.advanced-actions{padding:0 16px 18px}}
