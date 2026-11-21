@@ -220,6 +220,17 @@ export const toneLevels = [
   'eher formell, berufliches Umfeld – sachliche Formulierungen, klare, ruhige Gestaltung',
   'formell und arbeitsbezogen – förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte',
 ];
+/**
+ * Marke und Witz je Einsatzbereich: am lockeren Ende ein durchgängiges, augenzwinkerndes Branding, das zum
+ * formellen Ende hin Stufe für Stufe abnimmt.
+ */
+export const brandLevels = [
+  'Die Anwendung bekommt ein durchgängiges Branding mit Witz. (1) Name mit Wortspiel, das am Zweck der Anwendung ansetzt (Doppeldeutigkeit, abgewandelte Redewendung, gern englisch). (2) Darunter ein Claim als zweizeilige Pointe und eine kurze Tagline. (3) Jede Funktion und jeder Menüpunkt trägt in der App eine eigene, augenzwinkernde Bezeichnung: Wortspiele, abgewandelte Redewendungen, Anspielungen auf Film, Musik und Popkultur oder auf den Jargon der Zielgruppe – konsequent in einer Tonlage, nicht bunt gemischt. Halte das in der Spezifikation in einem eigenen Abschnitt „Marke und Ton“ fest: Name, Claim, Tagline und eine Tabelle „Funktion → Bezeichnung in der App“ für alle Funktionen; die Anforderungen nennen beide Bezeichnungen, damit die Umsetzung sie übernimmt. Grenzen: Der Witz geht nie auf Kosten von Personen oder Gruppen. Jede witzige Bezeichnung zeigt die sachliche Funktion als Unterzeile oder Tooltip und als Text für Screenreader. Fehlermeldungen, Sicherheitsabfragen (etwa vor dem Löschen), Einwilligungen und rechtliche Texte bleiben klar und sachlich.',
+  'Die Anwendung bekommt ein freundliches Branding mit dosiertem Augenzwinkern: Der Name darf ein leichtes Wortspiel sein, dazu ein kurzer Claim. Witzige Bezeichnungen nur für die zwei bis vier zentralen Funktionen sowie in Leerzuständen und Erfolgsmeldungen; Navigation, Einstellungen und alle übrigen Funktionen heißen sachlich. Halte Name, Claim und die wenigen eigenen Bezeichnungen in einem Abschnitt „Marke und Ton“ fest. Fehlermeldungen, Sicherheitsabfragen und rechtliche Texte bleiben klar und sachlich.',
+  'Zurückhaltendes Branding: ein eingängiger, freundlicher Name, höchstens ein schlichter Claim. Funktionen und Menüpunkte heißen sachlich; kein Wortwitz in Bezeichnungen, allenfalls ein freundlicher Satz in Leerzuständen.',
+  'Sachliches Branding: ein beschreibender, seriöser Name ohne Wortspiel, kein Claim oder nur eine nüchterne Unterzeile zum Zweck. Alle Bezeichnungen sind eindeutig und fachlich; kein Humor.',
+  'Nüchternes Branding: ein beschreibender, förmlicher Name, kein Claim, keinerlei Humor oder Wortspiele. Bezeichnungen folgen den im beruflichen Umfeld üblichen Fachbegriffen.',
+];
 /** Wie viel Eigenes die KI einbringt, von „nur das Vorgegebene“ bis „denkt kreativ weiter“. */
 const creativityLevels = [
   'Setze ausschließlich um, was Idee und Antworten vorgeben; bringe keine eigenen Funktionen, Ideen oder Erweiterungen ein.',
@@ -230,11 +241,22 @@ const creativityLevels = [
 ];
 const level = (v, list, fallback) => (Number.isInteger(v) && v >= 0 && v < list.length ? v : fallback);
 export const stylePrompt = (creativity, tone) => ' Eigene Ideen: ' + creativityLevels[level(creativity, creativityLevels, 2)]
-  + ' Einsatzbereich der Anwendung: ' + toneLevels[level(tone, toneLevels, 2)] + '. Richte Ansprache und Ton aller Oberflächentexte und Meldungen sowie die optische Gestaltung danach aus und halte beides bei UX/Gestaltung ausdrücklich fest.';
+  + ' Einsatzbereich der Anwendung: ' + toneLevels[level(tone, toneLevels, 2)] + '. Richte Ansprache und Ton aller Oberflächentexte und Meldungen sowie die optische Gestaltung danach aus und halte beides bei UX/Gestaltung ausdrücklich fest. Marke und Witz: ' + brandLevels[level(tone, brandLevels, 2)];
 
 const scopeTitle = 'Abgewählte Features', scopeLead = 'Nicht Teil dieser Version:';
 
 /** Prüft und normalisiert die Feature-Liste: Name, Kurzbeschreibung, Aufwand eines Agenten in Minuten, an/aus. */
+// Vorbereitung für das Anpassen an die Zielzeit: Schlank-Fassung (kürzer als das Feature) und Rang
+function leanOf(f) {
+  const minutes = Number.isFinite(f.minutes) ? Math.round(f.minutes) : 8, l = f.lean, out = {};
+  if (l && typeof l === 'object' && Number.isFinite(l.minutes) && text(l.note, 240)) {
+    const m = Math.max(1, Math.round(l.minutes));
+    if (m < minutes) out.lean = { note: text(l.note, 240), minutes: m };
+  }
+  if (Number.isInteger(f.rank) && f.rank > 0 && f.rank < 100) out.rank = f.rank;
+  return out;
+}
+
 export function cleanFeatures(list) {
   const seen = new Set(), out = [];
   for (const f of Array.isArray(list) ? list : []) {
@@ -243,7 +265,7 @@ export function cleanFeatures(list) {
     if (!name || seen.has(key)) continue;
     seen.add(key);
     const core = f.core === true;
-    out.push({ id: /^F\d{2,3}$/.test(f.id) ? f.id : '', dependsOn: Array.isArray(f.dependsOn) ? f.dependsOn.filter(d => typeof d === 'string') : [], from: Array.isArray(f.from) ? [...new Set(f.from.filter(n => Number.isInteger(n) && n >= 0 && n < 60))].slice(0, 8) : [], name, note: text(f.note, 240), minutes: Number.isFinite(f.minutes) ? Math.min(2880, Math.max(1, Math.round(f.minutes))) : 8, core, own: f.own === true,
+    out.push({ id: /^F\d{2,3}$/.test(f.id) ? f.id : '', dependsOn: Array.isArray(f.dependsOn) ? f.dependsOn.filter(d => typeof d === 'string') : [], from: Array.isArray(f.from) ? [...new Set(f.from.filter(n => Number.isInteger(n) && n >= 0 && n < 60))].slice(0, 8) : [], name, note: text(f.note, 240), minutes: Number.isFinite(f.minutes) ? Math.min(2880, Math.max(1, Math.round(f.minutes))) : 8, core, own: f.own === true, ...leanOf(f),
       // on = gewünscht, inSpec = so steht es derzeit in der Spezifikation; das Grundgerüst ist nicht abwählbar
       on: core || f.on !== false, inSpec: core || f.inSpec !== false });
     if (out.length >= 30) break;
@@ -290,7 +312,7 @@ export function scopeDemo(spec, project, idea, questions, extras, before, after)
   return withToc(lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n');
 }
 
-export const featuresPrompt = 'Ermittle aus der Spezifikation (spec) die enthaltenen Features: abgrenzbare, für Nutzer erkennbare Funktionen oder Leistungsmerkmale. Stufe jedes ein: core=true für Basis-Features – alles, ohne das die Anwendung ihren Grundzweck aus der Spezifikation nicht erfüllt, darunter genau ein Eintrag für das technische Grundgerüst (Projektaufbau, Datenhaltung, Kernablauf); core=false für Erweiterungen (Nice-to-have), die sich weglassen ließen, ohne dass der Kern unbrauchbar wird. Sei streng: Basis ist nur, was für die grundsätzliche Funktionsweise nötig ist. Prüffrage je Feature: Könnte jemand den Kernablauf einmal von Anfang bis Ende durchführen, wenn es fehlt? Wenn ja, ist es eine Erweiterung – auch dann, wenn die Spezifikation es als Muss-Anforderung führt. Erweiterungen sind insbesondere: Benachrichtigungen und Versand (E-Mail, Erinnerungen), Konten, Rollen und Rechteverwaltung über das Nötigste hinaus, Verlauf und Statistik, Export und Import, Einstellungen, Komfortfunktionen, Ausbau von Gestaltung und Barrierefreiheit, zusätzliche Tests. In der Regel ist höchstens ein Drittel der Einträge Basis. Ein Basis-Feature hängt nie von einer Erweiterung ab. Insgesamt 5–20 Einträge in der Reihenfolge der Spezifikation; was dort als Nicht-Ziel oder abgewählt steht, gehört nicht dazu. Je Eintrag: name (kurz, höchstens 60 Zeichen, in den Begriffen der Spezifikation), note (ein Satz, was dazugehört), minutes = Laufzeit eines einzelnen Coding-Agenten für dieses Feature einschließlich Tests, in Minuten. Gemeint ist die reine Laufzeit eines autonomen Coding-Agenten (KI), nicht die Arbeitszeit eines Menschen: Ein Agent schreibt und testet Code in Minuten. Richtwerte: Grundgerüst 5–15 Minuten, übliches Feature 3–10, aufwendiges Feature 15–30. Schätze knapp und nie in menschlicher Entwicklungszeit. Außerdem: own=true, wenn die Spezifikation es als Vorschlag oder Idee der KI kennzeichnet, id = fortlaufend F01, F02 …, from = Nummern (nr) der Entscheidungen aus decisions, aus denen dieses Feature folgt (leer, wenn es unmittelbar aus der Idee stammt), dependsOn = Kennungen der Features, die fertig sein müssen, bevor dieses umgesetzt werden kann. Die Features bilden so die Arbeitspakete einer Work Breakdown Structure: Trage nur echte fachliche oder technische Abhängigkeiten ein (keine Kette aus bloßer Reihenfolge), damit erkennbar ist, was sich unabhängig voneinander und damit parallel entwickeln lässt; keine Zyklen, das Grundgerüst hängt von nichts ab. Ausschließlich JSON ohne Markdown-Codeblock: {"features":[{"id":"F01","name":"...","note":"...","minutes":60,"core":true,"own":false,"dependsOn":[]},{"id":"F02","name":"...","note":"...","minutes":45,"core":false,"own":false,"dependsOn":["F01"]}]}';
+export const featuresPrompt = 'Ermittle aus der Spezifikation (spec) die enthaltenen Features: abgrenzbare, für Nutzer erkennbare Funktionen oder Leistungsmerkmale. Stufe jedes ein: core=true für Basis-Features – alles, ohne das die Anwendung ihren Grundzweck aus der Spezifikation nicht erfüllt, darunter genau ein Eintrag für das technische Grundgerüst (Projektaufbau, Datenhaltung, Kernablauf); core=false für Erweiterungen (Nice-to-have), die sich weglassen ließen, ohne dass der Kern unbrauchbar wird. Sei streng: Basis ist nur, was für die grundsätzliche Funktionsweise nötig ist. Prüffrage je Feature: Könnte jemand den Kernablauf einmal von Anfang bis Ende durchführen, wenn es fehlt? Wenn ja, ist es eine Erweiterung – auch dann, wenn die Spezifikation es als Muss-Anforderung führt. Erweiterungen sind insbesondere: Benachrichtigungen und Versand (E-Mail, Erinnerungen), Konten, Rollen und Rechteverwaltung über das Nötigste hinaus, Verlauf und Statistik, Export und Import, Einstellungen, Komfortfunktionen, Ausbau von Gestaltung und Barrierefreiheit, zusätzliche Tests. In der Regel ist höchstens ein Drittel der Einträge Basis. Ein Basis-Feature hängt nie von einer Erweiterung ab. Insgesamt 5–20 Einträge in der Reihenfolge der Spezifikation; was dort als Nicht-Ziel oder abgewählt steht, gehört nicht dazu. Je Eintrag: name (kurz, höchstens 60 Zeichen, in den Begriffen der Spezifikation), note (ein Satz, was dazugehört), minutes = Laufzeit eines einzelnen Coding-Agenten für dieses Feature einschließlich Tests, in Minuten. Gemeint ist die reine Laufzeit eines autonomen Coding-Agenten (KI), nicht die Arbeitszeit eines Menschen: Ein Agent schreibt und testet Code in Minuten. Richtwerte: Grundgerüst 5–15 Minuten, übliches Feature 3–10, aufwendiges Feature 15–30. Schätze knapp und nie in menschlicher Entwicklungszeit. Außerdem: own=true, wenn die Spezifikation es als Vorschlag oder Idee der KI kennzeichnet, id = fortlaufend F01, F02 …, from = Nummern (nr) der Entscheidungen aus decisions, aus denen dieses Feature folgt (leer, wenn es unmittelbar aus der Idee stammt), dependsOn = Kennungen der Features, die fertig sein müssen, bevor dieses umgesetzt werden kann. Die Features bilden so die Arbeitspakete einer Work Breakdown Structure: Trage nur echte fachliche oder technische Abhängigkeiten ein (keine Kette aus bloßer Reihenfolge), damit erkennbar ist, was sich unabhängig voneinander und damit parallel entwickeln lässt; keine Zyklen, das Grundgerüst hängt von nichts ab. Bereite außerdem das spätere Anpassen an eine Zielzeit vor, damit es ohne weitere Rückfrage sofort geht: Gib je Feature rank an – die Wichtigkeit für den Grundzweck als Rangfolge über alle Features (1 = am wichtigsten) – und, wo sich kürzen lässt, lean: die schlankste noch sinnvolle Fassung mit note (ein Satz: was bleibt und was entfällt oder einfacher gelöst wird, etwa durch eine verbreitete Bibliothek oder eine Funktion der Plattform) und minutes (deren Laufzeit, deutlich kleiner als minutes). Ausschließlich JSON ohne Markdown-Codeblock: {"features":[{"id":"F01","name":"...","note":"...","minutes":60,"core":true,"own":false,"dependsOn":[],"rank":1,"lean":{"note":"...","minutes":35}},{"id":"F02","name":"...","note":"...","minutes":45,"core":false,"own":false,"dependsOn":["F01"]}]}';
 
 export const scopePrompt = 'Der Nutzer hat den Umfang der Spezifikation (spec) geändert. remove = Features, die nicht mehr dazugehören: Entferne ihre Anforderungen, Abläufe, Oberflächenelemente und Akzeptanzkriterien und führe sie bei den Nicht-Zielen als abgewählt auf. restore = Features, die wieder dazugehören: Nimm sie mit Anforderungen und Akzeptanzkriterien wieder auf und streiche sie aus den Nicht-Zielen. Passe davon abhängige Stellen an (z. B. Architektur, Risiken). Alles Übrige bleibt wörtlich unverändert.' + editFormat + ' Entscheidungen und Umfang müssen zusammenpassen: decisions enthält die bisherigen Entscheidungen (nr, Frage, Optionen, Antwort). Gib im selben JSON-Objekt zusätzlich "answers":[{"nr":3,"answer":"..."}] an – für jede Entscheidung, deren Antwort durch die Umfangsänderung nicht mehr stimmt, die nun zutreffende Antwort (bevorzugt eine der vorhandenen Optionen im Wortlaut, sonst ein kurzer eigener Text). Leere Liste, wenn alle Antworten weiter gelten.';
 
@@ -375,7 +397,8 @@ export function cleanNames(list) {
     const name = text(typeof n === 'string' ? n : n && n.name, 40), key = name.toLowerCase();
     if (!name || seen.has(key)) continue;
     seen.add(key);
-    out.push({ name, why: text(n && n.why, 160) });
+    const claim = text(n && n.claim, 120);
+    out.push({ name, why: text(n && n.why, 160), ...(claim ? { claim } : {}) });
     if (out.length >= 8) break;
   }
   return out;
@@ -390,7 +413,7 @@ export function demoNames(idea, count = 3) {
     .map(name => ({ name, why: 'Demo: Wortkombination aus der Idee' }))).slice(0, Math.min(8, Math.max(1, count)));
 }
 
-export const namesPrompt = 'Schlage genau count Namen für die Anwendung vor, die in idea und – falls vorhanden – spec beschrieben ist. Kurz (ein bis zwei Wörter), gut aussprechbar, einprägsam, zum Einsatzbereich (context) passend und untereinander deutlich verschieden im Stil (beschreibend, bildhaft, Kunstwort). Keine bekannten Marken- oder Produktnamen, keine Namen aus avoid. Je Name ein Halbsatz, warum er passt. Ausschließlich JSON ohne Markdown-Codeblock: {"names":[{"name":"...","why":"..."}]}';
+export const namesPrompt = 'Schlage genau count Namen für die Anwendung vor, die in idea und – falls vorhanden – spec beschrieben ist. Kurz (ein bis zwei Wörter), gut aussprechbar, einprägsam, zum Einsatzbereich und zur dort beschriebenen Marke (context) passend – verlangt context Wortspiele, sind es Wortspiele, die am Zweck der Anwendung ansetzen; verlangt context Sachlichkeit, sind sie beschreibend – und untereinander deutlich verschieden. Wo context einen Claim vorsieht, je Name zusätzlich claim: eine kurze Pointe oder Unterzeile, die zum Namen gehört (sonst claim weglassen). Keine bekannten Marken- oder Produktnamen, keine Namen aus avoid. Je Name ein Halbsatz, warum er passt. Ausschließlich JSON ohne Markdown-Codeblock: {"names":[{"name":"...","why":"...","claim":"..."}]}';
 
 /** Befunde eines Reviews prüfen: Gewicht, Abschnitt, Problem und ein einarbeitbarer Vorschlag. */
 export function cleanFindings(list) {
@@ -401,3 +424,66 @@ export function cleanFindings(list) {
 }
 
 export const reviewPrompt = 'Prüfe die Spezifikation (spec) als unabhängiger Reviewer, bevor Coding-Agenten sie umsetzen. Suche nach: Widersprüchen, Lücken, nicht prüfbaren Anforderungen, fehlenden Randfällen, Unklarheiten, an denen ein Agent hängen bliebe, und unnötiger Komplexität gemessen an der Zielzeit (targetDuration, reine Laufzeit der Agenten). Höchstens zehn Befunde, die wichtigsten zuerst; kein Lob, nichts erfinden, nur was sich an der Spezifikation belegen lässt. Je Befund: severity (hoch, mittel oder niedrig), section (betroffener Abschnitt), issue (das Problem in einem Satz), suggestion (die konkrete Änderung an der Spezifikation in einem Satz, so formuliert, dass sie sich unmittelbar einarbeiten lässt). Antworte auf Deutsch und ausschließlich mit JSON ohne Markdown-Codeblock: {"summary":"Gesamteindruck in ein bis zwei Sätzen","findings":[{"severity":"hoch","section":"...","issue":"...","suggestion":"..."}]}';
+
+/* ---------- Logo-Entwürfe als SVG ---------- */
+const svgTags = new Set(['svg', 'g', 'path', 'circle', 'rect', 'ellipse', 'line', 'polygon', 'polyline', 'defs', 'linearGradient', 'radialGradient', 'stop', 'title', 'text', 'tspan']);
+const svgAttrs = new Set(['viewBox', 'xmlns', 'width', 'height', 'd', 'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'points', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'opacity', 'fill-opacity', 'stroke-opacity', 'fill-rule', 'clip-rule', 'transform', 'id', 'offset', 'stop-color', 'stop-opacity', 'gradientUnits', 'gradientTransform', 'font-size', 'font-weight', 'font-family', 'text-anchor', 'dominant-baseline', 'letter-spacing']);
+
+/**
+ * SVG auf eine feste Auswahl harmloser Elemente und Attribute zurückschneiden und neu zusammensetzen.
+ * Alles andere (Skripte, Ereignis-Attribute, Verweise, Stilangaben, fremde Elemente) macht das Ergebnis leer.
+ */
+export function cleanSvg(svg) {
+  const src = String(svg || ''), start = src.indexOf('<svg'), end = src.lastIndexOf('</svg>');
+  if (src.length > 12000 || start < 0 || end < start) return '';
+  const body = src.slice(start, end + 6), re = /<!--[\s\S]*?-->|<(\/?)([A-Za-z][\w]*)((?:\s+[\w:-]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*(\/?)>|([^<]+)/g;
+  let out = '', pos = 0, m;
+  while ((m = re.exec(body))) {
+    if (m.index !== pos) return '';
+    pos = re.lastIndex;
+    if (m[0].startsWith('<!--')) continue;
+    if (m[5] !== undefined) { out += m[5].replace(/&(?!(?:amp|lt|gt|quot);)/g, '&amp;').replace(/>/g, '&gt;'); continue; }
+    const tag = m[2];
+    if (!svgTags.has(tag)) return '';
+    if (m[1]) { out += '</' + tag + '>'; continue; }
+    let attrs = '';
+    for (const a of m[3].matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
+      const name = a[1], val = (a[2] ?? a[3]).trim();
+      if (!svgAttrs.has(name) || /[<>&]|javascript:|data:/i.test(val)) continue;
+      if (/url\(/i.test(val) && !/^url\(#[\w-]+\)$/.test(val)) continue;
+      if (name === 'xmlns' && val !== 'http://www.w3.org/2000/svg') continue;
+      attrs += ' ' + name + '="' + val.replace(/"/g, '') + '"';
+    }
+    if (tag === 'svg' && !/ xmlns=/.test(attrs)) attrs = ' xmlns="http://www.w3.org/2000/svg"' + attrs;
+    out += '<' + tag + attrs + (m[4] ? '/' : '') + '>';
+  }
+  return pos === body.length && / viewBox=/.test(out.slice(0, out.indexOf('>'))) ? out : '';
+}
+
+/** Logo-Entwürfe prüfen: Arbeitstitel, Gedanke dahinter und ein bereinigtes SVG. */
+export function cleanLogos(list) {
+  const out = [];
+  for (const l of Array.isArray(list) ? list : []) {
+    const svg = cleanSvg(l && l.svg);
+    if (!svg) continue;
+    out.push({ name: text(l.name, 40) || 'Entwurf ' + (out.length + 1), idea: text(l.idea, 200), svg });
+    if (out.length >= 5) break;
+  }
+  return out;
+}
+
+/** Demo ohne KI: schlichte Bildmarken aus dem Anfangsbuchstaben. */
+export function demoLogos(name, count = 3) {
+  const letter = (String(name || '').trim().match(/[\p{L}\p{N}]/u) || ['S'])[0].toUpperCase();
+  const base = [
+    ['Kreis', '<circle cx="60" cy="60" r="52" fill="#1d5c45"/>', '#ffffff'],
+    ['Kachel', '<rect x="10" y="10" width="100" height="100" rx="24" fill="#12303f"/>', '#7ee6bd'],
+    ['Ring', '<circle cx="60" cy="60" r="46" fill="none" stroke="#1d5c45" stroke-width="10"/>', '#1d5c45'],
+    ['Raute', '<polygon points="60,6 114,60 60,114 6,60" fill="#3b2a5c"/>', '#ffd28a'],
+    ['Bogen', '<path d="M12 96 A48 48 0 0 1 108 96 Z" fill="#b5462f"/><rect x="12" y="96" width="96" height="14" rx="4" fill="#12303f"/>', '#ffffff'],
+  ];
+  return base.slice(0, Math.min(5, Math.max(1, count))).map(([n, shape, ink]) => ({ name: n, idea: 'Demo-Entwurf ohne KI: Anfangsbuchstabe auf einfacher Grundform.',
+    svg: cleanSvg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">' + shape + '<text x="60" y="' + (n === 'Bogen' ? 90 : 78) + '" font-size="' + (n === 'Bogen' ? 40 : 54) + '" font-weight="700" font-family="sans-serif" text-anchor="middle" fill="' + ink + '">' + letter + '</text></svg>') }));
+}
+
+export const logoPrompt = 'Entwirf count deutlich unterschiedliche Logo-Entwürfe für die Anwendung (name, idea; spec als Hintergrund, context = Einsatzbereich und Ton). Jedes Logo ist eine quadratische Bildmarke als eigenständiges SVG mit viewBox="0 0 120 120": klar, einprägsam, auch in 32 Pixeln erkennbar, mit Bezug zum Zweck der Anwendung statt beliebiger Dekoration. Höchstens drei Farben als Hex-Werte; die Marke muss auf hellem wie dunklem Grund funktionieren (eigene Grundfläche oder ausreichend kräftige Farben). Text höchstens als ein bis zwei Initialen. Erlaubt sind ausschließlich die Elemente svg, g, path, circle, rect, ellipse, line, polygon, polyline, defs, linearGradient, radialGradient, stop, text, tspan und Darstellungs-Attribute wie fill, stroke, stroke-width, transform, opacity; kein style-Attribut, keine Klassen, keine Filter, keine Bilder, keine Verweise, keine Skripte. Die Entwürfe sollen sich in der Idee unterscheiden (etwa: Symbol für den Zweck, abstrakte Form, Initiale, Kombination), nicht nur in der Farbe. Je Entwurf: name (kurzer Arbeitstitel), idea (ein Satz zum Gedanken dahinter), svg (das vollständige SVG in einer Zeile). Ausschließlich JSON ohne Markdown-Codeblock: {"logos":[{"name":"...","idea":"...","svg":"<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 120 120\\">...</svg>"}]}';

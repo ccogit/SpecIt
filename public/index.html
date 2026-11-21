@@ -7,7 +7,7 @@
 <style>
 /* Layout und Designsystem nach dem Stitch-Entwurf „SpecIt Redesign“ (Farben, Typografie, Flächen). */
 :root{
-  --surface:#faf9f5;--surface-low:#f4f4f0;--surface-mid:#eeeeea;--surface-high:#e8e8e4;--card:#fff;
+  --go:#0c7d55;--on-go:#fff;--surface:#faf9f5;--surface-low:#f4f4f0;--surface-mid:#eeeeea;--surface-high:#e8e8e4;--card:#fff;
   --ink:#1a1c1a;--ink-soft:#414845;--outline:#717974;--outline-soft:#c1c8c3;
   --primary:#002218;--primary-container:#15382c;--secondary:#346853;--mint:#b7efd4;--on-mint:#1a503c;
   --error:#ba1a1a;--error-container:#fdf1cf;--on-error-container:#6b4200;--warn-line:#c77700;--hl:rgba(52,168,120,.16);--hl2:rgba(52,168,120,.32);
@@ -19,7 +19,7 @@
 }
 /* Dunkles Thema nach der Stitch-Fassung „Dark Glass“ */
 :root[data-theme=dark]{
-  --surface:#111317;--surface-low:#1a1c20;--surface-mid:#22252a;--surface-high:#2c2f34;--card:#17191d;
+  --go:#4edea3;--on-go:#00271a;--surface:#111317;--surface-low:#1a1c20;--surface-mid:#22252a;--surface-high:#2c2f34;--card:#17191d;
   --ink:#e2e2e8;--ink-soft:#bbcabf;--outline:#86948a;--outline-soft:#3c4a42;
   --primary:#4edea3;--primary-container:#4edea3;--secondary:#45dfa4;--mint:#123d2e;--on-mint:#7ee6bd;
   --error:#ffb4ab;--error-container:#3a2d0d;--on-error-container:#f3d28a;--warn-line:#d19a2e;--hl:rgba(78,222,163,.13);--hl2:rgba(78,222,163,.28);
@@ -73,7 +73,9 @@ textarea{resize:vertical;line-height:1.65;display:block}
 .switch input:disabled+.track{opacity:.45}
 .switch:has(input:disabled){cursor:not-allowed}
 
-main{flex:1;width:100%;max-width:max(1200px,88vw);margin:0 auto;padding:16px 24px;display:flex;flex-direction:column;gap:16px}
+/* Eine Seitenbreite für die ganze Anwendung: Kopfzeile, alle Ansichten und Fußleiste nutzen dieselbe Breite und dieselben Ränder */
+:root{--page:max(1200px,88vw)}
+main{flex:1;width:100%;max-width:var(--page);margin:0 auto;padding:16px 24px;display:flex;flex-direction:column;gap:16px}
 .status{font-family:var(--mono);font-size:12px;min-height:18px;color:var(--ink-soft)}
 .pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
 /* Überschrift, Stand-Marke und Statuszeile in einer Zeile */
@@ -87,6 +89,8 @@ main{flex:1;width:100%;max-width:max(1200px,88vw);margin:0 auto;padding:16px 24p
 .split{display:grid;grid-template-columns:minmax(0,3fr) minmax(420px,2fr);gap:24px;align-items:start}
 #spec{font-family:var(--mono);font-size:13px;line-height:1.75;min-height:520px;background:var(--card);box-shadow:var(--shadow);padding:24px}
 .side{display:flex;flex-direction:column;gap:16px}
+/* Bereiche behalten ihre volle Höhe; die Spalte rollt, statt sie zusammenzudrücken (sonst überlagern sie sich und sind nicht bedienbar) */
+.side>*{flex-shrink:0}
 /* Fragen-Katalog neben der Spezifikation: Frage aufklappen, Antwort ändern */
 .catpanel{padding:0}
 .catpanel>summary{display:flex;align-items:center;gap:12px;padding:16px 20px;list-style:none;border-radius:8px;color:var(--heading);font-family:var(--sans)}
@@ -95,6 +99,29 @@ main{flex:1;width:100%;max-width:max(1200px,88vw);margin:0 auto;padding:16px 24p
 .catpanel[open]>summary::before{transform:rotate(90deg)}
 .catpanel>summary:hover{background:var(--surface-low)}
 .catpanel>summary h2{flex:1;font-size:16px;color:var(--heading)}
+/* Stand je Bereich: farbiger Rand links über die ganze Höhe und ein Punkt vor dem Titel */
+.catpanel{border-left:5px solid transparent;transition:border-color .25s ease}
+.catpanel[data-state=done]{border-left-color:var(--go)}
+.catpanel[data-state=todo]{border-left-color:#e2a336}
+.catpanel[data-state=idle]{border-left-color:var(--outline-soft)}
+.catpanel[data-state=locked]{border-left-color:var(--surface-high)}
+.catpanel>summary .dot{width:13px;height:13px;border-radius:50%;flex-shrink:0;order:-1}
+.catpanel>summary .dot.done{background:var(--go);box-shadow:0 0 0 3px color-mix(in srgb,var(--go) 25%,transparent)}
+.catpanel>summary .dot.todo{background:#e2a336;box-shadow:0 0 0 3px color-mix(in srgb,#e2a336 28%,transparent);animation:dotpulse 1.8s ease-in-out infinite}
+@keyframes dotpulse{0%,100%{opacity:.55}50%{opacity:1}}
+.catpanel>summary .dot.idle{background:transparent;box-shadow:inset 0 0 0 2px var(--outline-soft)}
+.catpanel.locked>summary{cursor:not-allowed}
+.catpanel.locked>summary:hover{background:none}
+.catpanel.locked>summary h2,.catpanel.locked>summary::before{opacity:.45}
+.catpanel.locked>summary .meta:not(.lockwhy){display:none}
+.catpanel:not(.locked)>summary .lockwhy{display:none}
+.catpanel>summary .lockwhy{text-align:right}
+.sidego{display:flex}
+.sidego .btn{flex:1;justify-content:center;background:var(--surface-high);color:var(--ink);box-shadow:none}
+.sidego .btn.ready{background:var(--go);color:var(--on-go);box-shadow:0 2px 10px color-mix(in srgb,var(--go) 45%,transparent)}
+.catpanel>summary .dot.locked{background:transparent;box-shadow:inset 0 0 0 2px var(--outline-soft);opacity:.5}
+.sidenext{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 4px 2px;font-size:13px}
+@media(prefers-reduced-motion:reduce){.catpanel>summary .dot.todo{animation:none}}
 .catpanel>p{padding:0 20px}
 .catpanel>div{padding:0 20px 20px}
 .catgroup{display:flex;align-items:center;gap:10px;width:100%;border:0;border-top:1px solid var(--surface-mid);border-radius:0;background:none;padding:11px 6px;cursor:pointer;text-align:left}
@@ -107,20 +134,31 @@ main{flex:1;width:100%;max-width:max(1200px,88vw);margin:0 auto;padding:16px 24p
 .catitem{margin-left:18px}
 .catitem{border-top:1px solid var(--surface-mid)}
 .catitem.fresh{box-shadow:inset 3px 0 0 var(--secondary)}
-.cathd{display:flex;align-items:flex-start;gap:10px;width:100%;border:0;border-radius:4px;background:none;padding:9px 6px;cursor:pointer;text-align:left;font-size:13px;line-height:1.45}
+.cathd{display:flex;align-items:flex-start;gap:12px;width:100%;border:0;border-radius:6px;background:none;padding:14px 10px;cursor:pointer;text-align:left;font-size:14px;line-height:1.5}
 .cathd:hover{background:var(--surface-low)}
-.cathd .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.cathd .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
 .cathd .q{color:var(--ink-soft)}
 .catitem.open .cathd .q{color:var(--heading);font-weight:600}
 .cathd .sign{font-family:var(--mono);color:var(--outline)}
-.catbody{display:flex;flex-direction:column;gap:6px;padding:2px 6px 12px}
-.catbody .opt{padding:8px 10px;font-size:13px;gap:10px}
+.catbody{display:flex;flex-direction:column;gap:10px;padding:6px 10px 20px}
+.catbody .opt{padding:12px 14px;font-size:14px;line-height:1.45;gap:12px}
 .catbody .opt:disabled{opacity:.55;cursor:progress}
-.catbody .own{display:flex;gap:6px}
-.catbody input{padding:7px 10px;font-size:13px;flex:1;min-width:0}
+.catbody .own{display:flex;gap:8px;margin-top:2px}
+.catbody input{padding:10px 12px;font-size:14px;flex:1;min-width:0}
 /* Änderungen durch eine neue Antwort: Hinweisleiste und zeitweise hervorgehobene Stellen */
 .changebar{position:sticky;top:calc(var(--top-h,64px) + 8px);z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-left:4px solid var(--secondary);border-radius:6px;padding:10px 14px;margin-bottom:8px;background:var(--mint);color:var(--on-mint);font-size:13px;box-shadow:var(--shadow)}
 .changebar .what{flex:1;min-width:200px}
+#phase2>.changebar{margin-bottom:0}
+/* Werkzeugzeile: links die Aktion (erstellen) und die Darstellung, rechts die Downloads */
+/* Die Zeile übernimmt das Spaltenraster der Seite: Die Downloads enden am rechten Rand des Dokuments */
+.specbar{display:grid;grid-template-columns:minmax(0,3fr) minmax(420px,2fr);gap:24px}
+@media(max-width:1180px){.specbar{grid-template-columns:1fr}}
+.specbar .actions{display:flex;align-items:center}
+.specbar #generate{order:-1}
+.specbar #specDownload{order:5;margin-left:auto}
+.specbar #specPdf{order:6}
+/* Leere Platzhalter zählen im Abstand zwischen den Karten nicht mit */
+#planStatus:empty,#planOutput:empty{display:none !important}
 .changebar .btn{background:var(--card)}
 .md :is(h2,h3,h4,h5,h6,p,li,tr,pre){transition:background-color 1.4s ease,box-shadow 1.4s ease}
 .md :is(h2,h3,h4,h5,h6){scroll-margin-top:calc(var(--top-h,64px) + 72px)}
@@ -128,14 +166,17 @@ main{flex:1;width:100%;max-width:max(1200px,88vw);margin:0 auto;padding:16px 24p
 /* Schreibmarke am Ende des entstehenden Textes */
 .md.writing>:last-child::after{content:"▍";margin-left:2px;color:var(--secondary);animation:blink 1s steps(2,start) infinite}
 @keyframes blink{to{visibility:hidden}}
-.md .changed{background:var(--hl);box-shadow:0 0 0 5px var(--hl);border-radius:3px;transition:none;animation:glow 1.8s ease-in-out 5}
 /* Geänderte Tabellenzeile: Zellen einfärben statt die Zeile zu umranden – sonst zeichnen sich Linien und Kanten ab */
-.md tr.changed{background:none;box-shadow:none;animation:none}
-.md tr.changed>*{background:var(--hl);border-bottom-color:transparent;animation:glowcell 1.8s ease-in-out 5}
-.md tr.changed>:first-child{border-radius:4px 0 0 4px}
-.md tr.changed>:last-child{border-radius:0 4px 4px 0}
-@keyframes glowcell{0%,100%{background-color:var(--hl)}50%{background-color:var(--hl2)}}
-@keyframes glow{0%,100%{background-color:var(--hl);box-shadow:0 0 0 5px var(--hl)}50%{background-color:var(--hl2);box-shadow:0 0 0 5px var(--hl2),0 0 14px 2px var(--hl)}}
+/* Geänderte Stellen: ein Balken am linken Rand, zusammenhängende Stellen als ein Balken, pulsiert dauerhaft */
+.md .marks{position:absolute;inset:0 auto 0 0;width:28px;pointer-events:none}
+.md .marks i{position:absolute;left:9px;width:8px;border-radius:4px;background:var(--secondary);filter:blur(1.5px);animation:markpulse 1.8s ease-in-out infinite}
+@keyframes markpulse{0%,100%{opacity:.45;box-shadow:0 0 6px 1px var(--secondary)}50%{opacity:1;box-shadow:0 0 18px 5px var(--secondary)}}
+@media(prefers-reduced-motion:reduce){.md .marks i{animation:none;opacity:1}}
+.changesum{flex-basis:100%;max-height:38vh;overflow-y:auto;margin:4px 0 0;padding:8px 0 0;list-style:none;border-top:1px solid var(--outline-soft);display:flex;flex-direction:column;gap:8px}
+.changesum ul{list-style:none;margin:2px 0 0;padding:0 0 0 12px;display:flex;flex-direction:column;gap:2px}
+.changesum button{all:unset;cursor:pointer;display:block}
+.changesum button:hover,.changesum button:focus-visible{text-decoration:underline}
+.changesum .chapter{font-weight:700}
 /* Großansicht der Stitch-Entwürfe */
 .shot.chosen{box-shadow:0 0 0 3px var(--secondary),var(--shadow)}
 .shotbtn{display:block;width:100%;border:0;padding:0;background:none;cursor:zoom-in}
@@ -147,9 +188,21 @@ main{flex:1;width:100%;max-width:max(1200px,88vw);margin:0 auto;padding:16px 24p
 .lightscroll img{max-width:100%;height:auto;display:block;margin:0 auto}
 /* Sperre vor den Agent Tasks und Änderungswunsch zur Spezifikation */
 .gate{border-top:4px solid var(--warn-line);display:flex;flex-direction:column;gap:14px}
-.namebox{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:14px}
+.namebox{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;padding:14px 18px;background:var(--card);border-radius:8px;box-shadow:var(--shadow);border-left:4px solid var(--secondary)}
+.namebox .namehead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:15px}
+.namebox .namerow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.namebox .namechip{font-size:15px;padding:8px 14px}
+.namebox .namehead:empty{display:none}
+.catpanel>summary .namepick{font-family:var(--sans);font-size:15px;font-weight:700;padding:5px 14px;text-transform:none;letter-spacing:0}
+.catpanel .namebox{margin:0;padding:0 20px 20px;background:none;box-shadow:none;border-left:0;border-radius:0}
+.catpanel .namebox input{min-width:180px}
+.logotile{all:unset;cursor:pointer;display:grid;place-items:center;padding:8px;border-radius:10px;background:var(--surface-low);box-shadow:inset 0 0 0 1px var(--outline-soft)}
+.logotile:hover,.logotile:focus-visible{box-shadow:inset 0 0 0 2px var(--ink-soft)}
+.logotile.on{box-shadow:inset 0 0 0 3px var(--secondary);background:var(--card)}
+.logotile:disabled{opacity:.5;cursor:not-allowed}
+.namebox input{flex:1;min-width:240px;padding:8px 12px;font-size:14px}
 .namechip{font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:0;padding:4px 10px}
-.wishbox{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;padding:12px 14px 10px;border-radius:10px;background:var(--card);box-shadow:var(--shadow);border:1px solid transparent;transition:border-color .15s,box-shadow .15s}
+.wishbox{display:flex;flex-direction:column;gap:6px;margin-bottom:0;padding:12px 14px 10px;border-radius:10px;background:var(--card);box-shadow:var(--shadow);border:1px solid transparent;transition:border-color .15s,box-shadow .15s}
 .wishbox:focus-within{border-color:var(--secondary);box-shadow:0 0 0 3px var(--hl)}
 .wishlabel{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:var(--ink-soft)}
 .wishlabel .spark{color:var(--secondary);font-size:14px}
@@ -189,45 +242,116 @@ summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;co
 
 /* Kopfzeile mit Schritt-Leiste (immer sichtbar) */
 .top{position:sticky;top:0;z-index:10;background:var(--top-bg);backdrop-filter:blur(8px);box-shadow:0 1px 8px rgba(0,0,0,.05)}
-.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 24px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 24px;flex-wrap:wrap;width:100%;max-width:var(--page);margin:0 auto}
+.brand{display:flex;align-items:baseline;gap:14px;min-width:0}
 .wordmark{font-size:22px;line-height:28px;font-weight:700;letter-spacing:-.02em;color:var(--heading)}
 .wordmark span{color:var(--secondary)}
-.brand .rule{width:1px;height:20px;background:var(--outline-soft)}
-#project{font-family:var(--mono);font-size:13px;font-weight:500;background:transparent;box-shadow:none;padding:5px 8px;width:200px}
+.brand .rule{width:1px;height:20px;background:var(--outline-soft);align-self:center}
+#project{font-size:18px;font-weight:700;letter-spacing:-.01em;color:var(--heading);background:transparent;box-shadow:none;padding:4px 8px;width:240px}
 #project:hover{background:var(--surface-mid)}
+.brandlogo{display:inline-flex;align-self:center;flex-shrink:0;margin-right:-6px}
+.brandlogo svg{display:block;border-radius:6px}
 .tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.phases{display:flex;align-items:center;gap:4px;padding:4px;border-radius:8px;background:var(--surface-low);overflow-x:auto;max-width:100%}
-.phase{display:flex;align-items:center;gap:8px;border:0;background:transparent;border-radius:6px;padding:7px 12px;cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--ink-soft);white-space:nowrap}
+/* Jeder Schritt ist eine eigene Box; der Hintergrund dazwischen trennt (Abstand und Form wie bei den Parameter-Boxen) */
+.phases{display:flex;align-items:center;gap:12px;padding:3px;overflow-x:auto;max-width:100%}
+.phases .arrow{display:none}
+.phase{display:flex;align-items:center;gap:8px;border:0;background:var(--card);box-shadow:var(--shadow);border-radius:8px;padding:8px 16px;min-width:170px;justify-content:center;cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--ink-soft);white-space:nowrap}
+@media(max-width:1500px){.phase{min-width:130px}}
+@media(max-width:1100px){.phase{min-width:0}}
 .phase:hover{color:var(--ink)}
 .phase .num{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--surface-high);font-size:11px;font-weight:700}
 .phase[aria-current=page] .num{background:var(--on-primary);color:var(--primary-container)}
 .phase.done .num{color:var(--secondary)}
 .phase[aria-current=page]{background:var(--primary-container);color:var(--on-primary);font-weight:600}
 .phase[aria-current=page] .chip{background:rgba(128,128,128,.28);color:var(--on-primary)}
+/* Schritte als Kapseln in drei Zuständen: erledigt = grün, in Bearbeitung = gelb, offen = rot.
+   Die Zustandsfarbe (--st) tönt die Fläche, zeichnet den Rahmen, füllt die Nummer und färbt die Verbindung zum nächsten Schritt. */
+.phases{gap:14px;padding:3px}
+.phase{--st:#e5484d;--st-ink:#fff;position:relative;border-radius:8px;padding:7px 18px 7px 8px;justify-content:flex-start;gap:10px;font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:.01em;color:var(--ink);
+  background:var(--card);
+  box-shadow:inset 0 0 0 1px var(--outline-soft);transition:transform .15s ease,box-shadow .25s ease,background .25s ease}
+.phase:hover{transform:translateY(-1px);color:var(--ink)}
+.phase.done{--st:var(--go);--st-ink:var(--on-go)}
+.phase.part{--st:#e2a336;--st-ink:#231700}
+/* Die geöffnete Ansicht ist kein Stand: Sie behält ihre Standfarbe und hebt sich nur durch helle Kontur, kräftigere Fläche und Schein ab */
+.phase[aria-current=page]{color:var(--ink);font-weight:700;background:var(--surface-high);box-shadow:inset 0 0 0 1px var(--outline-soft),inset 0 -2px 0 var(--ink)}
+.phase[aria-current=page]:hover{transform:none}
+/* Die Nummer ist neutral (sie sagt nur, der wievielte Schritt es ist); den Stand trägt die Marke rechts */
+.phase .num,.phase.done .num,.phase[aria-current=page] .num{width:24px;height:24px;border-radius:6px;font-size:12px;background:var(--surface-high);color:var(--ink);box-shadow:none}
+.phase .state{display:inline-flex;align-items:center;gap:6px;margin-left:4px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--st);color:var(--st-ink)}
+.phase{padding-right:8px;min-width:0}
+/* Wird es eng, schrumpft die Marke auf ihr Zeichen (✓ erledigt, ● in Arbeit, ○ offen); Farbe und Nummer bleiben */
+@media(max-width:1640px){.phase .state{font-size:0;padding:3px 8px;gap:0}.phase .state::before{content:attr(data-short);font-size:11px}}
+@media(max-width:1280px){.phase{padding:6px 8px 6px 6px;gap:7px}}
+.phase .chip,.phase[aria-current=page] .chip{background:none;box-shadow:none;border:0;padding:0;font-family:var(--mono);font-size:11px;font-weight:400;color:var(--ink-soft);display:inline-block;line-height:inherit;transform:translateY(2px)}
+/* Anteil der beantworteten Fragen: eine feine Linie am unteren Rand statt einer gefüllten Fläche (bei 100 % entfällt sie) */
+.phase.pct:not(.done){background:linear-gradient(var(--ink-soft),var(--ink-soft)) 10px calc(100% - 3px)/calc((100% - 20px)*var(--pctn)) 2px no-repeat,var(--card)}
+.phase.pct:not(.done)[aria-current=page]{background:var(--surface-high)}
+/* Verbindung zum nächsten Schritt in der Farbe des erreichten Stands */
+.phase:not(:last-child)::after{content:"";position:absolute;left:100%;top:50%;width:14px;height:2px;transform:translateY(-50%);background:var(--outline-soft)}
+@media(prefers-reduced-motion:reduce){.phase:hover{transform:none}}
+/* Schritte im Stil der Anwendung: ein Umschalter wie „Ansicht / Bearbeiten“ – ruhige Fläche, die geöffnete Ansicht als Karte,
+   der Stand als kleine Marke in den Farben der übrigen Marken (grün = erledigt, gelb = in Arbeit, rot = offen) */
+.phases{gap:2px;padding:3px;background:var(--surface-low);border-radius:8px}
+.phases .phase,.phases .phase.pct:not(.done){background:transparent;box-shadow:none;border-radius:6px;padding:7px 12px;gap:8px;min-width:0;font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.02em;color:var(--ink-soft)}
+.phases .phase:hover{transform:none;color:var(--ink)}
+.phases .phase:not(:last-child)::after{display:none}
+.phases .phase .num{display:inline;width:auto;height:auto;border-radius:0;background:none;box-shadow:none;color:var(--outline);font-size:12px;font-weight:500}
+.phases .phase .num::after{content:"."}
+.phases .phase[aria-current=page],.phases .phase.pct:not(.done)[aria-current=page]{background:var(--card);color:var(--heading);font-weight:600;box-shadow:var(--shadow)}
+.phases .phase .chip{transform:none;line-height:16px}
+.phases .phase .state::before{content:none}
+.phases .phase .state{gap:0;margin-left:2px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.04em;background:color-mix(in srgb,#e5484d 20%,transparent);color:color-mix(in srgb,#e5484d 62%,var(--ink))}
+/* Kopfzeile in drei Zonen mit gleich breiten Seiten: Marke links, Schritte genau in der Mitte, Werkzeuge rechts */
+@media(min-width:1440px){
+  .bar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:24px}
+  .bar>.brand{justify-self:start}
+  .bar>.tools{justify-self:end;flex-wrap:nowrap}
+}
+.phases .phase.part .state{background:color-mix(in srgb,#e2a336 26%,transparent);color:color-mix(in srgb,#e2a336 55%,var(--ink))}
+.phases .phase.done .state{background:var(--mint);color:var(--on-mint)}
 .arrow{color:var(--outline-soft);font-family:var(--mono);font-size:11px;flex-shrink:0}
 
 /* Schritt 1: Idee */
-.hero{max-width:min(1280px,100%);margin:auto;width:100%;display:flex;flex-direction:column;gap:14px}
+/* Bereiche (Idee, Voreinstellung, Parameter) stehen weiter auseinander als die Boxen innerhalb eines Bereichs (12px) */
+.hero{margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column;gap:30px;padding-top:28px}
+.ideahead{margin-bottom:-18px;padding:0 4px}
+.ideacard{flex:1;display:flex;flex-direction:column;gap:12px;min-height:200px;max-height:340px}
+.ideacard #idea{flex:1}
 /* Skalen zweispaltig, damit die Idee-Seite ohne langes Scrollen auskommt */
 /* Deutlicher Abstand und eine Trennlinie zwischen den Reglern, damit Überschrift und Regler als Einheit lesbar sind */
-.scales{display:grid;grid-template-columns:1fr 1fr;gap:26px 44px;padding:22px 24px}
-.scales>div:nth-child(n+3){border-top:1px solid var(--surface-mid);padding-top:24px}
+.scales{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:12px}
+.scales>div{background:var(--card);border-radius:8px;box-shadow:var(--shadow);padding:16px 20px}
 .scales>.spread{grid-column:1/-1}
 /* gewählter Wert als Marke; Achsenenden bleiben klein und grau */
 .picked{font-size:11px}
+/* Die Marken „gewählt: …“ entfallen: Die Stellung des Reglers und die Bedeutung daneben sagen dasselbe.
+   Nur bei „Name der Anwendung“ bleibt die Anzahl als schlichter Text, weil es dort keine Bedeutungszeile gibt. */
+.scales .chip.picked{display:none}
+/* Auf der Idee-Seite wird nur die Anzahl der Namensvorschläge gewählt; der Name selbst wird bei der Spezifikation festgelegt */
+#projectIdea{display:none!important}
+.scales #nameCountValue.chip.picked{display:inline;background:none!important;box-shadow:none!important;padding:0;font-family:var(--sans);font-size:13px;font-weight:700;color:var(--heading);letter-spacing:0;text-transform:none}
+/* Pegel statt Textmarke: Balken und großer Wert, ohne Kasten */
+.chip.ok.picked.lvlmark{background:none!important;padding:0;gap:9px;align-items:flex-end;box-shadow:none!important;border:0}
+.lvlmark .lvl{display:inline-flex;align-items:flex-end;gap:3px;height:20px}
+.lvlmark .lvl i{width:5px;border-radius:1.5px;background:var(--outline-soft)}
+.lvlmark .lvl i.on{background:var(--ink)}
+.lvlmark b{font-family:var(--sans);font-size:17px;line-height:1;font-weight:700;color:var(--heading);font-variant-numeric:tabular-nums;letter-spacing:0}
 .scales .spread.meta{font-size:10px;color:var(--outline);opacity:.85}
 .presets{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .presets .btn[aria-pressed=true]{background:var(--mint);color:var(--on-mint);font-weight:700;box-shadow:inset 0 0 0 1px var(--secondary)}
 .scaletext{font-size:13px;line-height:1.5;margin-top:4px}
 .scalelabel{display:inline-flex;align-items:center}
 .scalelabel .info{text-transform:none}
-@media(max-width:980px){.scales{grid-template-columns:1fr}.scales>div:nth-child(n+2){border-top:1px solid var(--surface-mid);padding-top:24px}}
+@media(max-width:900px){.scales{grid-template-columns:1fr}}
 .hero .intro{text-align:center}
 .hero h1{font-size:28px;line-height:34px;letter-spacing:-.02em;font-weight:700}
 .hero .intro p{font-size:14px;line-height:22px;color:var(--ink-soft);max-width:none;margin:2px auto 0}
-#idea{font-size:17px;line-height:26px;padding:14px 16px;min-height:130px;resize:vertical}
-input[type=range]{width:100%;margin:8px 0 4px;accent-color:var(--secondary);cursor:pointer}
+#idea{font-size:17px;line-height:26px;padding:14px 16px;min-height:96px;resize:none}
+/* Alle Regler der Anwendung sehen gleich aus: neutrale Textfarbe; Grün, Gelb und Rot bleiben dem Stand vorbehalten */
+input[type=range]{width:100%;margin:8px 0 4px;accent-color:var(--ink);cursor:pointer}
+/* Ebenso die Marke mit dem gewählten Wert eines Reglers oder einer Auswahl: überall neutral */
+.chip.ok.picked,.agentslider .chip.ok,.goalpick .chip{background:var(--surface-high);color:var(--ink);font-weight:600;border-color:transparent;box-shadow:none}
 kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;border-radius:3px;background:var(--surface-mid);color:var(--ink-soft);letter-spacing:.04em}
 .btn.primary kbd{background:rgba(128,128,128,.28);color:var(--on-primary)}
 
@@ -279,7 +403,7 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
 .outline li .ans{display:block}
 .outline li.fresh{background:var(--tint);border-radius:4px;box-shadow:0 0 0 4px var(--tint);color:var(--ink)}
 .outline .empty{font-size:13px;font-style:italic;color:var(--outline);margin-top:4px}
-.sticky{position:sticky;top:calc(var(--top-h,60px) + 24px);max-height:calc(100vh - var(--top-h,60px) - 48px);overflow-y:auto}
+.sticky{position:sticky;top:calc(var(--top-h,60px) + 24px);max-height:calc(100vh - var(--top-h,60px) - 110px);overflow-y:auto}
 
 /* Dunkles Thema nach dem Stitch-Screen „Fragen (Dark Mode)“: feine Konturen statt Schatten, Mint als Fokusrahmen */
 :root[data-theme=dark] .active{border:2px solid var(--primary)}
@@ -297,7 +421,7 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
 .seg{display:inline-flex;padding:3px;border-radius:6px;background:var(--surface-mid);gap:2px}
 .seg button{border:0;border-radius:4px;padding:5px 14px;background:transparent;cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
 .seg button[aria-pressed=true]{background:var(--card);color:var(--heading);font-weight:600;box-shadow:var(--shadow)}
-.md{background:var(--card);border-radius:6px;box-shadow:var(--shadow);padding:24px 32px;min-height:520px;font-size:15px;line-height:1.7;overflow-wrap:anywhere}
+.md{position:relative;background:var(--card);border-radius:6px;box-shadow:var(--shadow);padding:24px 32px;min-height:520px;font-size:15px;line-height:1.7;overflow-wrap:anywhere}
 /* Text nutzt wie die Tabellen die volle Breite der Ansicht – weniger Scrollen */
 .md>*{max-width:none}
 .md>.tablewrap,.md>pre{max-width:none}
@@ -326,6 +450,7 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
 .md td:first-child,.md th{white-space:nowrap}
 .md th{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);border-bottom-color:var(--outline-soft)}
 .md .placeholder{color:var(--outline);font-style:italic}
+.md .nb{white-space:nowrap}
 
 @media(max-width:1180px){.interview,.split{grid-template-columns:1fr}.sticky{position:static;max-height:none}}
 @media(max-width:760px){
@@ -362,7 +487,7 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
 @keyframes flow{from{background-position:120% 0}to{background-position:-120% 0}}
 @keyframes level{0%,100%{transform:scaleY(.3);opacity:.6}50%{transform:scaleY(1);opacity:1}}
 @keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(360%)}}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:14px;padding:10px 12px 10px 18px;border-radius:8px;background:var(--primary);color:var(--on-primary);font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:14px;padding:10px 12px 10px 18px;border-radius:8px;background:var(--primary);color:var(--on-primary);font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 .toast .btn{background:var(--card);color:var(--ink)}
 /* Direkte Umsetzung: Empfehlung der Agentenzahl, Eingaben, Stand je Auftrag */
 .advice{margin-top:14px;padding:12px 16px;border-radius:6px;border-left:4px solid var(--secondary);background:var(--card);font-size:14px}
@@ -381,20 +506,11 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
 .catpanel>summary h2{display:flex;align-items:center}
 /* Feste Leiste für den Schrittwechsel: „Weiter“ steht auf jeder Ansicht an derselben Stelle */
 html{scrollbar-gutter:stable}
-/* Eine Leiste: Die Kopfzeile trägt Schritte, Zurück/Weiter und die Arbeitsanzeige */
-.navgroup{display:flex;align-items:center;gap:8px;flex:1;justify-content:center;min-width:0}
-.navgroup #navBack{min-width:0;padding-inline:12px}
-.navgroup #navNext{min-width:210px;justify-content:center}
-.navgroup .arrow{display:none}
-.navgroup .working{flex:1;min-width:0;max-width:640px;border-radius:8px;padding:7px 12px 9px;gap:10px;flex-wrap:nowrap;font-size:13px}
-.navgroup .working b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 auto}
-.navgroup .working #workingHint{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 100 auto}
-.navgroup .working .workstop,.navgroup .working .timer{flex-shrink:0}
-.navgroup .working:not(.hidden)+.phases{display:none}
-#project{width:150px}
-@media(max-width:900px){.navgroup{order:3;flex-basis:100%}.navgroup .working #workingHint{display:none}}
+/* Leiste am unteren Rand: Zurück, Arbeitsanzeige, Weiter – auf jeder Ansicht an derselben Stelle */
+body{padding-bottom:62px}
+#project{width:240px}
 .stepnav{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--top-bg);backdrop-filter:blur(8px);box-shadow:0 -1px 10px rgba(0,0,0,.1)}
-.stepnav .inner{width:100%;max-width:max(1200px,88vw);margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.stepnav .inner{width:100%;max-width:var(--page);margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 .stepnav .btn{min-width:150px;justify-content:center}
 /* Arbeitsanzeige in der Leiste: nimmt die Mitte ein und ersetzt dort die Schrittangabe */
 .stepnav .working{flex:1;min-width:0;border-radius:8px;padding:7px 12px 9px;gap:10px;flex-wrap:nowrap;font-size:13px}
@@ -402,8 +518,64 @@ html{scrollbar-gutter:stable}
 .stepnav .working #workingHint{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .stepnav .working .workstop{min-width:0;flex-shrink:0}
 .stepnav .working .timer{flex-shrink:0}
-.stepnav .working:not(.hidden)+#navHint{display:none}
+/* Drei Zonen mit gleich breiten Seiten: Die Arbeitsanzeige steht dadurch genau in der Mitte */
+.stepnav .inner{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr);align-items:center;gap:20px}
+.stepnav .navleft{display:flex;align-items:center;gap:18px;min-width:0}
+.stepnav .navmid{display:flex;min-width:0}
+.stepnav .navright{display:flex;justify-content:flex-end;min-width:0}
+.stepnav #navBack{min-width:0;flex-shrink:0}
+.stepnav #navNext{min-width:0;width:min(280px,100%)}
+.effortbar{display:flex;align-items:center;gap:14px;min-width:0;overflow:hidden}
+.effortbar .cap{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--outline);line-height:1.2;max-width:54px}
+.effortbar .t{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:help}
+.effortbar .t b{font-family:var(--mono);font-size:15px;line-height:1;font-weight:700;color:var(--heading);font-variant-numeric:tabular-nums}
+.effortbar .t i{font-style:normal;font-family:var(--mono);font-size:9px;line-height:1;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
+.effortbar .arr{color:var(--secondary);font-size:15px}
+/* Füllstände in der Kopfzeile: Balken für die Festlegungen, sechs Felder für die Themen, Farbe nach Stand */
+.effortbar .m{--st:#e5484d;align-items:flex-start;gap:4px}
+.effortbar .m.part{--st:#e2a336}
+.effortbar .m.done{--st:var(--go)}
+.effortbar .ebar{display:block;padding:0;width:84px;height:7px;border-radius:4px;background:var(--surface-high);overflow:hidden}
+.effortbar .ebar>i{display:block;height:100%;border-radius:4px;background:var(--st);transition:width .3s ease,background-color .3s ease}
+.effortbar .segs{display:flex;gap:3px;height:7px}
+.effortbar .segs i{width:11px;height:7px;border-radius:2px;background:var(--surface-high)}
+.effortbar .segs i.on{background:var(--st)}
+/* Die Aufwand-Anzeige ist eine eigene Gruppe: Abstand und eine feine Trennlinie setzen sie von den Schaltern ab (wie die Linie neben der Wortmarke) */
+.tools .effortbar{margin-right:14px;padding-right:26px;border-right:1px solid var(--outline-soft);overflow:visible}
+.effortbar .t{padding:3px 6px;margin:-3px -6px;border-radius:5px}
+.effortbar .t.tick{animation:tick .8s ease-out}
+@keyframes tick{0%,25%{background:color-mix(in srgb,#e5484d 42%,transparent)}100%{background:transparent}}
+@media(prefers-reduced-motion:reduce){.effortbar .t.tick{animation:none}}
+@media(max-width:1500px){.effortbar{gap:10px}.effortbar .arr{display:none}}
+/* Damit die Schritte auch in schmaleren Fenstern genau in der Mitte bleiben, werden die Werkzeuge rechts schrittweise kompakter */
+@media(max-width:1699px){.effortbar .t:not(.m),.effortbar .arr{display:none}}
+@media(max-width:1559px){#reset{font-size:0;gap:0;padding-inline:10px}#reset::before{content:"↺";font-size:15px;line-height:16px}.effortbar .ebar{width:64px}.tools{gap:8px}.tools .effortbar{margin-right:8px;padding-right:16px}}
+@media(max-width:1100px){.effortbar{display:none}.stepnav .inner{grid-template-columns:auto minmax(0,1fr) auto}}
+#effort{display:none}
+/* Arbeitsanzeige, leichte Fassung: keine Fläche – drei atmende Punkte, schimmernder Text und ein feiner Lichtstreif auf einer Haarlinie */
+.stepnav .working{background:color-mix(in srgb,var(--secondary) 9%,transparent);animation:none;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--secondary) 28%,transparent);color:var(--ink);padding:8px 14px 11px;border-radius:8px;gap:12px}
+.stepnav .working::before{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:color-mix(in srgb,var(--secondary) 22%,transparent)}
+.stepnav .working::after{display:none}
+.stepnav .working .stripe{height:3px;width:28%;bottom:0;border-radius:3px;background:linear-gradient(90deg,transparent,var(--secondary));box-shadow:0 0 14px 1px var(--secondary)}
+.stepnav .working .pulse{height:auto;gap:5px}
+.stepnav .working .pulse i{width:8px;height:8px;border-radius:50%;background:var(--secondary);box-shadow:none;animation:dot 1.3s ease-in-out infinite}
+.stepnav .working .pulse i:nth-child(2){animation-delay:.18s}
+.stepnav .working .pulse i:nth-child(3){animation-delay:.36s}
+.stepnav .working .pulse i:nth-child(4){display:none}
+@keyframes dot{0%,70%,100%{transform:scale(.5);opacity:.4}35%{transform:scale(1);opacity:1;box-shadow:0 0 8px var(--secondary)}}
+.stepnav .working b{font-weight:700;font-size:14px;background:linear-gradient(100deg,var(--ink) 42%,var(--secondary) 50%,var(--ink) 58%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 2.6s linear infinite}
+.stepnav .working #workingHint{color:var(--ink-soft)}
+.stepnav .working .workstop{background:transparent;color:var(--ink-soft);box-shadow:inset 0 0 0 1px var(--outline-soft)}
+.stepnav .working .workstop:hover{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink-soft)}
+.stepnav .working .timer{background:none;box-shadow:none;padding:0;color:var(--ink-soft)}
+@media(prefers-reduced-motion:reduce){.stepnav .working b{animation:none;color:var(--ink);background:none}.stepnav .working .pulse i{animation:none;transform:none;opacity:.8}}
 .stepnav #navNext{min-width:280px}
+/* Weiter-Knopf: neutral, solange etwas fehlt; grün, sobald das Nötige für den nächsten Schritt da ist */
+.stepnav #navNext{background:var(--surface-high);color:var(--ink);box-shadow:none;transition:background-color .25s ease,color .25s ease}
+.stepnav #navNext.ready{background:var(--go);color:var(--on-go);box-shadow:0 2px 10px color-mix(in srgb,var(--go) 45%,transparent)}
+.stepnav #navNext.ready:hover{filter:brightness(1.08)}
+#generate.ready{background:var(--go);color:var(--on-go);box-shadow:0 2px 10px color-mix(in srgb,var(--go) 45%,transparent)}
+#generate.ready:hover{filter:brightness(1.08)}
 @media(max-width:760px){.stepnav .working #workingHint{display:none}.stepnav #navHint{display:none}.stepnav .inner{padding:10px 16px}.stepnav .btn{min-width:0}.stepnav #navNext{min-width:0;flex:1}}
 /* Schritt 4: nummerierte Abschnitte, große Auswahlkacheln, Prüfübersicht */
 .stephead{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
@@ -443,7 +615,7 @@ html{scrollbar-gutter:stable}
 .donefind{opacity:.55}
 .reuseitem a{color:var(--secondary);font-weight:600;overflow-wrap:anywhere}
 .reuseitem .switch{margin-top:4px}
-.featsum{display:flex;flex-direction:column;gap:2px;margin-top:12px;padding:12px 14px;border-radius:6px;border-left:4px solid var(--secondary);background:var(--surface-low)}
+.featsum{display:flex;flex-direction:column;gap:2px;margin-top:12px;padding:12px 14px;border-radius:6px;border-left:4px solid transparent;background:var(--surface-low)}
 .featsum b{font-size:26px;line-height:32px;color:var(--heading);font-variant-numeric:tabular-nums}
 .featsum.over{border-left-color:var(--warn-line);background:var(--error-container)}
 .featsum.over b,.featsum.over .meta,.featsum.over .eyebrow{color:var(--on-error-container)}
@@ -468,17 +640,27 @@ html{scrollbar-gutter:stable}
 /* Aufteilung der Bearbeitungszeit: Basis-Features, Erweiterungen, Zielmarke */
 .goalpick{margin-top:10px;padding-top:10px;border-top:1px solid var(--surface-mid);font-size:13px}
 .goalpick input[type=range]{margin:6px 0 0}
+.sliderpair{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;align-items:start;margin-top:10px;padding-top:10px;border-top:1px solid var(--surface-mid)}
+.sliderpair .goalpick{margin:0;padding:0;border:0}
+.sliderpair .agentslider b{font-size:13px;line-height:20px}
+.sliderpair .agentslider input[type=range]{margin:6px 0 2px}
+.sliderpair .agentslider .meta{display:none}
+/* Ruhigeres Bild: Grün bleibt dem Stand des Bereichs und dem Dauer-Balken vorbehalten; die beiden Regler sind neutral */
+.sliderpair>*{min-width:0}
+.sliderpair .spread{flex-wrap:wrap;gap:4px 8px}
+.sliderpair .spread .chip{white-space:nowrap}
+@media(max-width:560px){.sliderpair{grid-template-columns:1fr}}
 .featsum .goalpick b{font-size:13px;line-height:20px;color:var(--heading)}
 .goalwarn{margin-top:6px}
 .featsum.over .goalpick b{color:var(--on-error-container)}
 .splitbar{position:relative;display:flex;height:12px;margin-top:8px;border-radius:6px;background:var(--surface-mid);overflow:visible}
 .splitbar .base{background:var(--secondary);border-radius:6px 0 0 6px}
-.splitbar .ext{background:var(--mint);box-shadow:inset 0 0 0 1px var(--secondary)}
+.splitbar .ext{background:color-mix(in srgb,var(--secondary) 50%,transparent)}
 .splitbar .goal{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);transform:translateX(-1px)}
 .splitlegend{display:flex;gap:6px 14px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--ink-soft)}
 .splitlegend b{color:var(--ink);font-size:12px;line-height:inherit}
 .splitlegend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
-.splitlegend i.base{background:var(--secondary)}.splitlegend i.ext{background:var(--mint);box-shadow:inset 0 0 0 1px var(--secondary)}.splitlegend i.goal{width:2px;background:var(--ink)}
+.splitlegend i.base{background:var(--secondary)}.splitlegend i.ext{background:color-mix(in srgb,var(--secondary) 50%,transparent)}.splitlegend i.goal{width:2px;background:var(--ink)}
 .featsum.over .splitlegend,.featsum.over .splitlegend b{color:var(--on-error-container)}
 .featgroup{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px;padding-bottom:6px}
 .featgroup .eyebrow{color:var(--secondary)}
@@ -496,6 +678,166 @@ html{scrollbar-gutter:stable}
 .featrow.off .mins{opacity:.5}
 .catacts .btn{white-space:normal;text-align:left}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.working,.working::after,.working .pulse i{animation:none}.working .pulse i:nth-child(odd){transform:scaleY(.55)}.working .stripe{animation:none;width:100%}}
+/* Umsetzung: ausgedünnt und in zwei Spalten – links festlegen (Abarbeitung, weiteres Vorgehen, Layouts), rechts prüfen und abschließen */
+.impl{display:grid;grid-template-columns:minmax(0,3fr) minmax(380px,2fr);gap:24px;align-items:start}
+.implmain,.implside{display:flex;flex-direction:column;gap:16px;min-width:0}
+.implmain>*,.implside>*{flex-shrink:0}
+@media(max-width:1180px){.impl{grid-template-columns:1fr}}
+#phase3{gap:14px!important}
+#phase3 .card{padding:16px 20px}
+#phase3 .stephead{margin-bottom:10px;align-items:center}
+#phase3 .stephead p{display:none}
+#phase3 .stephead h2,#layoutSection h2{font-size:16px}
+#phase3 .stepno{width:26px;height:26px;font-size:13px}
+/* Die beiden Kacheln „nacheinander/parallel“ sagen dasselbe wie der Regler darunter */
+#phase3 #planConfig>.choice2{display:none}
+#phase3 .choice{flex-direction:row;align-items:center;padding:10px 14px}
+#phase3 .choice span{display:none}
+#phase3 #agentNote{display:none}
+#phase3 .parbox{padding:0}
+#phase3 .advice{margin-top:10px;padding:10px 14px;font-size:13px}
+#phase3 #planConfig .settings{margin-top:12px!important}
+/* Gestaltung: UI-Layouts und Logo stehen an derselben Stelle nebeneinander */
+.designrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:stretch}
+/* Solange keine Layouts aktiv sind, deuten leere Rahmen die Entwürfe an (gleiche Höhe wie die Logo-Box) */
+.layoutghost{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:28px 0 6px}
+.layoutghost i{width:88px;height:88px;flex-shrink:0;border-radius:10px;border:1.5px dashed var(--outline-soft);background:linear-gradient(var(--outline-soft),var(--outline-soft)) 10px 10px/60% 6px no-repeat,linear-gradient(var(--outline-soft),var(--outline-soft)) 10px 24px/35% 6px no-repeat,linear-gradient(var(--outline-soft),var(--outline-soft)) 10px 44px/80% 30px no-repeat;opacity:.45}
+.layoutghost .meta{flex-basis:100%}
+#layoutBody:not(.hidden)~#layoutGhost{display:none}
+#logoPanel h2{font-size:16px}
+#layoutBody:not(.hidden){margin-top:28px}
+/* Beide Gestaltungs-Boxen: Inhalt füllt die gemeinsame Höhe und steht darin mittig, damit oben und unten gleich viel Luft bleibt */
+.designrow>section{display:flex;flex-direction:column}
+.designrow>section>.namebox{flex:1;justify-content:center}
+.designrow>section>.layoutghost{flex:1;align-content:center}
+#logoPanel .namerow{flex-wrap:nowrap;align-items:center;gap:10px}
+#logoPanel .logotile{flex-shrink:0}
+#logoPanel .logoidea{flex:1;min-width:120px;margin:0 0 0 6px}
+#logoPanel .namebox{margin:28px 0 6px;padding:0;background:none;box-shadow:none;border-left:0;border-radius:0}
+/* „Weiteres Vorgehen“: Auswahl in der Größe der übrigen Knöpfe */
+#phase3 .nextin .choice2{display:flex;flex-wrap:wrap;gap:8px}
+#phase3 .nextin .choice{padding:8px 14px;border-width:1px;border-radius:6px}
+#phase3 .nextin .choice b{font-family:var(--mono);font-size:12px;font-weight:600}
+/* Abarbeitung: Regler links in halber Breite, daneben die Schätzung; darunter Repository und Zielagent, der Knopf schließt rechts ab */
+#phase3 #planConfig{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px 28px;align-items:center}
+#phase3 #planConfig>.stephead,#phase3 #planConfig>.settings,#phase3 #planConfig>.actions,#phase3 #planConfig>.nextin{grid-column:1/-1}
+#phase3 .nextin .field-label{display:block;margin-bottom:6px}
+#phase3 #planConfig>.stephead{margin-bottom:0}
+#phase3 #planConfig>.settings,#phase3 #planConfig>.actions{margin-top:0!important}
+#phase3 #planConfig>.actions{justify-content:flex-end}
+#phase3 #agentRow .agentslider .meta{display:none}
+#phase3 #agentRow .agentslider input[type=range]{margin:8px 0 0}
+#phase3 #planConfig .advice{margin:0;padding:0;border:0;background:none;font-size:13px;color:var(--ink-soft)}
+#phase3 #planConfig .advice b{color:var(--ink)}
+#phase3 #plan{min-width:200px;justify-content:center}
+/* Wie viele und welche Agenten gehören zusammen: Parallelisierung und Zielagent in einer Zeile; darunter die Schätzung, dann das Repository */
+#phase3 #planConfig>.settings{display:contents}
+#phase3 #planConfig>.stephead{order:0}
+#phase3 #agentRow{order:1;align-self:start}
+#phase3 #planConfig>.settings>div:last-child{order:2;align-self:start}
+#phase3 #runAdvice{order:3;grid-column:1/-1}
+#phase3 #planConfig>.settings>div:first-child{order:4;grid-column:1/-1}
+#phase3 #planConfig>.nextin{order:5}
+#phase3 #planConfig>.actions{order:6}
+#phase3 #planConfig>.settings>div:last-child .field-label{margin-bottom:6px}
+@media(max-width:900px){#phase3 #planConfig{grid-template-columns:1fr}}
+/* „Neues Repository anlegen“ steht in derselben Zeile rechts neben dem Feld */
+.reporow{display:flex;align-items:stretch;gap:8px}
+.reporow input{flex:1;min-width:0}
+.reporow .btn{flex-shrink:0;white-space:nowrap}
+.repoextra{margin-top:8px}
+.repoextra:not(:has(#repoForm:not(.hidden))):has(#repoStatus:empty){display:none}
+#phase3 #planConfig>.actions{margin-top:12px!important}
+#layoutSection:has(#layoutOn:not(:disabled)) #layoutHint{display:none}
+#phase3 #runPanel{margin-top:12px!important}
+#phase3 .review{font-size:13px}
+#phase3 .reviewrow{grid-template-columns:130px minmax(0,1fr) auto;gap:12px;padding:8px 2px;font-size:13px}
+/* Grundsatz für die ganze Anwendung: Die Seite selbst rollt nie. Gerollt wird nur innerhalb der Ansicht –
+   in jeder Ansicht ihr Inhaltsbereich, auf breiten Fenstern bei Spezifikation und Umsetzung jede Spalte für sich. */
+body.fitview{height:100vh;height:100dvh;box-sizing:border-box;overflow:hidden}
+body.fitview main{min-height:0;overflow:hidden}
+body.fitview main>div:not(.hidden){flex:1 1 0;min-height:0;overflow-y:auto;position:relative}
+@media(min-width:1181px){
+  body.fitview #phase1{overflow:hidden;grid-template-rows:minmax(0,1fr);align-items:stretch}
+  body.fitview #phase1>*{position:relative;min-height:0;max-height:none;top:auto;overflow-y:auto}
+}
+@media(min-width:1181px) and (min-height:640px){
+  body.fitview #phase2,body.fitview #phase3{overflow:hidden}
+  body.fitview #phase2{flex:1;min-height:0}
+  body.fitview #phase2>*{flex-shrink:0}
+  body.fitview #phase2>.split{flex:1 1 0;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch}
+  /* position:relative hält absolut gesetzte Schalter innerhalb der rollenden Spalte, sonst verlängern sie die Seite */
+  body.fitview .split>div:first-child{position:relative;min-height:0;overflow-y:auto;padding-right:4px}
+  body.fitview .split>.side{position:relative;top:auto;max-height:none;min-height:0;overflow-y:auto}
+  body.fitview .md :is(h2,h3,h4,h5,h6){scroll-margin-top:12px}
+  body.fitview #phase3{flex:1;min-height:0}
+  body.fitview #phase3>*{flex-shrink:0}
+  body.fitview #phase3>.impl{flex:1 1 0;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch}
+  body.fitview .implmain,body.fitview .implside{position:relative;min-height:0;overflow-y:auto;padding-right:4px}
+}
+/* Fragen und Spezifikation in einer Ansicht (MERGED): Die Fragen stehen links, solange es kein Dokument gibt */
+body.merged .qapane{display:flex;flex-direction:column;gap:14px}
+body.merged .qapane.hidden{display:none}
+body.merged .qapane .gauge,body.merged .qapane .ideabox{display:none}
+body.merged.qa #specView,body.merged.qa #specCount,body.merged.qa #decPanel{display:none}
+/* Im Feld „Entscheidungen“ ersetzt die Fragenliste den früheren Katalog */
+body.merged.decqa #decPanel :is(#openHead,#openList,#doneHead,#catalog){display:none}
+body.merged.decqa #decPanel .qapane{gap:10px}
+body.merged.decqa #decDerive{margin-top:12px}
+/* Idee-Seite auf breiten Fenstern: links die Texteingabe über die ganze Höhe, rechts Voreinstellung und alle Regler */
+@media(min-width:1181px){
+  .hero:not(.hidden){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:16px 24px;padding-top:16px;align-items:start}
+  /* Überschriften-Zeile: links „Deine Idee“, rechts „Voreinstellung“; darunter beginnen Kasten und Regler auf einer Linie */
+  .hero>.ideahead{grid-column:1;grid-row:1;align-self:end;padding:0 4px;margin:0 0 2px}
+  .hero>.ideacard{grid-column:1;grid-row:2;max-height:none;height:100%;align-self:stretch}
+  .hero>.presets{grid-column:2;grid-row:1;align-self:center}
+  /* Alle Parameter in einer Spalte, je Parameter eine flache Zeile: Bezeichnung | Regler mit Achse | gewählter Wert und Bedeutung */
+  .hero>.scales{grid-column:2;grid-row:2;grid-template-columns:1fr;gap:14px;align-content:start;max-height:100%;overflow-y:auto;padding:0}
+  .hero>.scales>div{display:grid;grid-template-columns:238px minmax(0,1fr) minmax(0,236px);column-gap:18px;row-gap:1px;align-items:center;padding:13px 16px}
+  .hero>.scales>div>.spread:first-child{display:contents}
+  .hero>.scales>div .scalelabel{grid-column:1;grid-row:1/3;align-self:center;display:flex;align-items:center;justify-content:flex-start;gap:10px;width:100%}
+  .hero>.scales>div .scalelabel>label{flex:1;min-width:0;white-space:nowrap}
+  /* Info-Symbol ganz links vor der Bezeichnung: Symbole und Bezeichnungen stehen jeweils in einer Flucht */
+  .hero>.scales>div .scalelabel>.info{flex-shrink:0;order:-1;margin:0}
+  .hero>.scales>div>.spread:first-child>.chip{grid-column:3;grid-row:1/3;align-self:center;justify-self:stretch;justify-content:flex-start;overflow:hidden;text-overflow:ellipsis}
+  .hero>.scales>div>input[type=range]{grid-column:2;grid-row:1;margin:0}
+  .hero>.scales>div>.axis{grid-column:2;grid-row:2}
+  .hero>.scales>div>.scaletext{grid-column:3;grid-row:1/3;align-self:center;margin:0;font-size:13px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hero>.scales>div>.spread:first-child>.chip{white-space:nowrap}
+  .hero>.scales>div>p.muted{grid-column:2/-1;margin:0}
+  .hero>.scales>div>p.muted:empty{display:none}
+  .hero>.scales>div>#projectIdea{grid-column:3;grid-row:2;margin:0!important;padding:5px 9px!important}
+  .hero>.scales>div>.actions{grid-column:2;grid-row:1/3;margin:0!important;flex-wrap:nowrap;min-width:0}
+  .hero>.scales>div>.actions select{min-width:0!important;flex:1 1 0}
+  .hero>.scales>div>.axis{white-space:nowrap;gap:8px}
+  .hero>.scales>div>.axis span{overflow:hidden;text-overflow:ellipsis}
+  .hero>.scales>div>#reviewCost{grid-column:3;grid-row:1/3;align-self:center;margin:0!important;font-size:11px;line-height:1.3}
+  .hero>p{grid-column:1;grid-row:3;margin:0}
+}
+/* Wird die rechte Spalte schmal, entfallen die Achsenbeschriftungen der Regler (Wert und Bedeutung stehen rechts daneben) */
+@media(min-width:1181px) and (max-width:1560px){
+  .hero>.scales>div{grid-template-columns:232px minmax(0,1fr) minmax(0,210px);column-gap:14px}
+  .hero>.scales>div>.axis{display:none}
+  .hero>.scales>div>#projectIdea{grid-row:2}
+}
+/* Druck / PDF: nur die Spezifikation, A4, helle Farben unabhängig vom Thema */
+@media print{
+  @page{size:A4;margin:18mm 16mm}
+  :root,:root[data-theme=dark]{--ink:#111;--ink-soft:#333;--heading:#000;--card:#fff;--surface:#fff;--surface-low:#f3f3f0;--surface-mid:#dcdcd8;--surface-high:#d0d0cc;--outline:#666;--outline-soft:#bbb;--secondary:#1d5c45;--shadow:none}
+  html,body{background:#fff!important}
+  body{padding:0!important;display:block!important;min-height:0;height:auto!important;overflow:visible!important}
+  main,.split>div:first-child{overflow:visible!important}
+  .top,.stepnav,.toast,dialog,#phase0,#phase1,#phase3,#phase2>.pagehead,.split>.side,.split>div:first-child>*:not(#specView),#phase2>.wishbox,#phase2>.specbar,#changeBar,.md .marks{display:none!important}
+  main{max-width:none!important;padding:0!important;display:block!important}
+  #phase2,.split{display:block!important}
+  .md{box-shadow:none;border-radius:0;padding:0;min-height:0;background:#fff;color:#111;font-size:10.5pt;line-height:1.5}
+  .md :is(h2,h3,h4,h5,h6){break-after:avoid}
+  .md :is(tr,pre,blockquote,li){break-inside:avoid}
+  .md a{color:inherit;text-decoration:none}
+  .md .tablewrap{overflow:visible}
+  .md table{min-width:0;width:100%;font-size:9.5pt}
+  .md td:first-child,.md th{white-space:normal}
+}
 </style>
 </head>
 <body>
@@ -504,10 +846,12 @@ html{scrollbar-gutter:stable}
     <div class="brand">
       <span class="wordmark">Spec<span>It.</span></span>
       <span class="rule" aria-hidden="true"></span>
+      <span id="brandLogo" class="brandlogo hidden"></span>
       <input id="project" type="text" maxlength="100" placeholder="Projektname" aria-label="Projektname">
     </div>
-    <div class="navgroup"><button id="navBack" class="btn" type="button"></button><div id="working" class="working hidden" role="status" aria-live="polite"><span class="pulse" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b id="workingText"></b><span id="workingHint"></span><button id="workingStop" class="btn small workstop" type="button" title="Die laufende Verarbeitung beenden; es entstehen keine weiteren Kosten.">✕ Abbrechen</button><span id="workingTime" class="timer" aria-hidden="true"></span><span class="stripe" aria-hidden="true"></span></div><nav class="phases" id="phases" aria-label="Schritte"></nav><span class="meta hidden" id="navHint"></span><button id="navNext" class="btn primary" type="button"></button></div>
+    <nav class="phases" id="phases" aria-label="Schritte"></nav>
     <div class="tools">
+      <div class="effortbar" id="navHint"></div>
       <span id="mode" class="pill hidden" role="status">Demo-Modus</span>
       <label class="switch" id="aiSwitch"><input type="checkbox" id="ai"><span class="track"></span><span>Claude</span></label>
       <button id="theme" class="btn ghost" type="button" aria-pressed="false">Dunkel</button>
@@ -519,19 +863,16 @@ html{scrollbar-gutter:stable}
 <main>
   <!-- Schritt 1 · Idee -->
   <div id="phase0" class="hero hidden">
-    <div class="intro">
-      <h1>Was willst du bauen?</h1>
-    </div>
-    <div class="card" style="display:flex;flex-direction:column;gap:16px">
-      <div class="spread"><label class="field-label" for="idea" style="margin:0">Deine Idee in einem Satz</label><span class="meta" id="ideaCount"></span></div>
-      <textarea id="idea" rows="7" maxlength="2000" placeholder="z. B. Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost. Ein Satz genügt – mehr Details sind willkommen (Umschalt+Enter für eine neue Zeile)."></textarea>
+    <div class="spread ideahead"><label class="field-label" for="idea" style="margin:0">Deine Idee in einem Satz</label><span class="meta" id="ideaCount"></span></div>
+    <div class="card ideacard">
+      <textarea id="idea" rows="7" maxlength="2000" aria-label="Was willst du bauen?" placeholder="Was willst du bauen? Ein Satz genügt – z. B. „Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost“. Mehr Details sind willkommen (Umschalt+Enter für eine neue Zeile)."></textarea>
       <div class="spread">
         <span class="status" id="ideaStatus" role="status"></span>
         <button id="derive" class="btn primary hidden" type="button"><span id="deriveLabel">✦ Fragen ableiten →</span> <kbd>Enter</kbd></button>
       </div>
     </div>
     <div class="presets"><span class="field-label" style="margin:0">Voreinstellung</span><div class="actions" id="presets" role="group" aria-label="Voreinstellungen für die Regler"></div></div>
-    <div class="card scales">
+    <div class="scales">
       <div>
         <div class="spread"><span class="scalelabel"><label class="field-label" for="autonomy" style="margin:0">Modus</label><span class="info" id="autonomyInfo" tabindex="0" role="note"><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true"></span></span></span><span class="chip ok picked" id="autonomyValue"></span></div>
         <input type="range" id="autonomy" min="0" max="5" step="1" list="autonomyTicks">
@@ -567,14 +908,21 @@ html{scrollbar-gutter:stable}
         <p class="muted" id="layoutIdeaHint" style="font-size:13px"></p>
       </div>
       <div>
-        <div class="spread"><span class="scalelabel"><label class="field-label" for="nameCount" style="margin:0">Name der Anwendung</label><span class="info" tabindex="0" role="note" aria-label="Entweder selbst einen Namen eintragen – er wird dann schon in der Spezifikation verwendet – oder die Anzahl der Namensvorschläge wählen. Die Vorschläge erscheinen bei der Spezifikation und lassen sich dort mit einem Klick übernehmen. 0 = keine Vorschläge."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Entweder selbst einen Namen eintragen – er wird dann schon in der Spezifikation verwendet – oder die Anzahl der Namensvorschläge wählen. Die Vorschläge erscheinen bei der Spezifikation und lassen sich dort mit einem Klick übernehmen. 0 = keine Vorschläge.</span></span></span><span class="chip ok picked" id="nameCountValue"></span></div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="logoCount" style="margin:0">Logo-Entwürfe</label><span class="info" tabindex="0" role="note" aria-label="Lässt Claude Logo-Entwürfe als SVG zeichnen (quadratische Bildmarke). Sie erscheinen bei der Spezifikation; dort lässt sich einer auswählen und als SVG laden. 0 = keine Entwürfe."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Lässt Claude Logo-Entwürfe als SVG zeichnen (quadratische Bildmarke). Sie erscheinen bei der Spezifikation; dort lässt sich einer auswählen und als SVG laden. 0 = keine Entwürfe.</span></span></span><span class="chip ok picked" id="logoCountValue"></span></div>
+        <input type="range" id="logoCount" min="0" max="5" step="1" list="autonomyTicks">
+        <div class="spread meta axis"><span>0</span><span>5</span></div>
+        <p id="logoCountText" class="scaletext" aria-live="polite"></p>
+      </div>
+      <div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="nameCount" style="margin:0">Name der Anwendung</label><span class="info" tabindex="0" role="note" aria-label="Anzahl der Namensvorschläge. Sie erscheinen bei der Spezifikation; dort lässt sich einer mit einem Klick übernehmen oder ein eigener Name eintragen. 0 = keine Vorschläge."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Anzahl der Namensvorschläge. Sie erscheinen bei der Spezifikation; dort lässt sich einer mit einem Klick übernehmen oder ein eigener Name eintragen. 0 = keine Vorschläge.</span></span></span><span class="chip ok picked" id="nameCountValue"></span></div>
         <input type="range" id="nameCount" min="0" max="5" step="1" list="autonomyTicks">
         <div class="spread meta axis"><span>0</span><span>5</span></div>
         <input type="text" id="projectIdea" maxlength="100" placeholder="oder eigenen Namen eintragen" aria-label="Eigener Name der Anwendung" style="margin-top:8px;padding:7px 10px;font-size:14px">
       </div>
       <div>
-        <div class="spread"><span class="scalelabel"><label class="field-label" for="reviewBy" style="margin:0">Review der Spezifikation</label><span class="info" tabindex="0" role="note" aria-label="Lässt die fertige Spezifikation noch einmal von einem Agenten prüfen: Widersprüche, Lücken, nicht prüfbare Anforderungen, unnötige Komplexität. Die Befunde stehen neben der Spezifikation und lassen sich einzeln einarbeiten. Zur Wahl stehen die Anbieter, die auf diesem Rechner eingerichtet sind, und – wo möglich – das Modell."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Lässt die fertige Spezifikation noch einmal von einem Agenten prüfen: Widersprüche, Lücken, nicht prüfbare Anforderungen, unnötige Komplexität. Die Befunde stehen neben der Spezifikation und lassen sich einzeln einarbeiten. Zur Wahl stehen die Anbieter, die auf diesem Rechner eingerichtet sind, und – wo möglich – das Modell.</span></span></span><span class="chip ok picked" id="reviewValue"></span></div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="reviewBy" style="margin:0">Review der Spezifikation</label><span class="info" tabindex="0" role="note" aria-label="Lässt die fertige Spezifikation noch einmal von einem Agenten prüfen: Widersprüche, Lücken, nicht prüfbare Anforderungen, unnötige Komplexität. Die Befunde stehen neben der Spezifikation und lassen sich einzeln einarbeiten. Zur Wahl stehen die Anbieter, die auf diesem Rechner eingerichtet sind, und das Modell mit Version. Der Faktor nennt die Tokenkosten im Verhältnis zu Sonnet 5.5 (Listenpreise je Million Token, Stand 03.11.2026): Haiku 5.5 0,05×, Sonnet 5.5 1×, Opus 5.5 2×, Fable 5.2 4×. Gründlichere Modelle verbrauchen zusätzlich mehr Token zum Nachdenken und laufen länger; die Laufzeit-Faktoren sind grobe Richtwerte, keine Messwerte. Für Codex nennt die Codex-CLI keine Preise."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Lässt die fertige Spezifikation noch einmal von einem Agenten prüfen: Widersprüche, Lücken, nicht prüfbare Anforderungen, unnötige Komplexität. Die Befunde stehen neben der Spezifikation und lassen sich einzeln einarbeiten. Zur Wahl stehen die Anbieter, die auf diesem Rechner eingerichtet sind, und – wo möglich – das Modell.</span></span></span><span class="chip ok picked" id="reviewValue"></span></div>
         <div class="actions" style="margin-top:10px"><select id="reviewBy" aria-label="Anbieter für das Review" style="flex:1;min-width:150px"></select><select id="reviewModel" aria-label="Modell für das Review" style="flex:1;min-width:130px"></select></div>
+        <p class="meta" id="reviewCost" style="margin:8px 0 0"></p>
       </div>
     </div>
     <p style="text-align:center"><button class="link" type="button" id="pasteSpec">Vorhandene Spezifikation einfügen</button></p>
@@ -620,34 +968,38 @@ html{scrollbar-gutter:stable}
     <div class="pagehead">
       <div class="headline"><h1>Spezifikation<span class="info" tabindex="0" role="note" aria-label="Der konsolidierte Entwurf aus Idee und Antworten. Annahmen und offene Entscheidungen prüfen, Antworten im Fragen-Katalog ändern, direkt bearbeiten oder eine vorhandene Spezifikation einfügen."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Der konsolidierte Entwurf aus Idee und Antworten. Annahmen und offene Entscheidungen prüfen, Antworten im Fragen-Katalog ändern, direkt bearbeiten oder eine vorhandene Spezifikation einfügen.</span></span></h1><span class="chip" id="specBadge"></span><span id="specStatus" role="status" class="status"></span></div>
     </div>
+    <div class="wishbox hidden" id="wishBox">
+      <label class="wishlabel" for="wish"><span class="spark" aria-hidden="true">✦</span>Spezifikation anpassen</label>
+      <textarea id="wish" rows="1" maxlength="500" placeholder="Was soll anders werden? z. B. „Zusätzlich ein CSV-Export der Notizen“"></textarea>
+      <div class="wishfoot"><button id="wishRun" class="btn primary small" type="button">✦ Einarbeiten</button><span class="meta"><kbd>Strg</kbd> + <kbd>Enter</kbd></span></div>
+    </div>
+    <div class="specbar">
+      <div class="actions"><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="specPdf" class="btn small" type="button" title="Öffnet die Druckvorschau des Browsers mit der Spezifikation im A4-Format. Dort als Ziel „Als PDF speichern“ wählen.">↓ PDF / Vorschau</button><button id="generate" class="btn primary small" type="button">↻ Spezifikation aktualisieren</button><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div></div>
+    </div>
+    <div id="changeBar" class="changebar hidden" role="status"></div>
     <div class="split">
       <div>
-        <div class="namebox hidden" id="nameBox"></div>
-        <div class="wishbox hidden" id="wishBox">
-          <label class="wishlabel" for="wish"><span class="spark" aria-hidden="true">✦</span>Spezifikation anpassen</label>
-          <textarea id="wish" rows="1" maxlength="500" placeholder="Was soll anders werden? z. B. „Zusätzlich ein CSV-Export der Notizen“"></textarea>
-          <div class="wishfoot"><button id="wishRun" class="btn primary small" type="button">✦ Einarbeiten</button><span class="meta"><kbd>Strg</kbd> + <kbd>Enter</kbd></span></div>
-        </div>
-        <div style="margin-bottom:8px">
-          <div class="actions"><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="generate" class="btn primary small" type="button">↻ Konzept generieren</button><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div></div>
-        </div>
-        <div id="changeBar" class="changebar hidden" role="status"></div>
         <article id="specView" class="md" aria-label="Spezifikation, Ansicht"></article>
         <textarea id="spec" aria-label="Spezifikation als Markdown bearbeiten" class="hidden" rows="22" maxlength="50000" placeholder="Spezifikation generieren oder hier einfügen …"></textarea>
         <p class="meta" id="specCount" style="text-align:right;margin-top:6px"></p>
       </div>
       <div class="side sticky">
         <!-- Features der Spezifikation: einzeln an- und abwählbar, mit Aufwand je Feature und laufender Gesamtdauer -->
-        <details class="card catpanel" id="featPanel" open>
+        <details class="card catpanel" id="namePanel">
+          <summary><h2>Name der Anwendung</h2><span class="meta" id="nameMeta"></span></summary>
+          <div class="namebox" id="nameBox"></div>
+        </details>
+        <details class="card catpanel" id="featPanel">
           <summary><h2>Features<span class="info" tabindex="0" role="note" aria-label="Basis-Features gehören zur grundsätzlichen Funktionsweise und sind fest; Erweiterungen lassen sich an- und abwählen. Der Aufwand gilt je Feature für einen einzelnen Agenten; die geschätzte Dauer passt sich sofort an."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Basis-Features gehören zur grundsätzlichen Funktionsweise und sind fest; Erweiterungen lassen sich an- und abwählen. Der Aufwand gilt je Feature für einen einzelnen Agenten; die geschätzte Dauer passt sich sofort an.</span></span></h2><span class="meta" id="featCount"></span></summary>
           <div id="featBox"></div>
         </details>
         <!-- Zwei gleich aufgebaute, einklappbare Felder: beantwortete Fragen und offene Entscheidungen -->
         <details class="card catpanel" id="decPanel">
           <summary><h2>Entscheidungen<span class="info" tabindex="0" role="note" aria-label="Jede Antwort auf eine Frage ist eine Entscheidung; offene Fragen sind offene Entscheidungen. Aus den Entscheidungen entsteht die Spezifikation, aus ihr der Feature-Katalog. Ändert sich eine Entscheidung, werden Spezifikation und Features nachgezogen; wird ein Feature ab- oder angewählt, werden Spezifikation und betroffene Entscheidungen angepasst."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Jede Antwort auf eine Frage ist eine Entscheidung; offene Fragen sind offene Entscheidungen. Aus den Entscheidungen entsteht die Spezifikation, aus ihr der Feature-Katalog. Ändert sich eine Entscheidung, werden Spezifikation und Features nachgezogen; wird ein Feature ab- oder angewählt, werden Spezifikation und betroffene Entscheidungen angepasst.</span></span></h2><span class="meta" id="decCount"></span></summary>
-          <div><p class="eyebrow decsec" id="openHead"></p><div id="openList"></div><p class="eyebrow decsec" id="doneHead"></p><div id="catalog"></div></div>
+          <div><div id="decQa"></div><button id="decDerive" class="link hidden" type="button">+ Offene Entscheidungen aus der Spezifikation ableiten</button><p class="eyebrow decsec" id="openHead"></p><div id="openList"></div><p class="eyebrow decsec" id="doneHead"></p><div id="catalog"></div></div>
         </details>
         <!-- Open-Source-Recherche: nur auf Knopfdruck, nur echte GitHub-Treffer, Übernahme nur nach ausdrücklicher Auswahl -->
+        <div class="sidego hidden" id="sideGo"><button id="sideGoBtn" class="btn primary" type="button">✦ Spezifikation erstellen</button></div>
         <details class="card catpanel" id="reviewPanel">
           <summary><h2>Review<span class="info" tabindex="0" role="note" aria-label="Prüfung der Spezifikation durch den auf der Idee-Seite gewählten Agenten. Jeder Befund nennt Problem und Vorschlag; „Einarbeiten“ übernimmt den Vorschlag in die Spezifikation."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Prüfung der Spezifikation durch den auf der Idee-Seite gewählten Agenten. Jeder Befund nennt Problem und Vorschlag; „Einarbeiten“ übernimmt den Vorschlag in die Spezifikation.</span></span></h2><span class="meta" id="reviewCount"></span></summary>
           <div id="reviewBox"></div>
@@ -656,7 +1008,6 @@ html{scrollbar-gutter:stable}
           <summary><h2>Open-Source-Bausteine<span class="info" tabindex="0" role="note" aria-label="Sucht auf GitHub nach vorhandenen Projekten und Bibliotheken, die Teile der Spezifikation abdecken. Dafür gehen aus der Spezifikation abgeleitete Suchbegriffe an GitHub."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Sucht auf GitHub nach vorhandenen Projekten und Bibliotheken, die Teile der Spezifikation abdecken. Dafür gehen aus der Spezifikation abgeleitete Suchbegriffe an GitHub.</span></span></h2><span class="meta" id="reuseCount"></span></summary>
           <div id="reuseBox"></div>
         </details>
-        <div class="notebox"><span class="eyebrow">Dein Aufwand</span><p id="effortSide" class="mono" style="font-size:12px;margin-top:6px"></p></div>
       </div>
     </div>
     <div class="spread hidden"><button class="btn" type="button" data-phase="1">← Fragen</button><button id="toTasks" class="btn" type="button" data-phase="3">Weiter zur Umsetzung →</button></div>
@@ -673,10 +1024,13 @@ html{scrollbar-gutter:stable}
       <p id="gateText" class="muted"></p>
       <div class="actions" id="gateActions"></div>
     </div>
+    <div class="impl">
+      <div class="implmain">
+    <div class="designrow">
     <section class="card" id="layoutSection" aria-labelledby="layoutTitle">
       <div class="spread">
         <div><h2 id="layoutTitle">UI-Layouts mit Stitch <span class="chip">optional</span></h2><p class="muted" id="layoutHint" style="font-size:13px;margin-top:4px">Erzeugt Layout-Entwürfe aus dem abgeschlossenen Konzept. Die Spezifikation wird dafür an Google Stitch gesendet. Wähle danach den Entwurf, der umgesetzt werden soll.</p></div>
-        <label class="switch"><input type="checkbox" id="layoutOn" disabled><span class="track"></span><span>Layout-Erstellung über Stitch aktivieren</span></label>
+        <label class="switch"><input type="checkbox" id="layoutOn" disabled><span class="track"></span><span>aktivieren</span></label>
       </div>
       <div id="layoutBody" class="hidden">
         <div class="layoutgrid">
@@ -695,7 +1049,13 @@ html{scrollbar-gutter:stable}
         <p id="layoutChoice" class="status" role="status" style="margin-top:12px;font-weight:600"></p>
         <div id="layoutGallery" class="gallery"></div>
       </div>
+      <div class="layoutghost" id="layoutGhost" aria-hidden="true"><i></i><i></i><i></i><span class="meta">Entwürfe erscheinen hier, sobald die Layouts aktiviert sind.</span></div>
     </section>
+    <section class="card hidden" id="logoPanel" aria-labelledby="logoTitle">
+      <div class="spread"><span class="actions"><h2 id="logoTitle">Logo <span class="chip">optional</span></h2><span class="actions" id="logoActs"></span></span><span class="meta" id="logoMeta"></span></div>
+      <div class="namebox" id="logoBox"></div>
+    </section>
+    </div>
     <div id="planStale" class="banner hidden" role="status">VERALTET – der Plan passt nicht mehr zu Spezifikation oder Einstellungen. Bitte neu erstellen.</div>
     <div class="card" id="planConfig">
       <div class="stephead"><span class="stepno">1</span><div><h2>Abarbeitung festlegen</h2><p class="muted" id="formHint"></p></div></div>
@@ -706,33 +1066,39 @@ html{scrollbar-gutter:stable}
       <div id="agentRow" class="parbox"><div id="agentPick"></div><span class="note" id="agentNote"></span></div>
       <div id="runAdvice" class="advice"></div>
       <div class="settings" style="margin-top:16px">
-        <div><label class="field-label" for="repo">Repository / technische Vorgaben (optional)</label><input type="text" id="repo" maxlength="500" placeholder="URL, Stack, Konventionen"></div>
+        <div><label class="field-label" for="repo">Repository / technische Vorgaben (optional)</label><div class="reporow"><input type="text" id="repo" maxlength="500" placeholder="URL, Stack, Konventionen"><button id="repoNew" class="btn small" type="button" aria-expanded="false">＋ Neues Repository anlegen</button></div>
+          <div class="actions repoextra"><span id="repoForm" class="actions hidden"><input type="text" id="repoName" maxlength="100" placeholder="name-des-repositorys" aria-label="Name des neuen Repositorys" style="width:240px;padding:7px 10px;font-size:14px"><select id="repoVis" aria-label="Sichtbarkeit"><option value="private">privat</option><option value="public">öffentlich</option></select><button id="repoCreate" class="btn primary small" type="button">Auf GitHub anlegen</button></span><span class="status" id="repoStatus" role="status"></span></div></div>
         <div><label class="field-label" for="agent">Zielagent</label><select id="agent"><option>Agent-neutral</option><option>Claude Code</option><option>Codex</option><option>GitHub Copilot</option><option>Cursor</option></select></div>
       </div>
-      <div class="actions" style="margin-top:16px"><button id="plan" class="btn" type="button">⚙ Plan erstellen</button></div>
-    </div>
-    <p id="planStatus" class="status" role="status"></p>
-    <div id="planOutput" style="display:flex;flex-direction:column;gap:24px"></div>
-    <div class="card" id="nextCard">
-      <div class="stephead"><span class="stepno">2</span><div><h2>Weiteres Vorgehen</h2><p class="muted">Was soll mit dem Ergebnis geschehen?</p></div></div>
+      <div id="nextCard" class="nextin"><span class="field-label">Weiteres Vorgehen</span>
       <div class="choice2" role="group" aria-label="Weiteres Vorgehen">
         <button id="nextDownload" type="button" class="choice"><b>Zum Download bereitstellen</b><span>Spezifikation, Plan und Aufträge als Dateien – zur Übergabe an Coding-Agenten deiner Wahl.</span></button>
         <button id="nextRun" type="button" class="choice"><b>Direkt umsetzen</b><span>Die Umsetzung startet auf diesem Rechner über Claude Code in einem Zielordner.</span></button>
       </div>
       <div id="runPanel" class="hidden" style="margin-top:16px">
         <label class="field-label" for="runDir">Zielordner (vollständiger Pfad)</label><input type="text" id="runDir" maxlength="400" placeholder="C:\Projekte\meine-app">
+        <label class="field-label" for="runModel" style="margin-top:14px">Modell der Agenten</label><select id="runModel" aria-describedby="runModelCost"></select>
+        <p class="meta" id="runModelCost" style="margin:8px 0 0"></p>
         <label class="switch" style="margin-top:14px"><input type="checkbox" id="runShell"><span class="track"></span><span>Agenten dürfen Befehle ausführen (Tests, Build, Installation) – ohne Rückfrage, mit deinen Rechten</span></label>
         <p class="meta" style="margin-top:10px">Die Agenten schreiben Dateien nur im Zielordner und verbrauchen dein Claude-Kontingent.</p>
       </div>
+      </div>
+      <div class="actions" style="margin-top:16px"><button id="plan" class="btn" type="button">⚙ Plan erstellen</button></div>
     </div>
+    <p id="planStatus" class="status" role="status"></p>
+    <div id="planOutput" style="display:flex;flex-direction:column;gap:24px"></div>
+      </div>
+      <div class="implside">
     <div class="card" id="reviewCard">
-      <div class="stephead"><span class="stepno">3</span><div><h2>Prüfen und abschließen</h2><p class="muted">Alle Festlegungen und Ergebnisse auf einen Blick. „Ändern“ führt zur passenden Stelle. Abgeschlossen wird erst mit der Bestätigung unten rechts.</p></div></div>
+      <div class="stephead"><span class="stepno">2</span><div><h2>Prüfen und abschließen</h2><p class="muted">Alle Festlegungen und Ergebnisse auf einen Blick. „Ändern“ führt zur passenden Stelle. Abgeschlossen wird erst mit der Bestätigung unten rechts.</p></div></div>
       <div id="review" class="review"></div>
       <p id="finishHint" class="status" role="status" style="margin-top:12px"></p>
       <button id="finish" class="btn primary hidden" type="button"></button>
       <div id="doneBox" class="donebox hidden">
         <div id="downloads" class="actions"><span class="eyebrow">Bereitgestellt</span><button id="specDl2" class="btn" type="button">↓ SPEC.md</button><button id="json" class="btn" type="button">↓ tasks.json</button><button id="backlog" class="btn" type="button">↓ BACKLOG.md</button><button id="copyAll" class="btn" type="button">⧉ Alle kopieren</button></div>
         <div id="runBox"><p id="runStatus" class="status" role="status"></p><div class="actions"><button id="runStop" class="btn hidden" type="button">■ Stoppen</button></div><div id="runList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div></div>
+      </div>
+    </div>
       </div>
     </div>
 
@@ -754,6 +1120,7 @@ html{scrollbar-gutter:stable}
 </dialog>
 <div id="toast" class="toast hidden" role="status"></div>
 
+<nav class="stepnav" aria-label="Schrittwechsel"><div class="inner"><div class="navleft"><button id="navBack" class="btn" type="button"></button></div><div class="navmid"><div id="working" class="working hidden" role="status" aria-live="polite"><span class="pulse" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b id="workingText"></b><span id="workingHint"></span><button id="workingStop" class="btn small workstop" type="button" title="Die laufende Verarbeitung beenden; es entstehen keine weiteren Kosten.">✕ Abbrechen</button><span id="workingTime" class="timer" aria-hidden="true"></span><span class="stripe" aria-hidden="true"></span></div></div><div class="navright"><button id="navNext" class="btn primary" type="button"></button></div></div></nav>
 <script type="module">
 // Thema früh setzen: gespeicherte Wahl, sonst Systemeinstellung
 let theme=null;try{theme=localStorage.getItem('specit-theme')}catch{}
@@ -762,13 +1129,17 @@ function applyTheme(){document.documentElement.dataset.theme=theme;const b=docum
 applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('specit-theme',theme)}catch{}applyTheme()};
 
 import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate} from '/planner.mjs';
-import {topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
+import { cleanSvg, cleanLogos,topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
 
 const $=id=>document.getElementById(id),pageTitle=document.title;
 // Höhe der Kopfzeile (bricht bei schmalem Fenster um) für alles, was darunter haften bleibt
 new ResizeObserver(([e])=>document.documentElement.style.setProperty('--top-h',Math.round(e.target.offsetHeight)+'px')).observe(document.querySelector('.top'));
 const phaseNames=['Idee','Fragen','Spezifikation','Umsetzung'];
+// Fragen und Spezifikation in einer Ansicht: Solange es keine Spezifikation gibt, stehen die Fragen an ihrer Stelle.
+// false stellt den getrennten Ablauf mit eigenem Schritt „Fragen“ vollständig wieder her.
+const MERGED=true;
+const inQuestions=()=>s.phase===1||(MERGED&&s.phase===2&&!s.spec.trim());
 // Modus in sechs Stufen (autonomy = Stufe × 20): von „fragt bei allem nach“ bis „entscheidet alles selbst“
 const levels=[
   ['fragt bei allem nach','Keine Annahmen, keine Standards: Jede Frage beantwortest du selbst, nichts ist vorausgewählt.'],
@@ -792,6 +1163,10 @@ const durations=[
   ['1 Woche',2400,'Richtwert: großes Vorhaben, Umsetzung in Etappen.']
 ];
 // Eigene Ideen der KI und Einsatzbereich: je fünf Stufen (0–4)
+// Kurzfassungen für die Zeile rechts neben dem Regler (einzeilig); die lange Fassung bleibt im Tooltip und in der Übersicht
+const shortAutonomy=['Fragt alles','Fragt fast alles','Fragt Wichtiges','Fragt Richtungsweisendes','Fragt nur Grundlegendes','Entscheidet alles selbst'];
+const shortCreativity=['Nur Vorgegebenes','Nur das Nötigste','Naheliegende Ergänzungen','Eigene Ideen','Kreativ weitergedacht'];
+const shortTone=['Privat und locker','Eher informell','Neutral','Eher formell','Formell'];
 const creativityLevels=[
   ['setzt nur um, was du vorgibst','Keine eigenen Funktionen, Ideen oder Erweiterungen.'],
   ['ergänzt nur das Nötigste','Nur was zwingend nötig ist, damit das Vorgegebene funktioniert.'],
@@ -800,13 +1175,13 @@ const creativityLevels=[
   ['denkt das Konzept kreativ weiter','Auch ungewöhnliche eigene Ideen sind erwünscht – jeweils als „Vorschlag der KI“ gekennzeichnet.']
 ];
 const toneNames=[
-  ['Privat und locker','Persönliche Ansprache (Du), lockere Formulierungen, verspielte, farbige Gestaltung.'],
-  ['Eher informell','Freundliche Ansprache (Du), helle, einladende Gestaltung.'],
-  ['Neutral','Sachlich-freundliche Formulierungen, zurückhaltende Gestaltung.'],
-  ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung.'],
+  ['Privat und locker','Persönliche Ansprache (Du), lockere Formulierungen, verspielte, farbige Gestaltung. Dazu ein durchgängiges Branding mit Witz: Name mit Wortspiel, Claim und augenzwinkernde Bezeichnungen für alle Funktionen (die sachliche Funktion bleibt als Unterzeile erkennbar).'],
+  ['Eher informell','Freundliche Ansprache (Du), helle, einladende Gestaltung. Dosiertes Augenzwinkern: Name und Claim dürfen spielen, witzige Bezeichnungen nur für die wichtigsten Funktionen.'],
+  ['Neutral','Sachlich-freundliche Formulierungen, zurückhaltende Gestaltung. Eingängiger Name, Funktionen heißen sachlich.'],
+  ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung. Beschreibender Name, kein Humor.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({logoCount:0,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -835,7 +1210,8 @@ try{
     s.features=cleanFeatures(saved.features);
     if(!Number.isInteger(s.nameCount)||s.nameCount<0||s.nameCount>5)s.nameCount=3;
     s.names=cleanNames(saved.names);
-    if(typeof s.reviewBy!=='string')s.reviewBy='';if(typeof s.reviewModel!=='string')s.reviewModel='';
+    s.logoCount=Number.isInteger(s.logoCount)?Math.min(5,Math.max(0,s.logoCount)):0;s.logos=cleanLogos(s.logos);s.logoChosen=Number.isInteger(s.logoChosen)&&s.logos[s.logoChosen]?s.logoChosen:-1;
+    if(typeof s.runModel!=='string')s.runModel='';if(typeof s.reviewBy!=='string')s.reviewBy='';if(typeof s.reviewModel!=='string')s.reviewModel='';
     if(!s.review||!Array.isArray(s.review.findings))s.review=null;
     if(!Number.isInteger(s.featAgents)||s.featAgents<1)s.featAgents=1;
     if(!s.reuse||!Array.isArray(s.reuse.projects)||typeof s.reuseSpec!=='string'){s.reuse=null;s.reuseSpec=''}
@@ -882,6 +1258,35 @@ function exportCtx(){const c=chosenLayout();return {...(s.planContext||{}),...(l
 function firstOpen(from=0){const n=s.questions.length;for(let k=0;k<n;k++){const i=(from+k)%n;if(s.questions[i].state==='open')return i}return -1}
 
 /* Aufwand des Menschen gegenüber dem Ergebnis – nur gezählte Tatsachen */
+// Jeder echte Klick auf ein Bedienelement und jede Tasteneingabe in ein Feld zählt und aktualisiert die Anzeige sofort
+let effortSave=null;
+// Wächst ein Zähler durch eine Aktion, blitzt er kurz rot auf – wie ein Kurs, der sich gerade bewegt hat
+// (Die Leiste wird je Aktion mehrfach neu gezeichnet; deshalb merkt sich tickAt den Zeitpunkt des Zuwachses.)
+let effortPrev=null;const tickAt={};
+function effortBar(){
+  const now0=effort(),grew=k=>{if(effortPrev&&now0[k]>effortPrev[k])tickAt[k]=Date.now();return Date.now()-(tickAt[k]||0)<600};
+  const e=now0,box=$('navHint'),total=s.questions.length+s.extras.length,cls=(n,max)=>!max||!n?'open':n>=max?'done':'part';
+  const tile=(n,label,tip,key)=>{const t=node('span',undefined,'t'+(key&&grew(key)?' tick':''));t.append(node('b',String(n)),node('i',label));t.title=tip;return t};
+  // Füllstand: wie viel von allem Fragbaren schon festgelegt ist – rot ohne, gelb mit einem Teil, grün vollständig
+  const meter=node('span',undefined,'t m '+cls(e.facts,total)+(grew('facts')?' tick':'')),bar=node('span',undefined,'ebar'),fill=node('i');
+  fill.style.width=(total?Math.round(100*Math.min(e.facts,total)/total):0)+'%';bar.append(fill);
+  meter.append(bar,node('i',total?e.facts+'/'+total+' festgelegt':'festgelegt'));
+  meter.title='Festlegungen: beantwortete Fragen (selbst entschieden oder Standard übernommen) und Zusatzanforderungen – '+e.facts+' von '+total+'.';
+  // Sechs Felder für die sechs Themen: gefüllt, sobald es dazu mindestens eine Festlegung gibt
+  const cov=coverage(s.questions).perTopic,them=node('span',undefined,'t m '+cls(e.topics,6)+(grew('topics')?' tick':'')),segs=node('span',undefined,'segs');
+  topics.forEach((name,i)=>{const sq=node('i');if(cov[i]>0)sq.className='on';sq.title=name+(cov[i]>0?': abgedeckt':': noch offen');segs.append(sq)});
+  them.append(segs,node('i',e.topics+'/6 Themen'));them.title='Themen mit mindestens einer Festlegung: '+topics.map((n,i)=>n+(cov[i]>0?' ✓':' –')).join(', ')+'.';
+  box.replaceChildren(
+    tile(e.typed.toLocaleString('de-DE'),e.typed===1?'Wort':'Wörter','Dein Aufwand: von dir getippte Wörter (Idee, eigene Antworten, Zusatzanforderungen).','typed'),
+    tile(e.clicks.toLocaleString('de-DE'),e.clicks===1?'Klick':'Klicks','Dein Aufwand: deine Klicks auf Bedienelemente in dieser Sitzung.','clicks'),
+    node('span','→','arr'),meter,them);
+  if(e.specWords)box.append(tile(e.specWords.toLocaleString('de-DE'),'Wörter Spez.','Umfang der Spezifikation, die daraus entstanden ist.','specWords'));
+  effortPrev={typed:e.typed,clicks:e.clicks,facts:e.facts,topics:e.topics,specWords:e.specWords};
+  box.setAttribute('aria-label','Dein Aufwand und was daraus entstanden ist: '+effortText());
+}
+const effortNow=()=>{effortBar();clearTimeout(effortSave);effortSave=setTimeout(save,800)};
+document.addEventListener('click',e=>{if(e.isTrusted&&e.target.closest&&e.target.closest('button,a,input,select,summary,label,textarea')){s.clicks++;effortNow()}},true);
+document.addEventListener('input',e=>{if(e.isTrusted)setTimeout(effortNow,0)},true);
 function effort(){
   const typed=words(s.idea)+s.questions.reduce((n,q)=>n+words(q.custom),0)+s.extras.reduce((n,x)=>n+words(x),0);
   const sum=summary(s.questions),cov=coverage(s.questions);
@@ -896,28 +1301,37 @@ function effortText(){
 function phasesUI(){
   const old=!!stale(),cov=coverage(s.questions).percent;
   const info=[
+    // part = angefangen, aber noch nicht fertig. Der Stand hängt nur vom Inhalt ab, nie davon, welche Ansicht gerade offen ist.
     {done:!!s.idea.trim(),chip:''},
-    {done:s.questions.length>0&&cov===100,chip:s.questions.length?cov+' %':''},
-    {done:!!s.spec&&!s.dirty,chip:s.spec&&s.dirty?'prüfen':'',warn:true},
-    {done:!!s.plan&&!old,chip:s.plan?(old?'veraltet':s.plan.tasks.length+' Tasks'):'',warn:old}
+    {done:s.questions.length>0&&cov===100,part:s.questions.length>0&&cov>0,chip:s.questions.length?cov+' %':''},
+    {done:!!s.spec&&!s.dirty,part:!!s.spec||s.features.length>0||(MERGED&&s.questions.length>0),chip:s.spec&&s.dirty?'prüfen':MERGED&&!s.spec&&s.questions.length?cov+' %':'',warn:!!s.spec},
+    {done:!!s.plan&&!old,part:!!s.plan,chip:s.plan?(old?'veraltet':s.plan.tasks.length+' Tasks'):'',warn:old}
   ];
   const bar=$('phases');bar.replaceChildren();
   info.forEach((p,i)=>{
+    if(MERGED&&i===1)return;
     if(i)bar.append(node('span','→','arrow'));
-    const b=button(undefined,'phase'+(p.done?' done':''),()=>setPhase(i));
+    const b=button(undefined,'phase'+(p.done?' done':p.part?' part':''),()=>setPhase(i));
     b.setAttribute('aria-current',i===s.phase?'page':'false');
-    b.append(node('span',p.done&&i!==s.phase?'✓':String(i+1),'num'),node('span',phaseNames[i]));
+    // Nummer und Stand sind zwei getrennte Angaben: Die Nummer bleibt immer stehen, der Stand steht als eigene Marke daneben
+    const state=p.done?'erledigt':p.part?'in Arbeit':'offen';
+    const no=MERGED&&i>1?i:i+1;
+    b.append(node('span',String(no),'num'),node('span',phaseNames[i]));
     if(p.chip)b.append(node('span',p.chip,'chip'+(p.warn?' warn':'')));
+    // Anteil der beantworteten Fragen: füllt die Kapsel von links, die Zahl steht klein und schlicht daneben
+    if(i===(MERGED?2:1)&&s.questions.length&&!(MERGED&&s.spec)){b.classList.add('pct');b.style.setProperty('--pct',cov+'%');b.style.setProperty('--pctn',String(cov/100))}
+    const mark=node('span',(p.done?'✓ ':'')+state,'state');mark.dataset.short=state==='erledigt'?'✓':state==='offen'?'○':'●';b.append(mark);b.setAttribute('aria-label','Schritt '+no+': '+phaseNames[i]+' – '+state+(i===s.phase?' (diese Ansicht ist geöffnet)':''));
     bar.append(b);
   });
   [0,1,2,3].forEach(i=>$('phase'+i).classList.toggle('hidden',i!==s.phase));
   // Genau eine primäre Aktion je Ansicht
   const ready=!!s.spec.trim()&&!s.dirty,allAnswered=s.questions.length>0&&firstOpen()<0;
+  $('generate').textContent=s.spec.trim()?'↻ Spezifikation aktualisieren':'✦ Spezifikation erstellen';
   $('generate').classList.toggle('primary',!ready);$('toTasks').classList.toggle('primary',ready);
   $('toSpec').classList.toggle('primary',allAnswered);
   navUI();
 }
-function setPhase(i){s.phase=i;if(i===1&&s.active<0)activate(firstOpen(),false);renderAll();window.scrollTo({top:0});if(i===2)ensureFeatures()}
+function setPhase(i){if(MERGED&&i===1)i=2;s.phase=i;if(inQuestions()&&s.active<0)activate(firstOpen(),false);renderAll();window.scrollTo({top:0});if(i===2)ensureFeatures()}
 // Je Stand der Spezifikation höchstens ein selbsttätiger Versuch, damit ein Fehler keine Schleife auslöst
 let featTried='';
 function ensureFeatures(){
@@ -929,13 +1343,23 @@ for(const b of document.querySelectorAll('[data-phase]'))b.onclick=()=>setPhase(
 const nextOf=()=>[$('derive'),$('toSpec'),$('toTasks'),$('finish')][s.phase]||null;
 function navUI(){
   const target=nextOf(),next=$('navNext'),back=$('navBack');
-  back.style.visibility=s.phase?'visible':'hidden';back.textContent='←';back.title='Zurück zu „'+(phaseNames[s.phase-1]||'')+'“';back.setAttribute('aria-label',back.title);
+  back.style.visibility=s.phase?'visible':'hidden';back.textContent='← '+(phaseNames[MERGED&&s.phase===2?0:s.phase-1]||'');
   next.style.visibility=target?'visible':'hidden';
   if(target){next.textContent=s.phase===0?$('deriveLabel').textContent:target.textContent;next.disabled=target.disabled}
-  $('navHint').textContent='Schritt '+(s.phase+1)+' von '+phaseNames.length+' · '+phaseNames[s.phase];
+  // Grün heißt überall: Das Nötige für den nächsten Schritt ist da. Sonst bleibt der Knopf neutral (ein Klick zeigt, was fehlt).
+  const open=s.questions.some(q=>q.state==='open'),okNow=[!!s.idea.trim(),s.questions.length>0&&!open,!!s.spec.trim()&&!s.dirty&&!open&&!s.features.some(f=>f.on!==f.inSpec),!!s.plan&&!stale()&&!s.finished&&(s.nextStep!=='run'||!!s.runDir.trim())][s.phase];
+  next.classList.toggle('ready',!!okNow&&!!target&&!target.disabled&&!active);
+  // Derselbe Grundsatz über dem leeren Dokument: „Spezifikation erstellen“ wird grün, sobald der Umfang steht und in die Zielzeit passt
+  $('generate').classList.toggle('ready',!s.spec.trim()&&s.features.length>0&&!open&&!overTarget()&&!active);
+  suggestRunDir();
+  panelsUI();
+  // Spezifikations-Ansicht: Die Seite selbst rollt nicht; Dokument und Festlegungen rollen je für sich
+  document.body.classList.add('fitview');
+  // Dein Aufwand: immer an derselben Stelle in der Fußleiste, bei jeder Eingabe und jedem Klick aktualisiert
+  effortBar();
 }
 $('navNext').onclick=()=>nextOf()?.click();
-$('navBack').onclick=()=>{if(s.phase)setPhase(s.phase-1)};
+$('navBack').onclick=()=>{if(s.phase)setPhase(MERGED&&s.phase===2?0:s.phase-1)};
 
 /* ---------- Schritt 1: Idee ---------- */
 function ideaUI(){
@@ -944,26 +1368,29 @@ function ideaUI(){
   $('deriveLabel').textContent=same?'Weiter zu den Fragen →':s.autonomy===100?'✦ Spezifikation erstellen →':s.questions.length?'✦ Fragen neu ableiten →':'✦ Fragen ableiten →';
   // Modus als Stufe mit Bedeutung statt als Prozentwert
   const level=s.autonomy/20,[title,text]=levels[level],n=s.questions.length,ask=Math.round(n*(1-s.autonomy/100)),who=$('ai').checked?'Claude':'SpecIt';
-  $('autonomyValue').textContent='gewählt: Stufe '+(level+1)+' von '+levels.length;
+  levelMark('autonomyValue',level+1,levels.length,(level+1)+'/'+levels.length,'Stufe '+(level+1)+' von '+levels.length);
   $('autonomy').setAttribute('aria-valuetext',who+' '+title);
   scalesUI();presetsUI();
   const d=durations[s.durLevel],fdur=s.features.length?featDuration():null,need=fdur?fdur.total:0;
-  $('durValueText').textContent='gewählt: '+durations[s.durLevel][0];$('durLevel').setAttribute('aria-valuetext',d[0]);
-  $('durText').replaceChildren(node('b',d[0]),need&&d[1]?' · Features: '+hm(need)+(need<=d[1]?' – passt':' – '+hm(need-d[1])+' zu viel'):'');
+  levelMark('durValueText',s.durLevel,durations.length-1,durations[s.durLevel][0],durations[s.durLevel][0]);$('durLevel').setAttribute('aria-valuetext',d[0]);
+  // Kurz gehalten, damit die Zeile nicht umbricht; die ausführliche Fassung steht im Tooltip
+  $('durText').replaceChildren(node('b',d[0]),need&&d[1]?(need<=d[1]?' · passt':' · '+hm(need-d[1])+' zu viel'):'');$('durText').title=need&&d[1]?'Features: '+hm(need)+(need<=d[1]?' – passt in die Zielvorgabe':' – '+hm(need-d[1])+' mehr als die Zielvorgabe'):'';
   tip('durInfo','Reine Laufzeit der Coding-Agenten, nicht menschliche Entwicklungszeit. '+d[2]+(d[1]?' Der Umfang der Spezifikation wird darauf zugeschnitten.':'')+(need&&d[1]?' Die derzeit gewählten Features brauchen mit '+(fdur.agents===1?'einem Agenten':fdur.agents+' parallelen Agenten')+' etwa '+hm(need)+(need<=d[1]?'.':'; dafür Features abwählen oder die Dauer erhöhen.'):''));
-  $('autonomyText').replaceChildren(node('b',who+' '+title),n&&level>0&&level<5?' · '+ask+' von '+n+' Fragen an dich':'');
+  $('autonomyText').replaceChildren(node('b',shortAutonomy[level]),n&&level>0&&level<5?' · '+ask+'/'+n+' Fragen':'');$('autonomyText').title=who+' '+title+(n&&level>0&&level<5?' · '+ask+' von '+n+' Fragen an dich':'');
   tip('autonomyInfo','Legt fest, wie viel '+who+' selbst entscheidet. '+text);
 }
 // Die beiden weiteren Skalen: Stufe mit Bedeutung anzeigen; eine Änderung macht eine vorhandene Spezifikation prüfbedürftig
 // Text eines Info-Symbols setzen (sichtbar beim Überfahren, für Vorlesehilfen als Beschriftung)
 function tip(id,text){const e=$(id);e.querySelector('.tip').textContent=text;e.setAttribute('aria-label',text)}
+// Gewählter Wert eines Reglers als schlichte Textmarke (die Pegel-Balken sind wieder entfallen)
+function levelMark(id,value,max,text,label){const el=$(id);el.classList.remove('lvlmark');el.textContent='gewählt: '+label;el.removeAttribute('title');el.removeAttribute('aria-label')}
 function scalesUI(){
   const who=$('ai').checked?'Claude':'SpecIt',c=creativityLevels[s.creativity],t=toneNames[s.tone];
-  $('creativityValue').textContent='gewählt: Stufe '+(s.creativity+1)+' von 5';$('creativity').setAttribute('aria-valuetext',who+' '+c[0]);
-  $('creativityText').replaceChildren(node('b',who+' '+c[0]));
+  levelMark('creativityValue',s.creativity+1,5,(s.creativity+1)+'/5','Stufe '+(s.creativity+1)+' von 5');$('creativity').setAttribute('aria-valuetext',who+' '+c[0]);
+  $('creativityText').replaceChildren(node('b',shortCreativity[s.creativity]));$('creativityText').title=who+' '+c[0];
   tip('creativityInfo','Legt fest, wie viel Eigenes die KI ins Konzept einbringt. '+c[1]+($('ai').checked?'':' Wirkt nur mit Claude; im Demo-Modus kommen keine eigenen Ideen hinzu.'));
-  $('toneValue').textContent='gewählt: Stufe '+(s.tone+1)+' von 5';$('tone').setAttribute('aria-valuetext',t[0]);
-  $('toneText').replaceChildren(node('b',t[0]));
+  levelMark('toneValue',s.tone+1,5,(s.tone+1)+'/5','Stufe '+(s.tone+1)+' von 5');$('tone').setAttribute('aria-valuetext',t[0]);
+  $('toneText').replaceChildren(node('b',shortTone[s.tone]));$('toneText').title=t[0];
   tip('toneInfo','Bestimmt Ton und Gestaltung der Anwendung, die entsteht. '+t[1]);
 }
 for(const id of ['creativity','tone'])$(id).oninput=e=>{s[id]=Number(e.target.value);touched();scalesUI();presetsUI();statuses();save()};
@@ -972,16 +1399,21 @@ for(const id of ['creativity','tone'])$(id).oninput=e=>{s[id]=Number(e.target.va
 const presets=[
   {name:'Schnellste Umsetzung',why:'Claude entscheidet alles selbst, bringt nichts Eigenes ein, 15 Minuten Zielzeit, keine Layout-Entwürfe.',autonomy:100,creativity:0,durLevel:1,layouts:0},
   {name:'Ausgewogen',why:'Rückfragen bei allen wichtigen Entscheidungen, naheliegende Ergänzungen, keine Zeitvorgabe, keine Layout-Entwürfe.',autonomy:40,creativity:2,durLevel:0,layouts:0},
-  {name:'Bestes Ergebnis',why:'Rückfragen bei allen wichtigen Entscheidungen, eigene Ideen der KI, keine Zeitvorgabe, zwei Layout-Entwürfe zur Auswahl.',autonomy:40,creativity:3,durLevel:0,layouts:2},
+  {name:'Bestes Ergebnis',why:'Rückfragen bei allen wichtigen Entscheidungen, eigene Ideen der KI, keine Zeitvorgabe, zwei Layout-Entwürfe zur Auswahl, Review der Spezifikation durch Claude Opus 5.5.',autonomy:40,creativity:3,durLevel:0,layouts:2,review:'claude-opus-5-5'},
   {name:'Überraschendes Ergebnis',why:'Claude entscheidet alles selbst und denkt das Konzept kreativ weiter, keine Zeitvorgabe, zwei Layout-Entwürfe.',autonomy:100,creativity:4,durLevel:0,layouts:2},
   {name:'Volle Kontrolle',why:'Du entscheidest alles selbst: Rückfrage bei jeder Entscheidung, nur das Vorgegebene, keine Zeitvorgabe, keine Layout-Entwürfe.',autonomy:0,creativity:0,durLevel:0,layouts:0}
 ];
 // Ohne Stitch-Zugang lässt sich die Layout-Zahl nicht setzen; dann zählt sie für die Übereinstimmung nicht mit
-const presetOn=p=>s.autonomy===p.autonomy&&s.creativity===p.creativity&&s.durLevel===p.durLevel&&(!stitch||(s.layoutOn?s.layoutCount:0)===p.layouts);
+// Review: nur das Preset „Bestes Ergebnis“ sieht eines vor (gründliches Modell); ohne eingerichtetes Claude zählt es für die Übereinstimmung nicht mit
+const claudeReview=()=>reviewers.find(r=>r.id==='claude')||null;
+const presetReview=p=>{const c=claudeReview();return !c||(p.review?s.reviewBy==='claude'&&(s.reviewModel===p.review||!c.models.some(m=>m.id===p.review)):!s.reviewBy)};
+const presetOn=p=>s.autonomy===p.autonomy&&s.creativity===p.creativity&&s.durLevel===p.durLevel&&(!stitch||(s.layoutOn?s.layoutCount:0)===p.layouts)&&presetReview(p);
 function applyPreset(p){
   if(s.durLevel!==p.durLevel)goalChanged=true;
   s.autonomy=p.autonomy;s.creativity=p.creativity;s.durLevel=p.durLevel;
   if(stitch){s.layoutOn=p.layouts>0;if(p.layouts>0)s.layoutCount=p.layouts}
+  const c=claudeReview();
+  if(p.review&&c){s.reviewBy='claude';s.reviewModel=c.models.some(m=>m.id===p.review)?p.review:''}else if(c||!p.review){s.reviewBy='';s.reviewModel=''}
   const next=applyAutonomy(s.questions,s.autonomy);
   if(next.some((q,i)=>q.state!==s.questions[i].state)){s.questions=next;change=null;s.last=-1;activate(firstOpen(),false)}
   touched();renderAll();
@@ -989,7 +1421,6 @@ function applyPreset(p){
 function presetsUI(){
   const box=$('presets'),on=presets.findIndex(presetOn);box.replaceChildren();
   presets.forEach((p,i)=>{const b=button(p.name,'btn small',()=>{applyPreset(p);$('presets').querySelectorAll('.btn')[i]?.focus({preventScroll:true})});b.title=p.why;b.setAttribute('aria-pressed',String(i===on));box.append(b)});
-  if(on<0)box.append(node('span','eigene Einstellung','meta'));
 }
 $('autonomy').oninput=e=>{
   s.autonomy=Number(e.target.value)*20;
@@ -1017,14 +1448,14 @@ async function derive(more){
       if(added.length&&s.spec)s.dirty=true;
     }else{
       if(!fresh.length)throw Error('Es konnten keine Fragen abgeleitet werden. Bitte erneut versuchen.');
-      s.questions=fresh;s.askedIdea=idea;s.extras=[];s.clicks=0;s.last=-1;change=null;catOpen=-1;status.textContent='';
+      s.questions=fresh;s.askedIdea=idea;s.extras=[];s.last=-1;change=null;catOpen=-1;status.textContent='';
       if(s.spec)s.dirty=true;
     }
     // Je nach Modus entscheidet SpecIt einen Teil der Fragen selbst; im Auto-Modus alle, dann geht es direkt zur Spezifikation.
     s.questions=applyAutonomy(s.questions,s.autonomy);auto=!more&&firstOpen()<0;
-    s.qSource=r.source;s.phase=auto?2:1;activate(firstOpen(),false);renderAll();if(!more)window.scrollTo({top:0});
+    s.qSource=r.source;s.phase=auto||MERGED?2:1;activate(firstOpen(),false);renderAll();if(!more)window.scrollTo({top:0});
   }catch(e){status.textContent=e.message}finally{lock(false)}
-  if(auto)generate();
+  if(auto)startSpec();
 }
 $('idea').oninput=e=>{s.idea=e.target.value;revision++;if(s.spec)s.dirty=true;ideaUI();statuses();save()};
 $('idea').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();derive(false)}};
@@ -1044,11 +1475,27 @@ function choose(i){
   questionsUI();document.querySelectorAll('.opt')[i]?.focus({preventScroll:true});
 }
 function touched(){revision++;if(s.spec)s.dirty=true}
+// Woran sich messen lässt, ob die Spezifikation noch zum Stand der Eingaben passt – und was sich geändert hat
+const basisNow=()=>({idea:s.idea.trim(),q:s.questions.map(q=>[q.question,q.state==='open'?'':answerOf(q)]),x:[...s.extras],d:duration(),n:s.project.trim()});
+function dirtyWhy(){
+  const b=s.specBasis,now=basisNow(),out=[];if(!b||!Array.isArray(b.q))return out;
+  const short=t=>'„'+(t.length>48?t.slice(0,48)+'…':t)+'“';
+  if(b.idea!==now.idea)out.push('die Idee');
+  const old=new Map(b.q.map(([k,v])=>[k,v])),changed=now.q.filter(([k,v])=>old.has(k)&&old.get(k)!==v).map(([k])=>k),added=now.q.filter(([k])=>!old.has(k)).length;
+  if(changed.length)out.push((changed.length===1?'die Antwort auf ':changed.length+' Antworten, darunter ')+short(changed[0]));
+  if(added)out.push(plural(added,'neue Frage','neue Fragen'));
+  if((b.x||[]).join('\n')!==now.x.join('\n'))out.push('die Zusatzanforderungen');
+  if(b.d!==now.d)out.push('die Zielvorgabe ('+(now.d||'keine')+')');
+  if(b.n!==now.n&&now.n)out.push('der Name ('+now.n+')');
+  return out;
+}
 function confirmAnswer(){
   const i=s.active,q=s.questions[i];if(!q)return;
   const text=customOpen?custom.trim():'';
   if(!pick.length&&!text){$('busy').textContent='Bitte eine Option wählen oder eine eigene Antwort eingeben.';return}
-  s.questions[i]={...q,state:'decided',choice:[...pick],custom:text};s.last=i;s.clicks++;touched();$('busy').textContent='';
+  // Gibt es schon eine Spezifikation, wird die geänderte Antwort sofort eingearbeitet und die Änderung markiert
+  if(MERGED&&s.spec.trim()){$('busy').textContent='';applyAnswer(i,[...pick],text).then(()=>{activate(-1,false);renderAll()});return}
+  s.questions[i]={...q,state:'decided',choice:[...pick],custom:text};s.last=i;touched();$('busy').textContent='';
   const next=firstOpen(i);activate(next,false);renderAll();
   (document.querySelector('.opt[aria-checked=true],.opt')||$('toSpec')).focus({preventScroll:true});
   document.querySelector('.active')?.scrollIntoView({block:'nearest',behavior:'smooth'});
@@ -1056,7 +1503,7 @@ function confirmAnswer(){
 function skip(){const n=s.questions.length;let next=-1;for(let k=1;k<n;k++){const i=(s.active+k)%n;if(s.questions[i].state==='open'){next=i;break}}if(next>=0)activate(next)}
 function acceptAll(){
   if(firstOpen()<0)return;
-  s.questions=s.questions.map(q=>q.state==='open'?acceptDefault(q):q);s.clicks++;s.last=-1;touched();activate(-1,false);renderAll();$('toSpec').focus();
+  s.questions=s.questions.map(q=>q.state==='open'?acceptDefault(q):q);s.last=-1;touched();activate(-1,false);renderAll();$('toSpec').focus();
 }
 function optionButton(q,i){
   const on=pick.includes(i),b=button(undefined,'opt'+(q.multi?' multi':''),()=>choose(i)),body=node('span',undefined,'body'),head=node('span');
@@ -1070,7 +1517,10 @@ function questionsUI(){
   s.questions.forEach((q,i)=>{
     if(i===s.active){
       const card=node('section',undefined,'card active'+(needMark&&q.state==='open'?' need':'')),opts=node('div'),foot=node('div',undefined,'spread'),hints=node('span',undefined,'meta'),acts=node('div',undefined,'actions');
-      card.append(node('span','Frage '+(i+1)+' von '+n+' · '+topics[q.topic]+(q.multi?' · Mehrfachauswahl':''),'eyebrow'),node('h2',q.question));
+      // Kopfzeile mit „Einklappen“: schließt die Frage, ohne die Antwort zu ändern (auch mit Esc)
+      const top=node('div',undefined,'spread'),fold=button('▴ Einklappen','link',()=>{activate(-1,false);questionsUI()});fold.title='Frage schließen, ohne die Antwort zu ändern (Esc)';
+      top.append(node('span','Frage '+(i+1)+' von '+n+' · '+topics[q.topic]+(q.multi?' · Mehrfachauswahl':''),'eyebrow'),fold);
+      card.append(top,node('h2',q.question));
       opts.setAttribute('role',q.multi?'group':'radiogroup');opts.setAttribute('aria-label',q.question);opts.style.cssText='display:flex;flex-direction:column;gap:8px';
       q.options.forEach((_,k)=>opts.append(optionButton(q,k)));
       const own=button(undefined,'opt'+(q.multi?' multi':''),()=>{customOpen=!customOpen;if(customOpen&&!q.multi)pick=[];if(!customOpen&&!pick.length&&suggest())pick=[...q.defaults];questionsUI();$('customAnswer')?.focus()});
@@ -1126,8 +1576,7 @@ function gaugeUI(){
   if(s.extras.length){const sec=node('section'),ul=node('ul');sec.append(node('h3','Zusätzliche Anforderungen'),ul);s.extras.forEach((x,k)=>{const li=node('li',x+' ');const del=button('entfernen','link',()=>{s.extras.splice(k,1);touched();renderAll()});li.append(del);ul.append(li)});outline.append(sec)}
   $('nextHint').textContent=sum.open?'Offene Fragen erscheinen in der Spezifikation als offene Entscheidungen.':'Alle Fragen beantwortet.';
   // Seitenleiste in Schritt 3
-  $('effortSide').textContent=effortText();
-  catalogUI();featuresUI();reuseUI();reviewChoiceUI();specReviewUI();
+  catalogUI();featuresUI();reuseUI();reviewChoiceUI();specReviewUI();runModelUI();logoUI();
 }
 
 /* ---------- Open-Source-Bausteine: echte GitHub-Treffer, von Claude bewertet, Übernahme nur nach Auswahl ---------- */
@@ -1160,7 +1609,7 @@ async function researchReuse(){
   try{
     const result=await post('/api/reuse',{spec});
     if(rev!==revision||spec!==s.spec)message='Die Spezifikation wurde geändert; bitte die Recherche erneut starten.';
-    else{s.reuse={...result,projects:(result.projects||[]).map(p=>({...p,included:false}))};s.reuseSpec=digest(spec);$('reusePanel').open=true}
+    else{s.reuse={...result,projects:(result.projects||[]).map(p=>({...p,included:false}))};s.reuseSpec=digest(spec)}
   }catch(e){message='Recherche unvollständig: '+e.message+' Daraus folgt nicht, dass neu entwickelt werden muss.'}
   finally{lock(false)}
   renderAll();if(message)specNote(message,true);
@@ -1274,7 +1723,7 @@ async function decideOpen(onlyMinor){
 // Geänderte Antworten übernehmen und die Spezifikation nachziehen; ids = geänderte Fragen, label = Text der Hinweisleiste
 async function commitAnswers(next,ids,label){
   const prev={questions:s.questions,spec:s.spec,specSource:s.specSource,dirty:s.dirty},i=ids.length===1?ids[0]:-1;
-  s.questions=next;s.clicks++;revision++;change=null;
+  s.questions=next;revision++;change=null;
   syncCat();if(s.active>=0)activate(s.active,false);
   if(!prev.spec.trim()){renderAll();return}
   const rev=revision,ai=$('ai').checked,base={idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,...frame()};
@@ -1306,9 +1755,37 @@ function unitText(e){if(e.tagName!=='LI')return e.tagName+e.textContent.trim();c
 function markChanges(view,oldSpec,show){
   const box=node('div'),left=new Map(),hits=[];box.append(renderMarkdown(oldSpec,document));
   for(const e of box.querySelectorAll(unitSel)){const t=unitText(e);left.set(t,(left.get(t)||0)+1)}
-  for(const e of view.querySelectorAll(unitSel)){const t=unitText(e),n=left.get(t)||0;if(n)left.set(t,n-1);else{hits.push(e);if(show)e.classList.add('changed')}}
+  for(const e of view.querySelectorAll(unitSel)){const t=unitText(e),n=left.get(t)||0;if(n)left.set(t,n-1);else hits.push(e)}
+  drawMarks(view,show?hits:[]);
   let gone=0;for(const n of left.values())gone+=n;
   return {hits,removed:Math.max(0,gone-hits.length)};
+}
+// Balken am linken Rand zeichnen; überlappende oder direkt benachbarte Stellen (auch verschachtelte Listenpunkte) ergeben einen Balken
+let markHits=[];
+function drawMarks(view,hits){
+  view.querySelector(':scope>.marks')?.remove();markHits=hits;if(!hits.length)return;
+  const base=view.getBoundingClientRect(),layer=node('div',undefined,'marks'),merged=[];
+  const spans=hits.map(e=>{const r=e.getBoundingClientRect();return [r.top-base.top,r.bottom-base.top]}).filter(([a,b])=>b>a).sort((x,y)=>x[0]-y[0]);
+  for(const sp of spans){const last=merged[merged.length-1];if(last&&sp[0]<=last[1]+10)last[1]=Math.max(last[1],sp[1]);else merged.push([...sp])}
+  for(const [a,b] of merged){const bar=node('i');bar.style.top=a+'px';bar.style.height=(b-a)+'px';layer.append(bar)}
+  layer.setAttribute('aria-hidden','true');view.append(layer);
+}
+new ResizeObserver(()=>{const v=$('specView');if(markHits.length&&markHits[0].isConnected)drawMarks(v,markHits)}).observe($('specView'));
+// Zusammenfassung: geänderte Stellen je Kapitel, jeweils mit dem Anfang des Textes; ein Klick springt dorthin
+function changeSummary(view,hits){
+  const set=new Set(hits.filter(e=>!hits.some(h=>h!==e&&e.contains(h)))),groups=[];let head=null,cur=null;
+  for(const e of view.querySelectorAll('h2,h3,'+unitSel)){
+    if(/^H[23]$/.test(e.tagName)){head=e;cur=null}
+    if(set.has(e)){if(!cur){cur={head,items:[]};groups.push(cur)}cur.items.push(e)}
+  }
+  const go=e=>e.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  const list=node('ul',undefined,'changesum');
+  for(const g of groups){
+    const li=node('li'),sub=node('ul'),title=button((g.head?g.head.textContent.trim():'Vor dem ersten Kapitel')+' · '+plural(g.items.length,'Stelle','Stellen'),'chapter',()=>go(g.head||g.items[0]));
+    for(const e of g.items){const t=e.textContent.trim().replace(/\s+/g,' '),row=node('li');row.append(button('▸ '+(e===g.head?'Überschrift (neu oder geändert)':t.length>130?t.slice(0,130)+' …':t),'',()=>go(e)));sub.append(row)}
+    li.append(title,sub);list.append(li);
+  }
+  return list;
 }
 function flash(){
   if(!change)return;
@@ -1326,9 +1803,10 @@ function changeUI(view){
   if(!view||!change)return;
   const m=markChanges(view,change.old,Date.now()<change.until),what=node('span',undefined,'what'),acts=node('div',undefined,'actions');
   what.append(node('b',change.title),' '+change.detail+' · '+(m.hits.length?plural(m.hits.length,'Stelle','Stellen')+' geändert':'keine sichtbare Änderung')+(m.removed?', '+m.removed+' entfernt':''));
-  if(m.hits.length)acts.append(button('◎ Stellen zeigen','btn small',flash));
+  if(m.hits.length){const sum=button(change.sum?'▾ Zusammenfassung':'▸ Zusammenfassung','btn small',()=>{change.sum=!change.sum;specUI()});sum.setAttribute('aria-expanded',String(!!change.sum));acts.append(sum,button('◎ Stellen zeigen','btn small',flash))}
   const close=button('× Markierung beenden','btn small',()=>{change=null;renderAll()});close.setAttribute('aria-label','Markierung der geänderten Stellen beenden');
   acts.append(button('↶ Rückgängig','btn small',undoChange),close);bar.replaceChildren(what,acts);
+  if(change.sum&&m.hits.length)bar.append(changeSummary(view,m.hits));
   if(change.scroll&&m.hits[0]){
     change.scroll=false;const r=m.hits[0].getBoundingClientRect();
     if(r.top<150||r.bottom>innerHeight-24)m.hits[0].scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
@@ -1339,10 +1817,38 @@ $('extraOpen').onclick=()=>{$('extraForm').classList.toggle('hidden');$('extraIn
 function addExtra(){const v=$('extraInput').value.trim();if(!v||s.extras.length>=10)return;s.extras.push(v.slice(0,500));$('extraInput').value='';touched();renderAll()}
 $('extraAdd').onclick=addExtra;
 $('extraInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();addExtra()}};
-$('toSpec').onclick=()=>ensureDecided(()=>{setPhase(2);if(!s.spec.trim()||s.dirty)generate()});
+$('toSpec').onclick=()=>ensureDecided(()=>{setPhase(2);if(!s.spec.trim()||s.dirty)startSpec()});
 // Vor dem Konzept müssen alle Entscheidungen getroffen sein. Sind welche offen, fragt SpecIt nach: Die KI trifft sie
 // (vorgeschlagener Standard, als Annahme gekennzeichnet) – oder der Nutzer bricht ab und sieht rot markiert, wo etwas fehlt.
 let needMark=false,askNext=null;
+// Umfang zuerst: Features und Zielzeit stehen fest, bevor die Spezifikation geschrieben wird – sonst entstünde ein
+// Konzept, das nicht in die Zielzeit passt und noch einmal geschrieben werden müsste.
+let askKind='';
+const scopeBasis=()=>digest(s.idea+'\n'+JSON.stringify(s.questions.map(q=>[q.state,q.choice,q.custom]))+'\n'+JSON.stringify(s.extras));
+const overTarget=()=>{const t=targetMinutes();return !!t&&s.features.length>0&&featDuration().total>t};
+function ensureFits(next){
+  if(!overTarget()){next();return}
+  askNext=next;askKind='fit';
+  $('askTitle').textContent='Der Umfang passt nicht in die Zielzeit';
+  $('askText').textContent='Die gewählten Features brauchen '+hm(featDuration().total)+', die Zielvorgabe ist '+hm(targetMinutes())+'. Eine Spezifikation für diesen Umfang müsste später gekürzt und neu geschrieben werden. Besser zuerst unter „Features“ den Vorschlag für die Zielzeit übernehmen, Erweiterungen abwählen oder die Zielvorgabe ändern.';
+  $('askYes').textContent='Trotzdem für diesen Umfang erstellen';
+  if(!$('askBox').open)$('askBox').showModal();
+}
+async function startSpec(){
+  if(active)return;
+  if(!s.idea.trim()){generate();return}
+  const basis=scopeBasis();
+  if(!s.features.length||(s.featBasis!==basis&&(s.dirty||!s.spec.trim()))){
+    await deriveFeatures(true);
+    if(!s.features.length)return;
+    s.featBasis=basis;save();
+    if(overTarget())await proposeFit();
+    await deriveNames(false);
+    // Nur im Auto-Modus und wenn der Umfang passt, geht es ohne Rückfrage weiter
+    if(!(s.autonomy>=100&&!overTarget()&&!fitProposal)){renderAll();specNote('Umfang ermittelt: Features und Zielzeit rechts prüfen, dann „Spezifikation erstellen“.');return}
+  }
+  ensureFits(generate);
+}
 function ensureDecided(next){
   const open=s.questions.filter(q=>q.state==='open').length;
   if(!open){needMark=false;next();return}
@@ -1353,22 +1859,27 @@ function ensureDecided(next){
   if(!$('askBox').open)$('askBox').showModal();
 }
 $('askYes').onclick=()=>{
+  if(askKind==='fit'){askKind='';$('askBox').close();const go=askNext;askNext=null;if(go)go();return}
   $('askBox').close();needMark=false;
   s.questions=s.questions.map(q=>q.state==='open'?{...acceptDefault(q),auto:true}:q);s.last=-1;touched();activate(-1,false);
   const next=askNext;askNext=null;renderAll();if(next)next();
 };
 function declineAsk(){
+  if(askKind==='fit'){askKind='';if($('askBox').open)$('askBox').close();askNext=null;$('featPanel').open=true;renderAll();$('featPanel').scrollIntoView({block:'center'});return}
   if($('askBox').open)$('askBox').close();askNext=null;needMark=true;
   // Dorthin, wo die Angaben fehlen: in Schritt 2 die Fragenliste, bei der Spezifikation das Feld „Entscheidungen“
-  if(s.phase===2){$('decPanel').open=true;s.questions.forEach(q=>{if(q.state==='open')catGroups.add('o'+q.topic)})}
-  if(s.phase===1&&(s.active<0||s.questions[s.active]?.state!=='open'))activate(firstOpen(),false);
+  const here=inQuestions();
+  if(s.phase===2&&!here){$('decPanel').open=true;s.questions.forEach(q=>{if(q.state==='open')catGroups.add('o'+q.topic)})}
+  if(here&&(s.active<0||s.questions[s.active]?.state!=='open'))activate(firstOpen(),false);
   renderAll();
-  (s.phase===2?$('decPanel'):document.querySelector('#questions .need'))?.scrollIntoView({block:'center'});
+  (s.phase===2&&!here?$('decPanel'):document.querySelector('#questions .need'))?.scrollIntoView({block:'center'});
 }
 $('askNo').onclick=declineAsk;
 $('askBox').addEventListener('cancel',e=>{e.preventDefault();declineAsk()});
 document.addEventListener('keydown',e=>{
-  if(s.phase!==1||s.active<0||e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;
+  // Esc klappt die geöffnete Frage wieder ein – in der Fragenliste links wie im Feld „Entscheidungen“
+  if(e.key==='Escape'&&s.active>=0&&!e.defaultPrevented&&!document.querySelector('dialog[open]')&&(e.target instanceof Element)&&(e.target===document.body||e.target.closest('#questions'))){activate(-1,false);questionsUI();return}
+  if(!inQuestions()||s.active<0||e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;
   const t=e.target instanceof Element?e.target:document.body,q=s.questions[s.active],typing=t.matches('input,textarea,select');
   if(e.key==='Enter'){
     if(t.id!=='customAnswer'&&(typing||(t.matches('button,a')&&!t.classList.contains('opt'))))return;
@@ -1380,7 +1891,27 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- Schritt 3 / 4: Status ---------- */
+// Kennungen wie FR-001 oder AK-012 werden nie am Bindestrich umbrochen; kurze Tabellenzellen bleiben einzeilig.
+// Der Text selbst bleibt unverändert (nur eine Hülle um die Kennung), damit Vergleich und Kopieren nicht leiden.
+function keepIds(root){
+  const walk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];let t;while((t=walk.nextNode()))if(/[A-Za-zÄÖÜ]{1,6}-\d{1,5}/.test(t.nodeValue)&&!t.parentElement.closest('pre,code,.nb'))nodes.push(t);
+  for(const n of nodes){
+    const frag=document.createDocumentFragment();let last=0;const re=/[A-Za-zÄÖÜ]{1,6}-\d{1,5}(?:\.\d+)*/g;let m;
+    while((m=re.exec(n.nodeValue))){if(m.index>last)frag.append(n.nodeValue.slice(last,m.index));const sp=document.createElement('span');sp.className='nb';sp.textContent=m[0];frag.append(sp);last=re.lastIndex}
+    if(last<n.nodeValue.length)frag.append(n.nodeValue.slice(last));n.replaceWith(frag);
+  }
+  for(const c of root.querySelectorAll('td,th'))if(c.textContent.trim().length<=18)c.style.whiteSpace='nowrap';
+}
 function specUI(){
+  const qaPane=MERGED?$('qaPane'):null;
+  if(qaPane){
+    // Dieselbe Fragenliste an zwei Orten: links anstelle des Dokuments, solange es keines gibt; danach im Feld „Entscheidungen“
+    const qa=s.phase===2&&!s.spec.trim()&&typeof streamText!=='string'&&specMode!=='edit'&&s.questions.length>0,inDec=!qa&&!!s.spec.trim()&&s.questions.length>0;
+    const home=inDec?$('decQa'):document.querySelector('.split>div:first-child');
+    if(qaPane.parentElement!==home){if(inDec)home.append(qaPane);else home.prepend(qaPane)}
+    qaPane.classList.toggle('hidden',!(qa||inDec));document.body.classList.toggle('qa',qa);document.body.classList.toggle('decqa',inDec);
+    $('decDerive').classList.toggle('hidden',!(inDec&&$('ai').checked));$('decDerive').disabled=active;
+  }
   const edit=specMode==='edit';
   $('modeView').setAttribute('aria-pressed',String(!edit));$('modeEdit').setAttribute('aria-pressed',String(edit));
   $('spec').classList.toggle('hidden',!edit);$('specView').classList.toggle('hidden',edit);
@@ -1389,23 +1920,28 @@ function specUI(){
   const view=$('specView');
   const live=typeof streamText==='string';view.classList.toggle('writing',live);
   if(live){
-    if(streamText.trim()){view.replaceChildren(renderMarkdown(streamText,document));view.lastElementChild?.scrollIntoView({block:'nearest'})}
+    if(streamText.trim()){view.replaceChildren(renderMarkdown(streamText,document));keepIds(view);view.lastElementChild?.scrollIntoView({block:'nearest'})}
     else view.replaceChildren(node('p',$('ai').checked?'Claude beginnt zu schreiben …':'Spezifikation wird zusammengeführt …','placeholder'));
     changeUI(null);return;
   }
-  if(s.spec.trim())view.replaceChildren(renderMarkdown(s.spec,document));
-  else view.replaceChildren(node('p','Noch keine Spezifikation. „Konzept generieren“ wählen oder über „Bearbeiten“ eine vorhandene Spezifikation einfügen.','placeholder'));
+  if(s.spec.trim()){view.replaceChildren(renderMarkdown(s.spec,document));keepIds(view)}
+  else view.replaceChildren(node('p',s.features.length?'Der Umfang steht rechts unter „Features“. Auswahl und Zielzeit prüfen, dann „Spezifikation erstellen“ – geschrieben wird erst für den festgelegten Umfang.':'Noch keine Spezifikation. „Spezifikation erstellen“ wählen oder über „Bearbeiten“ eine vorhandene Spezifikation einfügen.','placeholder'));
   changeUI(view);
 }
 function setSpecMode(mode,focus){specMode=mode;specUI();if(mode==='view')ensureFeatures();if(focus)(mode==='edit'?$('spec'):$('modeEdit')).focus()}
 $('modeView').onclick=()=>setSpecMode('view');
 $('modeEdit').onclick=()=>setSpecMode('edit',true);
 function statuses(){
-  $('specBadge').textContent=streamText!==null?($('ai').checked?'Claude schreibt …':'Wird erstellt …'):s.spec?(s.specSource==='demo'?'Demo-Entwurf':s.specSource==='claude'?'Claude-Entwurf':'Manuelle Spezifikation'):'Noch kein Entwurf';
-  $('specStatus').textContent=s.spec&&s.dirty?'⚠ Eingaben geändert – Spezifikation prüfen/aktualisieren.':'';
+  $('specBadge').textContent=streamText!==null?($('ai').checked?'Claude schreibt …':'Wird erstellt …'):s.spec?(s.specSource==='demo'?'Demo-Entwurf':s.specSource==='claude'?'Claude-Entwurf':'Manuelle Spezifikation'):'';$('specBadge').classList.toggle('hidden',!$('specBadge').textContent);
+  // Stand, auf dem die Spezifikation beruht: wird mitgeführt, solange sie aktuell ist, und dient danach als Vergleich
+  if(s.spec&&!s.dirty)s.specBasis=basisNow();
+  if(s.spec&&s.dirty){
+    const why=dirtyWhy(),go=button('↻ Spezifikation aktualisieren','btn small',()=>$('generate').click());go.disabled=active;go.style.marginLeft='12px';
+    $('specStatus').replaceChildren('⚠ Die Spezifikation ist nicht mehr aktuell. '+(why.length?'Geändert seit ihrem Stand: '+why.join(' · ')+'.':'Seit ihrem Stand haben sich Eingaben geändert.'),go);
+  }else $('specStatus').textContent='';
   $('specStatus').className=s.spec&&s.dirty?'banner':'status';
   $('specCount').textContent=s.spec.length.toLocaleString('de-DE')+' / 50.000';
-  $('specDownload').disabled=!s.spec;$('wishBox').classList.toggle('hidden',!s.spec.trim());
+  $('specDownload').disabled=!s.spec;$('specPdf').disabled=!s.spec;$('wishBox').classList.toggle('hidden',!s.spec.trim());
   if(specMode==='view')specUI();
   planUI();layoutNote();phasesUI();
 }
@@ -1419,6 +1955,7 @@ function planUI(){
   const openCount=s.questions.filter(q=>q.state==='open').length,gate=openCount?'open':!s.spec.trim()?'none':s.dirty?'dirty':s.features.some(f=>f.on!==f.inSpec)?'features':'';
   $('planGate').classList.toggle('hidden',!gate);
   for(const id of ['planConfig','planStatus','planOutput','layoutSection','nextCard','reviewCard'])$(id).classList.toggle('hidden',!!gate);
+  if(gate)$('logoPanel').classList.add('hidden');else logoUI();
   if(gate){
     $('planStale').classList.add('hidden');
     const acts=$('gateActions');acts.replaceChildren();
@@ -1436,7 +1973,7 @@ function planUI(){
     }else{
       $('gateTitle').textContent=gate==='none'?'Es gibt noch keine Spezifikation':'Die Spezifikation ist nicht mehr aktuell';
       $('gateText').textContent=gate==='none'?'Aufträge entstehen aus der Spezifikation. Erstelle sie zuerst.':'Seit dem Erzeugen haben sich Eingaben oder Antworten geändert. Aktualisiere die Spezifikation, bevor daraus Aufträge werden.';
-      const make=button(gate==='none'?'Spezifikation erstellen':'Spezifikation aktualisieren','btn primary',()=>{setPhase(2);generate()});make.disabled=active;
+      const make=button(gate==='none'?'Spezifikation erstellen':'Spezifikation aktualisieren','btn primary',()=>{setPhase(2);startSpec()});make.disabled=active;
       acts.append(make,button('Zur Spezifikation →','btn',()=>setPhase(2)));
     }
     return;
@@ -1563,7 +2100,7 @@ async function generate(){
   try{
     // Die Antwort kommt als Strom und wird beim Entstehen angezeigt
     let r=null;streamText='';specMode='view';specUI();statuses();
-    await stream('/api/spec/stream',{mode:'final',idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()},m=>{
+    await stream('/api/spec/stream',{mode:'final',idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,features:s.features.filter(f=>f.on),ai:$('ai').checked,...frame()},m=>{
       if(typeof m.t==='string'){streamText+=m.t;const now=performance.now();if(now-paintAt>180){paintAt=now;specUI();$('specCount').textContent=streamText.length.toLocaleString('de-DE')+' Zeichen …'}}
       else if(m.error)throw Error(m.error);else if(m.done)r=m;
     });
@@ -1575,23 +2112,23 @@ async function generate(){
   // Was Claude in der Spezifikation offen lässt, gleich als Fragen mit Alternativen anbieten
   // (nicht im Auto-Modus: dort entscheidet Claude sie selbst und es wird nicht rückgefragt)
   if(s.specSource==='claude'&&$('ai').checked&&s.autonomy<100)await deriveDecisions();
-  // Danach die Features der Spezifikation mit ihrem Aufwand ermitteln
-  await deriveFeatures();
-  // Passt der Umfang nicht in die Zielzeit, gleich einen Vorschlag machen, wie er hineinpasst
-  if(targetMinutes()&&s.features.length&&featDuration().total>targetMinutes())await proposeFit();
+  // Der Umfang stand schon vor dem Schreiben fest; nur wenn es noch keine Feature-Liste gibt, wird sie aus der Spezifikation ermittelt
+  if(!s.features.length){await deriveFeatures();if(overTarget())await proposeFit()}
   // Namensvorschläge, sofern gewünscht und kein eigener Name angegeben ist
   await deriveNames(false);
+  // Logo-Entwürfe, sofern gewünscht
+  await deriveLogos(false);
   // Zum Schluss das gewünschte Review der fertigen Spezifikation
   if(s.reviewBy&&$('ai').checked)await runReview();
 }
 
 /* ---------- Features der Spezifikation: an-/abwählen, Aufwand je Feature, Gesamtdauer ---------- */
-async function deriveFeatures(){
-  if(active||!s.spec.trim())return;
-  const rev=revision;lock(true,'Features und Aufwand werden ermittelt');
+async function deriveFeatures(early){
+  if(active||(!s.spec.trim()&&!s.idea.trim()))return;
+  const rev=revision;lock(true,early?'Umfang wird festgelegt: Features und Aufwand':'Features und Aufwand werden ermittelt');
   let message='';
   try{
-    const r=await call({mode:'features',spec:s.spec,idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()});
+    const r=await call({mode:'features',spec:early?'':s.spec,idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()});
     if(rev===revision){
       // Bisherige Auswahl bleibt: gleichnamige Features behalten ihren Zustand, bereits abgewählte bleiben in der Liste.
       const old=new Map(s.features.map(f=>[f.name.toLowerCase(),f])),fresh=cleanFeatures(r.features).map(f=>{const o=old.get(f.name.toLowerCase());return o?{...f,on:o.on,inSpec:o.inSpec}:{...f,on:true,inSpec:true}});
@@ -1669,7 +2206,9 @@ async function proposeFit(){
     }
   }
   const baseBest=featureDuration(list.map(f=>({...f,on:f.core})),max);
-  if(!$('ai').checked){fitProposal=localFit(list,target);renderAll();return}
+  // Sind Schlank-Fassungen vorbereitet, entsteht der Vorschlag sofort; Claude wird nur gefragt, wenn das nicht reicht
+  const quick=localFit(list,target);
+  if(!$('ai').checked||(list.some(f=>f.lean)&&quick.base<=target)){fitProposal=quick;renderAll();return}
   lock(true,'Lösung für die Zielzeit wird gesucht');featNote='';let message='';
   try{
     const r=await call({mode:'fit',spec:s.spec,features:list,target,maxAgents:Math.min(6,max),idea:s.idea,project:s.project,ai:true});
@@ -1685,19 +2224,37 @@ async function proposeFit(){
 function localFit(list,target){
   let feats=list.map(f=>({...f,on:true})),measures=[];
   const baseOf=()=>featureDuration(feats.map(f=>({...f,on:f.core})),Math.min(6,workPackages(feats).width));
+  // 1. verschlanken: vorbereitete Schlank-Fassungen der Basis-Features, größte Ersparnis zuerst
+  const slim=feats.map((f,i)=>i).filter(i=>feats[i].core&&feats[i].lean).sort((x,y)=>(feats[y].minutes-feats[y].lean.minutes)-(feats[x].minutes-feats[x].lean.minutes));
+  for(const i of slim){
+    if(baseOf()<=target)break;
+    const f=feats[i];
+    measures.push({kind:'verschlanken',feature:f.id,text:'„'+f.name+'“: '+f.lean.note,saves:f.minutes-f.lean.minutes,search:''});
+    feats=feats.map((x,k)=>k===i?{...x,note:x.lean.note,minutes:x.lean.minutes,lean:undefined}:x);
+  }
+  // 2. herabstufen: das für den Grundzweck unwichtigste Basis-Feature zuerst (das Grundgerüst bleibt),
+  //    bevorzugt eines, auf dem kein anderes Basis-Feature aufbaut
   const cores=()=>feats.map((f,i)=>i).filter(i=>feats[i].core).slice(1);
   while(baseOf()>target&&cores().length){
-    const i=cores().pop();
+    const all=cores(),free=all.filter(i=>!feats.some(f=>f.core&&f.dependsOn.includes(feats[i].id))),pool=free.length?free:all;
+    const i=pool.reduce((best,k)=>(feats[k].rank||0)>(feats[best].rank||0)||((feats[k].rank||0)===(feats[best].rank||0)&&k>best)?k:best,pool[0]);
     measures.push({kind:'herabstufen',feature:feats[i].id,text:'„'+feats[i].name+'“ wird Erweiterung und kommt erst hinzu, wenn Zeit bleibt.',saves:feats[i].minutes,search:''});
     feats=feats.map((f,k)=>k===i?{...f,core:false}:f);
   }
-  const agents=Math.min(6,workPackages(feats).width),fit=suggestExtensions(feats,target,agents);
-  return {local:true,summary:'Rechnerischer Vorschlag ohne KI: Die Basis wird auf das Nötigste verkleinert, indem spätere Basis-Features zu Erweiterungen werden. Inhaltlich verschlanken (einfachere Lösung, vorhandener Code) kann nur Claude.',measures,
+  const agents=Math.min(6,workPackages(feats).width),fit=suggestExtensions(feats,target,agents),slimmed=measures.some(m=>m.kind==='verschlanken');
+  // local = es wurde nichts umformuliert; verschlankte Features müssen in einer vorhandenen Spezifikation nachgezogen werden
+  return {local:!slimmed,summary:slimmed?'Sofort-Vorschlag aus den vorbereiteten Schlank-Fassungen der Features: Die Basis wird verschlankt'+(measures.some(m=>m.kind==='herabstufen')?' und auf das Nötigste verkleinert':'')+'.':'Die Basis wird auf das Nötigste verkleinert, indem die für den Grundzweck unwichtigsten Basis-Features zu Erweiterungen werden.',measures,
     features:fit.features.map(f=>({...f,inSpec:(list.find(x=>x.id===f.id)||{inSpec:true}).inSpec})),agents,base:fit.base,total:fit.total,chosen:fit.chosen.length,target};
 }
 // Vorschlag übernehmen: Feature-Liste und Agentenzahl ersetzen und den neuen Umfang in die Spezifikation einarbeiten
 async function acceptFit(){
   const p=fitProposal;if(!p||active)return;
+  if(!s.spec.trim()){
+    // Noch keine Spezifikation: Der Vorschlag legt nur den Umfang fest, geschrieben wird danach
+    s.features=p.features.map(f=>({...f,inSpec:f.on}));s.featAgents=p.agents;fitProposal=null;revision++;
+    featNote='Vorschlag übernommen: '+hm(p.total)+' mit '+(p.agents===1?'einem Agenten':p.agents+' parallelen Agenten')+' bei einer Zielvorgabe von '+hm(p.target)+'.';
+    renderAll();return;
+  }
   if(p.local){
     // Ohne KI wird nichts umformuliert: Auswahl setzen und Abgewähltes über die Feature-Auswahl in die Spezifikation bringen
     s.features=p.features;s.featAgents=p.agents;fitProposal=null;revision++;
@@ -1751,8 +2308,12 @@ async function applyScope(){
   renderAll();flash();
 }
 function featuresUI(){
+  // Solange es keine Spezifikation gibt, ist die Auswahl selbst der Umfang – es gibt nichts einzuarbeiten
+  if(!s.spec.trim()&&s.features.some(f=>f.on!==f.inSpec))s.features=s.features.map(f=>({...f,inSpec:f.on}));
   const box=$('featBox'),list=s.features;box.replaceChildren();
-  $('featCount').textContent=list.length?list.filter(f=>f.core).length+' Basis · '+list.filter(f=>!f.core&&f.on).length+' von '+list.filter(f=>!f.core).length+' Erweiterungen':'';
+  // Kopfzeile: geplante Dauer, die Zahl der Agenten, mit der sie gerechnet ist, die Zielvorgabe und der Umfang
+  const fdHead=list.length?featDuration():null,tHead=targetMinutes();
+  $('featCount').textContent=list.length?'Geschätzt '+hm(fdHead.total)+(tHead?' / Soll '+hm(tHead):'')+' · '+(fdHead.agents===1?'1 Agent':fdHead.agents+' Agenten parallel')+' · '+list.filter(f=>f.core).length+' Basis · '+list.filter(f=>!f.core&&f.on).length+' von '+list.filter(f=>!f.core).length+' Erweiterungen':'';
   if(!list.length){
     box.append(node('p',s.spec.trim()?'Für diese Spezifikation sind noch keine Features ermittelt.':'Die Features erscheinen, sobald eine Spezifikation erstellt ist.','meta'));
     if(s.spec.trim()){const get=button('✦ Features und Aufwand ermitteln','btn small',deriveFeatures);get.style.marginTop='10px';get.disabled=active;box.append(get)}
@@ -1770,7 +2331,7 @@ function featuresUI(){
   if(target){const mark=node('span',undefined,'goal');mark.style.left=Math.min(100,target/span*100)+'%';mark.title='Zielvorgabe: '+hm(target);bar.append(mark)}
   bar.setAttribute('role','img');bar.setAttribute('aria-label','Basis-Features '+hm(baseMin)+', Erweiterungen '+hm(extMin)+(target?', Zielvorgabe '+hm(target):''));
   const key=(cls,label,min)=>{const e=node('span');e.append(node('i',undefined,cls),label+' ',node('b',hm(min)));return e};
-  legend.append(key('base','Basis-Features',baseMin),key('ext','Erweiterungen +',extMin));if(target)legend.append(key('goal','Ziel',target));
+  legend.append(key('base',list.filter(f=>f.core).length+' Basis-Features',baseMin),key('ext',list.filter(f=>!f.core&&f.on).length+' von '+list.filter(f=>!f.core).length+' Erweiterungen +',extMin));if(target)legend.append(key('goal','Ziel',target));
   sum.append(bar,legend);
   // Zielvorgabe direkt hier ändern: Die Rechnung passt sich sofort an; die Spezifikation nennt die Vorgabe als Rahmen
   // und wird deshalb erst auf Wunsch nachgezogen.
@@ -1778,14 +2339,16 @@ function featuresUI(){
   gHead.append(node('b','Zielvorgabe'),gNow);
   gIn.type='range';gIn.min=0;gIn.max=durations.length-1;gIn.step=1;gIn.value=s.durLevel;gIn.disabled=active;gIn.setAttribute('aria-label','Ziel-Entwicklungsdauer');gIn.setAttribute('aria-valuetext',durations[s.durLevel][0]);
   gIn.oninput=()=>{gNow.textContent=durations[Number(gIn.value)][0];gIn.setAttribute('aria-valuetext',gNow.textContent)};
-  gIn.onchange=()=>{goalChanged=Number(gIn.value)!==s.durLevel||goalChanged;s.durLevel=Number(gIn.value);featNote='';fitProposal=null;renderAll();$('featBox').querySelector('.goalpick input')?.focus({preventScroll:true})};
-  goal.append(gHead,gIn);sum.append(goal);
+  gIn.onchange=()=>{goalChanged=Number(gIn.value)!==s.durLevel||goalChanged;s.durLevel=Number(gIn.value);featNote='';fitProposal=null;renderAll();if(targetMinutes()&&s.features.some(f=>f.lean)&&!active){const t=targetMinutes(),q=localFit(s.features,t);if(q.base<=t||!$('ai').checked)proposeFit()}$('featBox').querySelector('.goalpick input')?.focus({preventScroll:true})};
+  // Zielvorgabe und Parallelisierung stehen nebeneinander in einer Zeile
+  const pair=node('div',undefined,'sliderpair');goal.append(gHead,gIn);pair.append(goal);sum.append(pair);
   if(s.spec.trim()&&typeof s.specDuration==='string'&&s.specDuration!==duration()){
     const warn=node('div',undefined,'spread goalwarn'),take=button('In die Spezifikation übernehmen','btn small',applyDuration);take.disabled=active;
     warn.append(node('span','Die Spezifikation nennt noch „'+(s.specDuration||'keine Vorgabe')+'“.','meta'),take);sum.append(warn);
   }
   par.className='parbox';
-  par.append(agentSlider(fd.agents,fd.max,n=>{s.featAgents=n;featuresUI();ideaUI();save()}),node('span',fd.max<2?'Die Arbeitspakete bauen aufeinander auf; es kann nur nacheinander gearbeitet werden.':'Höchstens '+fd.max+': So viele Arbeitspakete sind unabhängig voneinander und lassen sich gleichzeitig entwickeln.','note'));
+  pair.append(agentSlider(fd.agents,fd.max,n=>{s.featAgents=n;featuresUI();ideaUI();save()}));
+  par.append(node('span',fd.max<2?'Die Arbeitspakete bauen aufeinander auf; es kann nur nacheinander gearbeitet werden.':'Höchstens '+fd.max+': So viele Arbeitspakete sind unabhängig voneinander und lassen sich gleichzeitig entwickeln.','note'));
   const allOn=button('✓ Alle Erweiterungen','btn small',()=>{featNote='';setFeatures(()=>true)}),allOff=button('✕ Keine Erweiterungen','btn small',()=>{featNote='';setFeatures(()=>false)});
   allOn.disabled=list.every(f=>f.on);allOff.disabled=list.every(f=>f.core||!f.on);
   // Vorschlag: Basis gesetzt, Erweiterungen der Reihe nach, solange die Zielzeit reicht
@@ -1829,7 +2392,7 @@ function featuresUI(){
   const foot=node('p',(s.featSource==='claude'?'Aufwand von Claude geschätzt':'Aufwand: feste Demo-Annahmen')+'; die tatsächliche Dauer kann deutlich abweichen. ','meta'),again=button('Neu ermitteln','link',deriveFeatures);
   foot.style.marginTop='12px';again.disabled=active;foot.append(again);box.append(foot);
 }
-$('generate').onclick=()=>ensureDecided(()=>generate());
+$('generate').onclick=()=>ensureDecided(()=>startSpec());
 $('pasteSpec').onclick=()=>{setPhase(2);setSpecMode('edit',true)};
 for(const id of ['project','projectIdea'])$(id).oninput=e=>{s.project=e.target.value;$(id==='project'?'projectIdea':'project').value=s.project;touched();namesUI();statuses();save()};
 $('nameCount').oninput=e=>{s.nameCount=Number(e.target.value);namesUI();save()};
@@ -1837,28 +2400,63 @@ $('nameCount').oninput=e=>{s.nameCount=Number(e.target.value);namesUI();save()};
 /* ---------- Review der Spezifikation durch einen gewählten Agenten ---------- */
 let reviewers=[];
 const reviewerNow=()=>reviewers.find(r=>r.id===s.reviewBy)||null;
+const times=f=>String(f).replace('.',',')+'×',usd=n=>'$'+String(n).replace('.',',');
+// Überall dieselbe Form: Name mit Version · Kosten · Laufzeit (beides im Verhältnis zu Sonnet 5.5)
+const modelOption=m=>new Option(m.name+(m.factor!=null?' · Kosten '+times(m.factor):'')+(m.time!=null?' · Laufzeit '+times(m.time):''),m.id);
+const modelHint=(m,codex)=>!m?'':m.factor!=null?'Tokenkosten '+times(m.factor)+' Sonnet 5.5 · '+usd(m.in)+' / '+usd(m.out)+' je Mio. Token (Eingabe / Ausgabe)'+(m.time!=null?' · Laufzeit etwa '+times(m.time)+' (grober Richtwert)':'')+(m.note?' · '+m.note:''):(m.note?m.note+' · ':'')+(codex?'Preise und Tempo nennt die Codex-CLI nicht':'');
+// Modell der Agenten für die direkte Umsetzung
+let agentModels=[];
+function runModelUI(){
+  const sel=$('runModel');sel.replaceChildren(new Option('Standard von Claude Code',''),...agentModels.map(modelOption));
+  if(s.runModel&&agentModels.length&&!agentModels.some(m=>m.id===s.runModel))s.runModel='';
+  sel.value=s.runModel;const m=agentModels.find(x=>x.id===s.runModel);
+  $('runModelCost').textContent=m?modelHint(m):'Es gilt das in Claude Code eingestellte Modell. Kosten und Laufzeit gelten je Agent.';
+}
+$('runModel').onchange=e=>{s.runModel=e.target.value;save();renderAll()};
+// Neues Repository auf GitHub anlegen und gleich als Repository eintragen
+const repoSlug=()=>(s.project.trim()||s.idea).toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40).replace(/-+$/,'')||'neues-projekt';
+$('repoNew').onclick=()=>{
+  const f=$('repoForm'),open=f.classList.toggle('hidden')===false;$('repoNew').setAttribute('aria-expanded',String(open));$('repoStatus').textContent='';
+  if(open){if(!$('repoName').value)$('repoName').value=repoSlug();$('repoName').focus()}
+};
+$('repoName').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('repoCreate').click()}};
+$('repoCreate').onclick=async()=>{
+  const name=$('repoName').value.trim(),st=$('repoStatus'),vis=$('repoVis').value;if(!name)return;
+  $('repoCreate').disabled=true;st.className='status';st.textContent='Repository wird angelegt …';
+  try{
+    const r=await post('/api/repo',{name,visibility:vis,description:s.project.trim()});
+    $('repo').value=r.url;$('repo').dispatchEvent(new Event('input'));$('repoForm').classList.add('hidden');$('repoNew').setAttribute('aria-expanded','false');
+    st.textContent='Angelegt ('+(vis==='public'?'öffentlich':'privat')+', leer) und oben eingetragen.';
+  }catch(e){st.className='banner';st.textContent=e.message}finally{$('repoCreate').disabled=false}
+};
+const reviewModelNow=()=>(reviewerNow()?.models||[]).find(m=>m.id===s.reviewModel)||null;
+const reviewModelName=()=>reviewModelNow()?.name||s.reviewModel;
 function reviewChoiceUI(){
   const by=$('reviewBy'),mo=$('reviewModel'),r=reviewerNow();
   by.replaceChildren(new Option('Kein Review',''),...reviewers.map(x=>new Option(x.name,x.id)));
   // Ein gespeicherter, hier nicht eingerichteter Anbieter bleibt sichtbar, bis der Stand der Anbieter bekannt ist
   if(s.reviewBy&&!r)by.append(new Option(s.reviewBy+' (nicht eingerichtet)',s.reviewBy));
   by.value=s.reviewBy;
-  const models=r?r.models:[];mo.replaceChildren(...(models.length?models.map(m=>new Option(m,m)):[new Option('Standardmodell','')]));
-  if(models.length&&!models.includes(s.reviewModel))s.reviewModel=models[0];if(!models.length)s.reviewModel='';
+  const models=r?r.models:[];
+  mo.replaceChildren(...(models.length?models.map(modelOption):[new Option('Standardmodell','')]));
+  if(models.length&&!models.some(m=>m.id===s.reviewModel))s.reviewModel=(models.find(m=>m.preferred)||models[0]).id;if(!models.length)s.reviewModel='';
   mo.value=s.reviewModel;mo.disabled=models.length<2;mo.classList.toggle('hidden',!s.reviewBy);
-  $('reviewValue').textContent=!s.reviewBy?'gewählt: kein Review':'gewählt: '+(r?r.name:s.reviewBy)+(s.reviewModel?' · '+s.reviewModel:'');
+  const m=reviewModelNow();
+  $('reviewValue').textContent=!s.reviewBy?'gewählt: kein Review':'gewählt: '+(r?r.name:s.reviewBy)+(s.reviewModel?' · '+reviewModelName():'');
+  // Entscheidungshilfe: Kostenverhältnis und Listenpreis, soweit bekannt
+  $('reviewCost').textContent=modelHint(m,!!r&&r.id==='codex');
 }
-$('reviewBy').onchange=e=>{s.reviewBy=e.target.value;s.reviewModel='';reviewChoiceUI();specReviewUI();save()};
-$('reviewModel').onchange=e=>{s.reviewModel=e.target.value;reviewChoiceUI();save()};
+$('reviewBy').onchange=e=>{s.reviewBy=e.target.value;s.reviewModel='';reviewChoiceUI();specReviewUI();presetsUI();save()};
+$('reviewModel').onchange=e=>{s.reviewModel=e.target.value;reviewChoiceUI();presetsUI();save()};
 async function runReview(){
   const r=reviewerNow();
   if(active||!s.spec.trim()||!s.reviewBy)return;
   if(!r){specNote('Der gewählte Reviewer ist auf diesem Rechner nicht eingerichtet.',true);return}
   if(!$('ai').checked){specNote('Ein Review braucht einen Agenten: bitte Claude aktivieren.');return}
-  const rev=revision,spec=s.spec;lock(true,'Review der Spezifikation durch '+r.name+(s.reviewModel?' ('+s.reviewModel+')':''));let message='';
+  const rev=revision,spec=s.spec;lock(true,'Review der Spezifikation durch '+r.name+(s.reviewModel?' ('+reviewModelName()+')':''));let message='';
   try{
     const x=await call({mode:'review',spec,provider:s.reviewBy,model:s.reviewModel,ai:true,...frame()});
-    if(rev===revision){s.review={by:r.name,model:s.reviewModel,summary:String(x.summary||''),findings:(Array.isArray(x.findings)?x.findings:[]).map(f=>({...f,done:false})),spec:digest(spec)};$('reviewPanel').open=true}
+    if(rev===revision){s.review={by:r.name,model:reviewModelName(),summary:String(x.summary||''),findings:(Array.isArray(x.findings)?x.findings:[]).map(f=>({...f,done:false})),spec:digest(spec)}}
   }catch(e){message=e.message}finally{lock(false)}
   renderAll();if(message)specNote('Review nicht möglich: '+message,true);
 }
@@ -1884,23 +2482,123 @@ function specReviewUI(){
   });
 }
 
+/* ---------- Festlegungen in der rechten Spalte: Stand je Bereich als Punkt, Führung zum nächsten offenen Bereich ---------- */
+// done = erledigt (grün), todo = hier ist noch etwas zu tun (gelb), idle = freiwillig und noch nicht genutzt (grau)
+const panelNames={namePanel:'Name der Anwendung',featPanel:'Features',decPanel:'Entscheidungen',reviewPanel:'Review',reusePanel:'Open-Source-Bausteine'};
+let panelBefore={};
+function panelStates(){
+  const open=s.questions.filter(q=>q.state==='open').length,v=s.review,left=v?v.findings.filter(f=>!f.done).length:0;
+  return {
+    namePanel:s.project.trim()?'done':'todo',
+    logoPanel:s.logos[s.logoChosen]?'done':s.logoCount>0||s.logos.length?'todo':'idle',
+    featPanel:!s.features.length||overTarget()||(s.spec.trim()&&s.features.some(f=>f.on!==f.inSpec))?'todo':'done',
+    decPanel:open?'todo':s.questions.length?'done':'idle',
+    reviewPanel:v?(left?'todo':'done'):s.reviewBy&&s.spec.trim()?'todo':'idle',
+    reusePanel:s.reuse?'done':'idle'
+  };
+}
+function panelsUI(){
+  const st=panelStates(),ids=Object.keys(panelNames).filter(id=>!$(id).classList.contains('hidden')),label={done:'erledigt',todo:'noch zu tun',idle:'freiwillig, noch nicht genutzt',locked:'noch nicht möglich'};
+  // Bereiche, deren Voraussetzung fehlt, sind gesperrt und nennen, was fehlt
+  const noSpec=!s.spec.trim()?'Erst möglich, sobald die Spezifikation erstellt ist':'',locks={reviewPanel:noSpec,reusePanel:noSpec,featPanel:!s.features.length&&!s.idea.trim()?'Erst möglich, sobald eine Idee eingegeben ist':'',decPanel:!s.questions.length?'Erst möglich, sobald die Fragen abgeleitet sind (Schritt 2)':''};
+  for(const id of ids){
+    const d=$(id),why=locks[id]||'';d.classList.toggle('locked',!!why);if(why){d.open=false;st[id]='locked'}
+    const s0=d.querySelector('summary');let hint=s0.querySelector('.lockwhy');
+    if(!hint){hint=node('span',undefined,'meta lockwhy');s0.append(hint);s0.addEventListener('click',e=>{if(d.classList.contains('locked'))e.preventDefault()})}
+    hint.textContent=why;s0.setAttribute('aria-disabled',String(!!why));
+  }
+  // Der Schritt dazwischen: Erst mit der Spezifikation werden die folgenden Bereiche möglich – der Knopf steht genau an dieser Stelle
+  $('sideGo').classList.toggle('hidden',!noSpec);$('sideGoBtn').disabled=active;$('sideGoBtn').classList.toggle('ready',$('generate').classList.contains('ready'));
+  for(const id of ids){
+    const sum=$(id).querySelector('summary');let dot=sum.querySelector('.dot');
+    if(!dot){dot=node('span',undefined,'dot');sum.prepend(dot)}
+    $(id).dataset.state=st[id];dot.className='dot '+st[id];dot.title=label[st[id]];dot.setAttribute('aria-label',label[st[id]]);dot.setAttribute('role','img');
+  }
+  const todo=ids.filter(id=>st[id]==='todo');
+  panelBefore=st;
+}
+
+/* ---------- Logo-Entwürfe: Anzahl auf der Idee-Seite, Auswahl und Download bei der Spezifikation ---------- */
+// Ein Entwurf wird nur als geprüftes SVG eingefügt (dieselbe Bereinigung wie auf dem Server)
+function logoNode(svg,size){
+  const clean=cleanSvg(svg),doc=clean?new DOMParser().parseFromString(clean,'image/svg+xml'):null,root=doc&&doc.documentElement;
+  if(!root||root.nodeName!=='svg'||doc.querySelector('parsererror'))return node('span','?','meta');
+  const el=document.importNode(root,true);el.setAttribute('width',size);el.setAttribute('height',size);el.setAttribute('aria-hidden','true');return el;
+}
+function logoUI(){
+  // Das gewählte Logo steht in der Kopfzeile vor dem Projektnamen
+  const mark=$('brandLogo'),chosen=s.logos[s.logoChosen];mark.replaceChildren();mark.classList.toggle('hidden',!chosen);if(chosen){mark.append(logoNode(chosen.svg,30));mark.title='Gewähltes Logo: '+chosen.name}
+  const n=s.logoCount;$('logoCount').value=n;
+  levelMark('logoCountValue',n,5,String(n),n?plural(n,'Entwurf','Entwürfe'):'keine Entwürfe');$('logoCount').setAttribute('aria-valuetext',n?plural(n,'Entwurf','Entwürfe'):'keine Entwürfe');
+  $('logoCountText').replaceChildren(node('b',n?plural(n,'Logo-Entwurf','Logo-Entwürfe'):'Keine Logo-Entwürfe'));
+  const box=$('logoBox');box.replaceChildren();
+  box.classList.toggle('hidden',!s.spec.trim()||!(n>0||s.logos.length));
+  $('logoPanel').classList.toggle('hidden',box.classList.contains('hidden'));
+  if(box.classList.contains('hidden'))return;
+  const head=node('div',undefined,'namehead'),row=node('div',undefined,'namerow'),pick=s.logos[s.logoChosen];
+  $('logoMeta').textContent=pick?pick.name:s.logos.length?plural(s.logos.length,'Entwurf','Entwürfe')+' · keiner gewählt':'noch keine Entwürfe';
+  s.logos.forEach((l,i)=>{
+    const b=button('','logotile'+(i===s.logoChosen?' on':''),()=>{s.logoChosen=i===s.logoChosen?-1:i;save();logoUI();panelsUI()});
+    b.append(logoNode(l.svg,72));b.title=l.name+(l.idea?' – '+l.idea:'')+' · Klicken, um diesen Entwurf zu wählen';b.setAttribute('aria-label','Logo-Entwurf '+l.name);b.setAttribute('aria-pressed',String(i===s.logoChosen));b.disabled=active;row.append(b);
+  });
+  // Aktionen stehen oben neben dem Titel, der Gedanke zum gewählten Entwurf rechts neben den Kacheln
+  const acts=$('logoActs');acts.replaceChildren();
+  if(n>0){const more=button(s.logos.length?'↻ Neue Entwürfe':'✦ Logos entwerfen','btn small',()=>deriveLogos(true));more.disabled=active;acts.append(more)}
+  if(pick){acts.append(button('↓ SVG','btn small',()=>download('logo.svg',cleanSvg(pick.svg))));if(pick.idea)row.append(node('p',pick.idea,'meta logoidea'))}
+  box.append(head,row);
+}
+$('sideGoBtn').onclick=()=>$('generate').click();
+$('decDerive').onclick=()=>deriveDecisions();
+// Zielordner vorschlagen: Projektordner im Home-Verzeichnis (oder laut SPECIT_PROJECTS_DIR) plus Kurzname der Anwendung.
+// Der Vorschlag folgt dem Namen, solange das Feld leer ist oder noch den letzten Vorschlag enthält.
+let projectsDir='',pathSep='\\';
+function suggestRunDir(){
+  if(!projectsDir)return;
+  const sug=projectsDir+pathSep+repoSlug();$('runDir').placeholder=sug;
+  if(!s.runDir.trim()||s.runDir===s.runDirSuggested){if(s.runDir!==sug){s.runDir=sug;$('runDir').value=sug}s.runDirSuggested=sug}
+}
+// Umsetzung: Die Erklärtexte der Auswahlkacheln und Abschnitte stehen als Tooltip statt als Fließtext
+for(const c of document.querySelectorAll('#phase3 .choice'))c.title=c.querySelector('span')?.textContent||'';
+for(const h of document.querySelectorAll('#phase3 .stephead')){const p=h.querySelector('p');if(p&&!p.id&&p.textContent)h.querySelector('h2').title=p.textContent}
+$('logoCount').oninput=e=>{s.logoCount=Number(e.target.value);save();logoUI()};
+async function deriveLogos(force){
+  if(active||!s.logoCount||(!force&&s.logos.length))return;
+  if(!s.idea.trim()&&!s.spec.trim())return;
+  const rev=revision;lock(true,'Logo-Entwürfe werden gezeichnet');let message='';
+  try{
+    const r=await call({mode:'logos',idea:s.idea,spec:s.spec,project:s.project,count:s.logoCount,tone:s.tone,ai:$('ai').checked});
+    if(rev===revision){s.logos=cleanLogos(r.logos);s.logoChosen=-1}
+  }catch(e){message=e.message}finally{lock(false)}
+  renderAll();if(message)specNote(message,true);
+}
+
 /* ---------- Name der Anwendung: eigener Name oder Vorschläge ---------- */
 function namesUI(){
   const named=!!s.project.trim();
-  $('nameCount').disabled=named;
-  $('nameCountValue').textContent=named?'eigener Name':s.nameCount?'gewählt: '+plural(s.nameCount,'Vorschlag','Vorschläge'):'gewählt: keine';
+  // Der Regler bleibt bedienbar, auch wenn schon ein Name feststeht: Er gilt dann für „Neue Vorschläge“
+  $('nameCountValue').textContent=s.nameCount?plural(s.nameCount,'Namensvorschlag','Namensvorschläge'):'Keine Namensvorschläge';
   $('nameCount').setAttribute('aria-valuetext',$('nameCountValue').textContent);
-  // Vorschläge bei der Spezifikation: ein Klick übernimmt den Namen
-  const box=$('nameBox');box.replaceChildren();
-  box.classList.toggle('hidden',!s.spec.trim()||!(s.names.length||(s.nameCount>0&&!named)));
+  // Name bei der Spezifikation: gut sichtbar, Vorschläge per Klick, eigener Name per Eingabe
+  const box=$('nameBox');
+  if(box.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;
+  box.replaceChildren();
+  box.classList.toggle('hidden',!s.idea.trim()&&!s.spec.trim());
   if(box.classList.contains('hidden'))return;
-  box.append(node('span',named?'Name':'Namensvorschläge','eyebrow'));
-  if(named)box.append(node('b',s.project.trim()));
+  const head=node('div',undefined,'namehead'),row=node('div',undefined,'namerow'),own=node('input');
+  // Der gewählte Name steht einmal, gut sichtbar, in der Kopfzeile des Bereichs
+  $('nameMeta').textContent=named?'✓ '+s.project.trim():'noch kein Name gewählt';$('nameMeta').className=named?'chip ok namepick':'meta';
   for(const n of s.names){
     const mine=n.name===s.project.trim(),b=button((mine?'✓ ':'')+n.name,'chip pickchip namechip'+(mine?' ok':''),()=>applyName(n.name));
-    b.title=(n.why?n.why+' – ':'')+'Klicken, um diesen Namen zu übernehmen';b.disabled=active;b.setAttribute('aria-pressed',String(mine));box.append(b);
+    b.title=(n.claim?'„'+n.claim+'“ – ':'')+(n.why?n.why+' – ':'')+'Klicken, um diesen Namen zu übernehmen';b.disabled=active;b.setAttribute('aria-pressed',String(mine));row.append(b);
   }
-  if(s.nameCount>0){const more=button(s.names.length?'↻ Neue Vorschläge':'✦ Namen vorschlagen','link',()=>deriveNames(true));more.disabled=active;box.append(more)}
+  if(s.nameCount>0){const more=button(s.names.length?'↻ Neue Vorschläge':'✦ Namen vorschlagen','btn small',()=>deriveNames(true));more.disabled=active;row.append(more)}
+  own.type='text';own.maxLength=100;own.placeholder='eigenen Namen eintragen und mit Enter übernehmen';own.setAttribute('aria-label','Eigener Name der Anwendung');
+  own.value='';own.disabled=active;if(named)own.placeholder='anderen Namen eintragen und mit Enter übernehmen';
+  own.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();own.blur()}};
+  own.onchange=()=>{const v=own.value.trim().slice(0,100);if(v)applyName(v)};
+  row.append(own);box.append(head,row);
+  // Der Claim zum gewählten Namen, sofern der Vorschlag einen mitbringt
+  const claim=s.names.find(n=>n.name===s.project.trim())?.claim;if(claim)box.append(node('p','„'+claim+'“','meta'));
 }
 async function deriveNames(force){
   if(active||!s.nameCount||(!force&&(s.project.trim()||s.names.length)))return;
@@ -1946,7 +2644,7 @@ function setAi(on){
   aiUI();
 }
 $('ai').onchange=()=>setAi($('ai').checked);
-$('spec').oninput=e=>{revision++;change=null;s.spec=e.target.value;s.specSource='manual';s.dirty=false;statuses();$('effortSide').textContent=effortText();save()};
+$('spec').oninput=e=>{revision++;change=null;s.spec=e.target.value;s.specSource='manual';s.dirty=false;statuses();save()};
 for(const id of ['repo','agent'])$(id).oninput=e=>{revision++;s[id]=e.target.value;statuses();save()};
 $('plan').onclick=async()=>{
   if(active)return;
@@ -1983,7 +2681,7 @@ function layoutNote(){
 function layoutUI(){
   const on=s.layoutOn&&stitch,l=s.layout;
   $('layoutOn').disabled=!stitch;$('layoutOn').checked=on;$('layoutIdea').disabled=!stitch;$('layoutIdea').value=on?s.layoutCount:0;
-  $('layoutIdeaValue').textContent=on?'gewählt: '+plural(s.layoutCount,'Entwurf','Entwürfe'):'gewählt: keine';$('layoutIdea').setAttribute('aria-valuetext',on?plural(s.layoutCount,'Entwurf','Entwürfe'):'keine Entwürfe');
+  levelMark('layoutIdeaValue',on?s.layoutCount:0,5,String(on?s.layoutCount:0),on?plural(s.layoutCount,'Entwurf','Entwürfe'):'keine Entwürfe');$('layoutIdea').setAttribute('aria-valuetext',on?plural(s.layoutCount,'Entwurf','Entwürfe'):'keine Entwürfe');
   presetsUI();
   $('layoutIdeaText').replaceChildren(node('b',on?plural(s.layoutCount,'Layout-Entwurf','Layout-Entwürfe'):'Keine Layout-Entwürfe'));  $('layoutIdeaHint').textContent=stitch?'':'Kein STITCH_API_KEY konfiguriert – siehe README.';
   $('layoutBody').classList.toggle('hidden',!on);$('layoutRun').disabled=layoutBusy;
@@ -2078,6 +2776,10 @@ $('layoutRun').onclick=async()=>{
 function download(name,content){const url=URL.createObjectURL(new Blob([content],{type:'text/plain;charset=utf-8'}));const a=node('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 async function copyText(t,status,ok='Kopiert.'){try{await navigator.clipboard.writeText(t);status.textContent=ok}catch{status.textContent='Kopieren nicht möglich. Bitte manuell markieren oder herunterladen.'}}
 $('specDownload').onclick=()=>{if(s.spec)download('SPEC.md',s.spec)};
+// PDF: Druckvorschau des Browsers mit eigenem Drucklayout (nur die Spezifikation, A4); der Dokumenttitel wird zum Dateinamen
+const printTitle=document.title;
+$('specPdf').onclick=()=>{if(!s.spec.trim())return;if(specMode!=='view')setSpecMode('view');document.title=s.project.trim()?s.project.trim()+' – Spezifikation':'Spezifikation';window.print()};
+addEventListener('afterprint',()=>{document.title=printTitle});
 $('json').onclick=()=>{if(s.plan&&!stale())download('tasks.json',JSON.stringify({source:s.planSource,form:agentsNow()===1?'single':'split',context:exportCtx(),spec:s.planSpec,...s.plan},null,2))};
 const allText=()=>(agentsNow()===1?renderSingle:renderBacklog)(s.plan,s.planSpec,exportCtx());
 $('backlog').onclick=()=>{if(s.plan&&!stale())download(agentsNow()===1?'AUFTRAG.md':'BACKLOG.md',allText())};
@@ -2103,7 +2805,7 @@ function adviceUI(p,agents){
   box.append(line,opts,node('p','Gewählt: '+(agents===1?'1 Agent':agents+' Agenten')+'. Grundlage: geschätzte Bearbeitungszeit je Auftrag ('+(s.planSource==='claude'?'von Claude geschätzt':'Demo-Annahmen')+') und die Abhängigkeiten im Plan. Die tatsächliche Dauer kann deutlich abweichen.','meta'));
 }
 // Stand aller Festlegungen als Schlüssel: Ändert sich etwas nach dem Abschluss, ist erneut zu bestätigen
-function finishKey(){return digest(JSON.stringify([s.planSpec,s.plan?s.plan.tasks.map(t=>t.id):0,agentsNow(),s.nextStep,s.runDir,s.runShell,exportCtx()]))}
+function finishKey(){return digest(JSON.stringify([s.planSpec,s.plan?s.plan.tasks.map(t=>t.id):0,agentsNow(),s.nextStep,s.runDir,s.runShell,s.runModel,exportCtx()]))}
 // Übersicht vor dem Abschluss: jede Festlegung mit Sprung zu der Stelle, an der sie sich ändern lässt
 function reviewUI(p,agents){
   const box=$('review'),sum=summary(s.questions),c=chosenLayout(),direct=s.nextStep==='run',single=agents===1;box.replaceChildren();
@@ -2118,7 +2820,7 @@ function reviewUI(p,agents){
   row('UI-Entwurf',!s.layoutOn?'keine Layouts gewünscht':c?c.label:s.layout&&s.layout.screens.length?'noch keiner gewählt – alle Entwürfe gelten nur als Referenz':'noch nicht erzeugt',jump('layoutSection'),s.layoutOn&&!c);
   row('Abarbeitung',single?'Nacheinander · ein Agent · ein Gesamtauftrag':'Parallel · '+agents+' Agenten · mehrere Teilaufträge',jump('planConfig'));
   row('Plan',p?plural(p.tasks.length,single?'Arbeitsschritt':'Teilauftrag',single?'Arbeitsschritte':'Teilaufträge')+' · voraussichtlich '+hm(estimate(p,agents)):s.plan?'veraltet – bitte neu erstellen':'noch nicht erstellt',jump('planConfig'),!p);
-  row('Weiteres Vorgehen',direct?'Direkt umsetzen in '+(s.runDir.trim()||'– Zielordner fehlt –')+(s.runShell?' · Befehle erlaubt':' · ohne Befehle'):'Zum Download bereitstellen',jump('nextCard'),direct&&!s.runDir.trim());
+  row('Weiteres Vorgehen',direct?'Direkt umsetzen in '+(s.runDir.trim()||'– Zielordner fehlt –')+(s.runShell?' · Befehle erlaubt':' · ohne Befehle')+(s.runModel?' · '+(agentModels.find(m=>m.id===s.runModel)?.name||s.runModel):''):'Zum Download bereitstellen',jump('nextCard'),direct&&!s.runDir.trim());
   // Abschluss: der Knopf steht in der festen Leiste unten rechts
   const done=!!p&&s.finished===finishKey(),ready=!!p&&!active&&!runBusy&&!layoutBusy&&(!direct||(agentsOk&&!!s.runDir.trim())),f=$('finish');
   f.textContent=done&&!direct?'✓ Abgeschlossen':direct?'▸ Bestätigen und Umsetzung starten':'✓ Bestätigen und bereitstellen';f.disabled=!ready||(done&&!direct);
@@ -2134,7 +2836,7 @@ $('finish').onclick=async()=>{
   if(!s.runDir.trim()){$('finishHint').textContent='Bitte einen Zielordner angeben.';$('runDir').focus();return}
   $('finish').disabled=true;$('finishHint').textContent='Umsetzung wird gestartet …';runOpen.clear();
   try{
-    run=await post('/api/run',{action:'start',dir:s.runDir,agents:agentsNow(),shell:s.runShell,plan:p,spec:s.planSpec,repo:s.repo,reuse:selectedReuse(),...(layoutActive()?{layoutUrl:s.layout.url,...(chosenLayout()?{layoutChoice:chosenLayout().label,layoutHtmls:chosenLayout().htmls}:{})}:{})});
+    run=await post('/api/run',{action:'start',dir:s.runDir,agents:agentsNow(),shell:s.runShell,model:s.runModel,plan:p,spec:s.planSpec,repo:s.repo,reuse:selectedReuse(),...(layoutActive()?{layoutUrl:s.layout.url,...(chosenLayout()?{layoutChoice:chosenLayout().label,layoutHtmls:chosenLayout().htmls}:{})}:{})});
     s.finished=finishKey();save();runBusy=true;renderAll();pollRun();$('doneBox').scrollIntoView({block:'nearest'});
   }catch(e){renderAll();$('finishHint').textContent=e.message}
 };
@@ -2217,10 +2919,16 @@ if($('idea').value!==s.idea)$('idea').value=s.idea;
   $('repo').value=s.repo;$('agent').value=s.agent;$('layoutCount').value=s.layoutCount;$('layoutDevice').value=s.layoutDevice;$('layoutTheme').value=s.layoutTheme;
   ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();save();
 }
-if(s.phase===1&&s.active<0)activate(firstOpen(),false);else if(s.active>=0)activate(s.active,false);
+if(MERGED){
+  // Die Fragenliste zieht in die linke Spalte der Spezifikations-Ansicht um; die Ansicht „Fragen“ selbst wird nicht mehr gezeigt
+  document.body.classList.add('merged');if(s.phase===1)s.phase=2;
+  const pane=node('div',undefined,'qapane hidden');pane.id='qaPane';pane.append(...document.querySelector('#phase1>.column').children);
+  document.querySelector('.split>div:first-child').prepend(pane);renderAll();
+}
+if(inQuestions()&&s.active<0)activate(firstOpen(),false);else if(s.active>=0)activate(s.active,false);
 renderAll();
 fetch('/api/status').then(r=>r.json()).then(r=>{
-  available=!!r.available;provider=r.provider||null;statusLoaded=true;stitch=!!r.stitch;agentsOk=!!r.agents;reviewers=Array.isArray(r.reviewers)?r.reviewers:[];reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
+  available=!!r.available;provider=r.provider||null;statusLoaded=true;stitch=!!r.stitch;agentsOk=!!r.agents;reviewers=Array.isArray(r.reviewers)?r.reviewers:[];agentModels=Array.isArray(r.models)?r.models:[];runModelUI();projectsDir=typeof r.projectsDir==='string'?r.projectsDir:'';pathSep=r.pathSep==='/'?'/':'\\';suggestRunDir();$('repoNew').disabled=!r.github;$('repoNew').title=r.github?'Legt über die GitHub-CLI ein leeres Repository in deinem Konto an.':'Dafür die GitHub-CLI einrichten: im Terminal „gh auth login“, dann SpecIt neu starten.';reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
   let wanted=false;try{wanted=localStorage.getItem('specit-ai')==='1'}catch{}
   $('ai').checked=available&&wanted;aiUI();
   if(!stitch)$('layoutHint').textContent='Kein STITCH_API_KEY konfiguriert. Schlüssel in .env setzen und neu starten, siehe README.';
@@ -2228,7 +2936,8 @@ fetch('/api/status').then(r=>r.json()).then(r=>{
 }).catch(()=>{$('mode').classList.remove('hidden');$('mode').textContent='Server nicht erreichbar'});
 aiUI();
 // Lebenszeichen: Solange diese Verbindung steht, läuft der Server. Wird die letzte Seite geschlossen, beendet er sich.
-new EventSource('/api/alive');
+const live=new EventSource('/api/alive');let boot='';
+live.addEventListener('hello',e=>{if(boot&&boot!==e.data)location.reload();boot=e.data});
 </script>
 </body>
 </html>

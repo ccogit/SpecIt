@@ -2,13 +2,13 @@ import http from 'node:http';
 import { readFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { tmpdir } from 'node:os';
+import { tmpdir, homedir } from 'node:os';
 import { validatePlan, demoPlan } from './planner.mjs';
 import { validateRun, startRun, stopRun, runStatus, killAgents } from './runner.mjs';
 import { withSkills } from './skills.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
-import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
+import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, cleanLogos, demoLogos, logoPrompt, brandLevels, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
 import { withToc } from './markdown.mjs';
 import { stitchKey, createProject, generateLayout, generateVariants, downloadFile, isProjectId, isScreenId, isFileName, variantCount, device } from './stitch.mjs';
 const host='127.0.0.1', port=Number(process.env.PORT||3000);
@@ -62,7 +62,7 @@ function frameIn(b){
  return {autonomy,duration,creativity,tone,excluded,frame:{duration,tone:toneLevels[tone],excluded}};
 }
 function validate(b){
- if(!b||!['questions','final','plan','revise','decisions','triage','adjust','features','scope','fit','names','review'].includes(b.mode))throw Error('Ungültiger Modus.');
+ if(!b||!['questions','final','plan','revise','decisions','triage','adjust','features','scope','fit','names','review','logos'].includes(b.mode))throw Error('Ungültiger Modus.');
  if(b.mode==='adjust'){
   // Änderungswunsch in eigenen Worten; die Idee darf fehlen (eingefügte Spezifikation).
   if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
@@ -74,7 +74,13 @@ function validate(b){
   // Review der Spezifikation durch einen gewählten Agenten
   if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
   const provider=b.provider==='codex'?'codex':'claude',wanted=String(b.model||'');
-  return {mode:b.mode,ai:b.ai===true,spec:b.spec,provider,model:provider==='claude'&&['sonnet','opus','haiku'].includes(wanted)?wanted:'',duration:frameIn(b).duration};
+  return {mode:b.mode,ai:b.ai===true,spec:b.spec,provider,model:(reviewers.find(r=>r.id===provider)?.models||[]).some(m=>m.id===wanted)?wanted:'',duration:frameIn(b).duration};
+ }
+ if(b.mode==='logos'){
+  // Logo-Entwürfe als SVG
+  const idea=String(b.idea||'').trim().slice(0,2000),spec=typeof b.spec==='string'?b.spec.slice(0,50000):'';
+  if(!idea&&!spec.trim())throw Error('Für Logo-Entwürfe braucht es eine Idee oder eine Spezifikation.');
+  return {mode:b.mode,ai:b.ai===true,idea,spec,project:String(b.project||'').trim().slice(0,100),tone:Number.isInteger(b.tone)&&b.tone>=0&&b.tone<=4?b.tone:2,count:Number.isInteger(b.count)?Math.min(5,Math.max(1,b.count)):3};
  }
  if(b.mode==='names'){
   // Namensvorschläge aus Idee und – falls vorhanden – Spezifikation
@@ -84,15 +90,17 @@ function validate(b){
   return {mode:b.mode,ai:b.ai===true,idea,spec,tone,count:Number.isInteger(b.count)?Math.min(8,Math.max(1,b.count)):3,avoid:cleanNames(b.avoid).map(n=>n.name)};
  }
  if(b.mode==='fit'){
-  // Lösungsvorschlag, wie die Features in die Zielzeit passen
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  // Lösungsvorschlag, wie die Features in die Zielzeit passen; die Spezifikation darf noch fehlen (Umfang zuerst)
+  if(typeof b.spec!=='string'||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(!b.spec.trim()&&!String(b.idea||'').trim())throw Error('Für einen Vorschlag braucht es eine Idee oder eine Spezifikation.');
   const features=cleanFeatures(b.features),target=Number.isFinite(b.target)?Math.round(b.target):0;
   if(!features.length||target<1)throw Error('Für einen Vorschlag braucht es Features und eine Zielzeit.');
   return {mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),spec:b.spec,features,target,maxAgents:Number.isInteger(b.maxAgents)?Math.min(6,Math.max(1,b.maxAgents)):1};
  }
  if(b.mode==='features'||b.mode==='scope'){
-  // Features der Spezifikation ermitteln bzw. eine geänderte Auswahl einarbeiten; die Idee darf fehlen.
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  // Features ermitteln (aus der Spezifikation oder, bevor es sie gibt, aus Idee und Entscheidungen) bzw. eine geänderte Auswahl einarbeiten.
+  if(typeof b.spec!=='string'||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(!b.spec.trim()&&(b.mode==='scope'||!String(b.idea||'').trim()))throw Error(b.mode==='scope'?'Spezifikation fehlt oder zu lang.':'Für die Features braucht es eine Idee oder eine Spezifikation.');
   const base={mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),questions:cleanQuestions(b.questions||[]),extras:cleanExtras(b.extras),...frameIn(b),spec:b.spec};
   if(b.mode==='features')return base;
   const remove=names(b.remove),restore=names(b.restore);
@@ -111,6 +119,8 @@ function validate(b){
  if(typeof b.idea!=='string'||b.idea.length>2000)throw Error('Ungültige Idee.');
  if(!b.idea.trim())throw Error('Bitte zuerst die Idee in einem Satz beschreiben.');
  const data={mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:b.idea.trim(),questions:cleanQuestions(b.questions||[]),extras:cleanExtras(b.extras),...frameIn(b)};
+ // Festgelegter Umfang: Die Spezifikation wird für genau diese Features geschrieben
+ if(b.mode==='final')data.scope=cleanFeatures(b.features||[]).map(f=>({name:f.name,note:f.note,basis:!!f.core}));
  if(b.mode!=='revise')return data;
  // Eine Antwort wurde geändert: Spezifikation, Stand davor und Index der geänderten Frage.
  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
@@ -128,6 +138,7 @@ function demo(b){
  // Ohne KI lässt sich der Umfang nicht sinnvoll umschneiden
  if(b.mode==='fit')return {source:'demo',features:[],measures:[],summary:''};
  if(b.mode==='names')return {source:'demo',names:demoNames(b.idea||b.spec,b.count)};
+ if(b.mode==='logos')return {source:'demo',logos:demoLogos(b.project||b.idea,b.count)};
  if(b.mode==='review')return {source:'demo',summary:'Ein Review braucht einen Agenten; im Demo-Modus findet keines statt.',findings:[]};
  if(b.mode==='adjust')return {markdown:adjustDemo(b.spec,b.project,b.idea,b.questions,b.extras,b.wish,b.frame)};
  if(b.mode==='features')return {source:'demo',features:demoFeatures(b.questions,b.extras)};
@@ -137,8 +148,8 @@ function demo(b){
  return {source:'demo',markdown:demoSpec(b.project,b.idea,b.questions,b.extras,b.frame)};
 }
 // Kompakte Sicht für die KI: Antworttext statt Options-Indizes.
-function brief(b){return b.mode==='plan'?b:{project:b.project,idea:b.idea,answers:b.questions.map(q=>({topic:topics[q.topic],question:q.question,answer:answerOf(q),state:q.state})),additionalRequirements:b.extras,...(b.duration?{targetDuration:b.duration}:{}),...(b.excluded&&b.excluded.length?{excludedFeatures:b.excluded}:{})}}
-const finalPrompt=b=>'Erstelle eine verständliche Markdown-Spezifikation mit Ziel/Nicht-Zielen, Nutzern, priorisierten Anforderungen, Regeln, UX, Architektur und Schnittstellen, Qualität, Betrieb, Risiken, Akzeptanzkriterien und offenen Entscheidungen. Antworten mit state=decided sind bestätigte Vorgaben; state=default sind übernommene Standards und als Annahmen zu kennzeichnen; state=open sind offene Entscheidungen. Widersprüche benennen.'+framePrompt(b.autonomy,b.duration,b.creativity,b.tone)+(b.excluded&&b.excluded.length?' Die Features in excludedFeatures hat der Nutzer abgewählt: Sie gehören nicht zum Umfang und stehen ausschließlich bei den Nicht-Zielen.':'');
+function brief(b){return b.mode==='plan'?b:{project:b.project,idea:b.idea,answers:b.questions.map(q=>({topic:topics[q.topic],question:q.question,answer:answerOf(q),state:q.state})),additionalRequirements:b.extras,...(b.duration?{targetDuration:b.duration}:{}),...(b.excluded&&b.excluded.length?{excludedFeatures:b.excluded}:{}),...(b.scope&&b.scope.length?{features:b.scope}:{})}}
+const finalPrompt=b=>'Erstelle eine verständliche Markdown-Spezifikation mit Ziel/Nicht-Zielen, Nutzern, priorisierten Anforderungen, Regeln, UX, Architektur und Schnittstellen, Qualität, Betrieb, Risiken, Akzeptanzkriterien und offenen Entscheidungen. Antworten mit state=decided sind bestätigte Vorgaben; state=default sind übernommene Standards und als Annahmen zu kennzeichnen; state=open sind offene Entscheidungen. Widersprüche benennen.'+framePrompt(b.autonomy,b.duration,b.creativity,b.tone)+(b.excluded&&b.excluded.length?' Die Features in excludedFeatures hat der Nutzer abgewählt: Sie gehören nicht zum Umfang und stehen ausschließlich bei den Nicht-Zielen.':'')+(b.scope&&b.scope.length?' Der Umfang ist bereits festgelegt und auf die Zielzeit abgestimmt: features ist die verbindliche, abschließende Feature-Liste (basis=true: Basis-Feature, sonst Erweiterung). Spezifiziere genau diese Features in dem Umfang, den name und note beschreiben. Füge keine weiteren Funktionen hinzu, auch nicht als Soll- oder Kann-Anforderung; was darüber hinausginge, steht höchstens bei den Nicht-Zielen.':'');
 // Wie ask(), aber als Strom: onText erhält jedes Textstück, sobald es entsteht; geliefert wird der vollständige Text.
 function askStream(instruction,data,maxTokens,onText){
  const content=instruction+'\n\nProjektdaten (JSON):\n'+JSON.stringify(data);
@@ -197,11 +208,11 @@ const probe=(cmd,args)=>new Promise(resolve=>{
  }catch{resolve(false)}
 });
 const codexOk=process.env.SPECIT_NO_CODEX!=='1'&&await probe('codex',['--version']);
-function codexAsk(instruction,data){
+function codexAsk(instruction,data,use=''){
  const content=system+'\n\n'+instruction+'\n\nProjektdaten (JSON):\n'+JSON.stringify(data),dir=tmpdir(),file='specit-review-'+Date.now()+'-'+Math.floor(Math.random()*1e6)+'.txt';
  return new Promise((resolve,reject)=>{
   let done=false;const finish=(fn,v)=>{if(done)return;done=true;clearTimeout(timer);fn(v)};
-  const child=spawn('codex',['exec','--skip-git-repo-check','--ephemeral','--sandbox','read-only','--color','never','-o',file,'-'],{cwd:dir,windowsHide:true,shell:process.platform==='win32',stdio:['pipe','ignore','ignore']});
+  const child=spawn('codex',['exec','--skip-git-repo-check','--ephemeral','--sandbox','read-only','--color','never',...(use?['-m',use]:[]),'-o',file,'-'],{cwd:dir,windowsHide:true,shell:process.platform==='win32',stdio:['pipe','ignore','ignore']});
   const timer=setTimeout(()=>{child.kill();finish(reject,Error('Codex hat nicht rechtzeitig geantwortet.'))},300000);
   currentAbort?.signal.addEventListener('abort',()=>{child.kill();finish(reject,Error('Abgebrochen.'))},{once:true});
   child.on('error',()=>finish(reject,Error('Codex konnte nicht gestartet werden.')));
@@ -215,7 +226,46 @@ function codexAsk(instruction,data){
  });
 }
 // Wer ein Review übernehmen kann: Claude (über Claude Code mit wählbarem Modell oder über die API) und, falls eingerichtet, Codex
-const reviewers=[...(key?[{id:'claude',name:'Claude',models:[model]}]:cliOk?[{id:'claude',name:'Claude',models:['sonnet','opus','haiku']}]:[]),...(codexOk?[{id:'codex',name:'Codex',models:[]}]:[])];
+// Claude-Modelle mit Version und Listenpreis in US-Dollar je Million Token (Eingabe/Ausgabe, Stand 03.11.2026).
+// factor ist das Kostenverhältnis zu Sonnet 5.5, time ein grober, nicht gemessener Richtwert für die Laufzeit im Verhältnis
+// zu Sonnet 5.5; beides dient in der Oberfläche als Entscheidungshilfe (Review und direkte Umsetzung nutzen dieselbe Liste).
+const claudeModels=[
+ {id:'claude-haiku-5-5',name:'Haiku 5.5',in:0.1,out:0.5,time:0.6,note:'am schnellsten, für einfache Aufgaben'},
+ {id:'claude-sonnet-5-5',name:'Sonnet 5.5',in:2,out:10,time:1,note:'ausgewogen',preferred:true},
+ {id:'claude-opus-5-5',name:'Opus 5.5',in:4,out:20,time:1.5,note:'gründlicher bei verzahnten Anforderungen'},
+ {id:'claude-fable-5-2',name:'Fable 5.2',in:8,out:40,time:2.5,note:'am gründlichsten'},
+].map(m=>({...m,factor:m.in/2}));
+// Codex-Modelle: die Liste, die die Codex-CLI selbst zwischenspeichert (Preise enthält sie nicht)
+async function codexModels(){
+ try{
+  const j=JSON.parse(await readFile(path.join(process.env.CODEX_HOME||path.join(homedir(),'.codex'),'models_cache.json'),'utf8'));
+  return (Array.isArray(j.models)?j.models:[]).filter(m=>m&&m.visibility==='list'&&/^[\w.-]{1,60}$/.test(m.slug||'')).sort((a,b)=>(a.priority||99)-(b.priority||99)).slice(0,12)
+   .map((m,i)=>({id:m.slug,name:String(m.display_name||m.slug).slice(0,60),note:String(m.description||'').slice(0,160),preferred:i===0}));
+ }catch{return []}
+}
+const reviewers=[...(key?[{id:'claude',name:'Claude',models:[claudeModels.find(m=>m.id===model)||{id:model,name:model}]}]:cliOk?[{id:'claude',name:'Claude',models:claudeModels}]:[]),...(codexOk?[{id:'codex',name:'Codex',models:await codexModels()}]:[])];
+// Neues Repository auf GitHub anlegen: über die GitHub-CLI mit der Anmeldung des Nutzers, leer und standardmäßig privat
+const ghOk=process.env.SPECIT_NO_GITHUB!=='1'&&await probe('gh',['auth','status']);
+function createRepo(b){
+ const name=String(b&&b.name||'').trim(),visibility=b&&b.visibility==='public'?'public':'private';
+ if(!/^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/.test(name))throw Error('Name des Repositorys: Buchstaben, Ziffern, Punkt, Binde- und Unterstrich, höchstens 100 Zeichen.');
+ if(!ghOk)throw Error('Die GitHub-CLI ist nicht eingerichtet. Im Terminal „gh auth login“ ausführen und SpecIt neu starten.');
+ const desc=String(b.description||'').replace(/[^\p{L}\p{N} .,-]/gu,' ').replace(/\s+/g,' ').trim().slice(0,120);
+ return new Promise((resolve,reject)=>{
+  let out='',err='',done=false;const finish=(fn,v)=>{if(done)return;done=true;clearTimeout(timer);fn(v)};
+  const child=spawn('gh',['repo','create',name,'--'+visibility,...(desc?['--description',desc]:[])],{windowsHide:true,stdio:['ignore','pipe','pipe']});
+  const timer=setTimeout(()=>{child.kill();finish(reject,Error('GitHub hat nicht rechtzeitig geantwortet.'))},60000);
+  child.stdout.on('data',d=>out+=d);child.stderr.on('data',d=>err+=d);
+  child.on('error',()=>finish(reject,Error('Die GitHub-CLI konnte nicht gestartet werden.')));
+  child.on('close',code=>{
+   const url=(out.match(/https:\/\/github\.com\/[\w.-]+\/[\w.-]+/)||[])[0];
+   if(code!==0||!url)return finish(reject,Error(/already exists/i.test(err)?'Ein Repository mit diesem Namen gibt es in deinem Konto bereits.':'Das Repository konnte nicht angelegt werden. '+err.trim().slice(0,200)));
+   finish(resolve,{url:url.replace(/\.git$/,'')+'.git',visibility});
+  });
+ });
+}
+// Vorschlag für den Zielordner der direkten Umsetzung: ein Ordner im Home-Verzeichnis, über SPECIT_PROJECTS_DIR änderbar
+const projectsDir=path.resolve(process.env.SPECIT_PROJECTS_DIR||path.join(homedir(),'SpecIt-Projekte'));
 function parseJson(out){return JSON.parse(out.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''))}
 async function claude(b){
  if(b.mode==='revise'){
@@ -235,13 +285,19 @@ async function claude(b){
  if(b.mode==='review'){
   if(b.provider==='codex'&&!codexOk)throw Error('Codex ist auf diesem Rechner nicht eingerichtet.');
   const data={...(b.duration?{targetDuration:b.duration}:{}),spec:b.spec};
-  const out=b.provider==='codex'?await codexAsk(reviewPrompt,data):await ask(reviewPrompt,data,5000,b.model);
+  const out=b.provider==='codex'?await codexAsk(reviewPrompt,data,b.model):await ask(reviewPrompt,data,5000,b.model);
   // Der Reviewer darf Text um das JSON legen; maßgeblich ist das äußerste Objekt
   let parsed;try{parsed=JSON.parse(out.slice(out.indexOf('{'),out.lastIndexOf('}')+1))}catch{throw Error('Der Reviewer hat kein lesbares Ergebnis geliefert. Bitte erneut versuchen.')}
   return {source:b.provider,model:b.model,summary:String(parsed.summary||'').trim().slice(0,600),findings:cleanFindings(parsed.findings)};
  }
+ if(b.mode==='logos'){
+  let parsed;try{parsed=parseJson(await ask(logoPrompt,{count:b.count,name:b.project,idea:b.idea,context:toneLevels[b.tone]+'. '+brandLevels[b.tone],spec:b.spec.slice(0,6000)},9000))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
+  const logos=cleanLogos(parsed.logos).slice(0,b.count);
+  if(!logos.length)throw Error('Es kamen keine brauchbaren Logo-Entwürfe zurück. Bitte erneut versuchen.');
+  return {source:'claude',logos};
+ }
  if(b.mode==='names'){
-  let parsed;try{parsed=parseJson(await ask(namesPrompt,{count:b.count,idea:b.idea,context:toneLevels[b.tone],avoid:b.avoid,spec:b.spec.slice(0,12000)},1200))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
+  let parsed;try{parsed=parseJson(await ask(namesPrompt,{count:b.count,idea:b.idea,context:toneLevels[b.tone]+'. '+brandLevels[b.tone],avoid:b.avoid,spec:b.spec.slice(0,12000)},1800))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
   const names=cleanNames(parsed.names).slice(0,b.count);
   if(!names.length)throw Error('Es kamen keine Namensvorschläge zurück. Bitte erneut versuchen.');
   return {source:'claude',names};
@@ -254,7 +310,10 @@ async function claude(b){
   return {source:'claude',features,measures:cleanMeasures(parsed.measures),summary:String(parsed.summary||'').trim().slice(0,600)};
  }
  if(b.mode==='features'){
-  let parsed;try{parsed=parseJson(await ask(withSkills('features',featuresPrompt),{project:b.project,decisions:decisionsOf(b.questions),spec:b.spec},4000))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
+  // Ohne Spezifikation: Umfang aus Idee und Entscheidungen ableiten, damit erst danach geschrieben wird
+  const early=!b.spec.trim();
+  const instruction=early?'Es gibt noch keine Spezifikation: Der Umfang wird festgelegt, bevor sie geschrieben wird. Leite die Features aus der Idee (idea), den Entscheidungen (decisions) und den Zusatzanforderungen (additionalRequirements) ab; wo im Folgenden von der Spezifikation die Rede ist, sind diese Angaben gemeint.'+framePrompt(b.autonomy,b.duration,b.creativity,b.tone)+' '+featuresPrompt:featuresPrompt;
+  let parsed;try{parsed=parseJson(await ask(withSkills('features',instruction),early?{project:b.project,idea:b.idea,decisions:decisionsOf(b.questions),additionalRequirements:b.extras,...(b.duration?{targetDuration:b.duration}:{})}:{project:b.project,decisions:decisionsOf(b.questions),spec:b.spec},4000))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
   // Die KI nennt Entscheidungen mit ihrer Nummer (ab 1); intern zählt die Position in der Fragenliste
   for(const f of Array.isArray(parsed.features)?parsed.features:[])if(f&&Array.isArray(f.from))f.from=f.from.filter(Number.isInteger).map(n=>n-1).filter(i=>i>=0&&i<b.questions.length);
   const features=cleanFeatures(parsed.features);
@@ -317,8 +376,9 @@ process.on('exit',killAgents);for(const sig of ['SIGINT','SIGTERM'])process.on(s
 // beendet sich der Server und gibt den Port frei. Die Frist überbrückt ein Neuladen der Seite.
 const keepRunning=process.env.SPECIT_KEEP_RUNNING==='1',grace=Number(process.env.SPECIT_EXIT_AFTER_MS)||4000;
 let pages=0,exitTimer=null;
+const bootId=Date.now().toString(36);
 function alive(req,res){
- res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.write('retry: 1000\n\n');
+ res.writeHead(200,{'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.write('retry: 1000\n\n');res.write('event: hello\ndata: '+bootId+'\n\n');
  pages++;clearTimeout(exitTimer);
  const beat=setInterval(()=>res.write(': \n\n'),20000);
  req.on('close',()=>{
@@ -333,7 +393,7 @@ http.createServer(async(req,res)=>{
   return res.end(req.url==='/'?html:modules[req.url]);
  }
  if(req.method==='GET'&&req.url==='/api/alive')return alive(req,res);
- if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,stitch:!!stitchKey(),agents:cliOk,reviewers});
+ if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,stitch:!!stitchKey(),agents:cliOk,reviewers,models:cliOk?claudeModels:[],github:ghOk,projectsDir,pathSep:path.sep});
  if(req.method==='GET'&&req.url==='/api/run')return send(res,200,runStatus());
  if(req.method==='GET'&&req.url.startsWith('/api/layout/file?')){
   const query=new URL(req.url,'http://'+host).searchParams,name=query.get('name');
@@ -345,9 +405,13 @@ http.createServer(async(req,res)=>{
    return res.end(file.body);
   }catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}
  }
- if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/layout','/api/run','/api/reuse'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
+ if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/layout','/api/run','/api/reuse','/api/repo'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
  if(!['http://'+host+':'+port,'http://localhost:'+port].includes(req.headers.origin)||!String(req.headers['content-type']).startsWith('application/json'))return send(res,403,{error:'Nur lokale Anfragen erlaubt.'});
  let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>500000)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
+ if(req.url==='/api/repo'){
+  let body;try{body=JSON.parse(raw)}catch{return send(res,400,{error:'Ungültige Anfrage.'})}
+  try{return send(res,200,await createRepo(body))}catch(e){return send(res,400,{error:e.message||'Das Repository konnte nicht angelegt werden.'})}
+ }
  if(req.url==='/api/run'){
   // Direkte Umsetzung: Agenten von Claude Code im Zielordner starten oder stoppen.
   let body;try{body=JSON.parse(raw)}catch{return send(res,400,{error:'Ungültige Anfrage.'})}

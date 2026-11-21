@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { estimate } from '../planner.mjs';
 import assert from 'node:assert/strict';
-import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant, adjustDemo, cleanFeatures, demoFeatures, workPackages, suggestExtensions, featureDuration, mapAnswers, cleanNames, demoNames, cleanFindings } from '../interview.mjs';
+import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant, adjustDemo, cleanFeatures, demoFeatures, workPackages, suggestExtensions, featureDuration, mapAnswers, cleanNames, demoNames, cleanFindings, cleanSvg, cleanLogos, demoLogos, brandLevels, stylePrompt } from '../interview.mjs';
 
 test('autonomy decides a share of the questions itself and gives them back when lowered', () => {
   const qs = demoQuestions(), n = qs.length;
@@ -196,4 +196,33 @@ test('review findings are normalised and capped', () => {
   assert.equal(f.length, 10);
   assert.deepEqual(f[0], { severity: 'mittel', section: 'Daten', issue: 'Widerspruch', suggestion: 'Abschnitt 3 anpassen' });
   assert.equal(f[1].severity, 'niedrig');
+});
+
+test('features keep a prepared lean variant only when it is shorter', () => {
+  const f = cleanFeatures([{ name: 'A', minutes: 10, core: true, rank: 1, lean: { note: 'nur Liste', minutes: 4 } }, { name: 'B', minutes: 5, lean: { note: 'nichts gespart', minutes: 5 } }, { name: 'C', minutes: 5, rank: 0 }]);
+  assert.deepEqual(f[0].lean, { note: 'nur Liste', minutes: 4 });
+  assert.equal(f[0].rank, 1);
+  assert.equal(f[1].lean, undefined);
+  assert.equal(f[2].rank, undefined);
+});
+
+test('svg logos are reduced to harmless elements and attributes', () => {
+  const ok = cleanSvg('Text davor <svg viewBox="0 0 120 120" onload="x()" style="a"><circle cx="60" cy="60" r="50" fill="#123" onclick="y()"/><path d="M0 0L10 10" fill="url(#g)" stroke="url(http://x)"/></svg> danach');
+  assert.equal(ok, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="#123"/><path d="M0 0L10 10" fill="url(#g)"/></svg>');
+  assert.equal(cleanSvg('<svg viewBox="0 0 1 1"><script>alert(1)</script></svg>'), '');
+  assert.equal(cleanSvg('<svg viewBox="0 0 1 1"><foreignObject><b>x</b></foreignObject></svg>'), '');
+  assert.equal(cleanSvg('<svg viewBox="0 0 1 1"><image href="http://x/a.png"/></svg>'), '');
+  assert.equal(cleanSvg('<svg><circle r="1"/></svg>'), '');
+  assert.equal(cleanLogos([{ name: 'A', svg: '<svg viewBox="0 0 1 1"><rect width="1" height="1"/></svg>' }, { name: 'B', svg: '<svg viewBox="0 0 1 1"><script/></svg>' }]).length, 1);
+  assert.equal(demoLogos('Lesespur', 3).length, 3);
+  assert.ok(demoLogos('Lesespur', 1)[0].svg.includes('>L</text>'));
+});
+
+test('branding wit fades from informal to formal and names keep an optional claim', () => {
+  assert.equal(brandLevels.length, 5);
+  assert.match(stylePrompt(2, 0), /Funktion → Bezeichnung in der App/);
+  assert.match(stylePrompt(2, 1), /zwei bis vier zentralen Funktionen/);
+  assert.match(stylePrompt(2, 4), /keinerlei Humor/);
+  assert.doesNotMatch(stylePrompt(2, 3), /Bezeichnung in der App/);
+  assert.deepEqual(cleanNames([{ name: 'Pair Pressure', why: 'Wortspiel', claim: ' Heute ist Paarungszwang. ' }]), [{ name: 'Pair Pressure', why: 'Wortspiel', claim: 'Heute ist Paarungszwang.' }]);
 });
