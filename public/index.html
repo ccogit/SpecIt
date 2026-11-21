@@ -972,7 +972,7 @@ function navUI(){
   const target=nextOf(),next=$('navNext'),back=$('navBack');
   back.style.visibility=s.phase?'visible':'hidden';back.textContent='←';back.title='Zurück zu „'+(phaseNames[s.phase-1]||'')+'“';back.setAttribute('aria-label',back.title);
   next.style.visibility=target?'visible':'hidden';
-  if(target){next.textContent=s.phase===0?(target===$('magicStart')?$('magicStart').textContent:$('deriveLabel').textContent):target.textContent;next.disabled=target.disabled||(s.phase===0&&!s.idea.trim())}
+  if(target){next.textContent=s.phase===0?(target===$('magicStart')?'✦ Konzept starten':$('deriveLabel').textContent):target.textContent;next.disabled=target.disabled||(s.phase===0&&!s.idea.trim())}
   $('navHint').textContent='Schritt '+(s.phase+1)+' von '+phaseNames.length+' · '+phaseNames[s.phase];
 }
 $('navNext').onclick=()=>nextOf()?.click();
