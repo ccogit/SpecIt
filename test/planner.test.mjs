@@ -33,6 +33,7 @@ test('a chosen layout is passed on as the authoritative design, others only as r
 const blockedPlan=()=>{const p=demoPlan('Test');p.tasks[0].blockedBy=['Freigabe ausstehend'];return validatePlan(p)};
 test('DAG waves and blocked propagation',()=>{const p=blockedPlan();assert.deepEqual(p.waves,[['T01'],['T02','T03'],['T04']]);assert.equal(p.blocked.length,4)});
 test('the demo plan asks nothing back: no blocked tasks, its own decisions stated as settled',()=>{const p=demoPlan('Test');assert.deepEqual(p.blocked,[]);assert.equal(p.decisions.length,1);const m=renderTask(p.tasks[1],p,'EXAMPLE');assert.ok(!m.includes('BLOCKIERT')&&m.includes('Festlegungen des Plans'));assert.ok(renderSingle(p,'EXAMPLE').includes('Diese Punkte sind entschieden')&&!renderSingle(p,'EXAMPLE').includes('zu klären'))});
+test('a long, missing or untidy list of plan decisions never rejects the plan',()=>{const p=demoPlan('Test');p.decisions=Array.from({length:40},(_,i)=>'Festlegung '+i);assert.equal(validatePlan(p).decisions.length,40);p.decisions=['a',7,'',' b '];assert.deepEqual(validatePlan(p).decisions,['a','b']);delete p.decisions;assert.deepEqual(validatePlan(p).decisions,[])});
 test('cycle rejected',()=>{const p=demoPlan('Test');p.tasks[0].dependsOn=['T04'];assert.throws(()=>validatePlan(p),/Zyklisch/)});
 test('unknown dependency rejected',()=>{const p=demoPlan('Test');p.tasks[1].dependsOn=['T99'];assert.throws(()=>validatePlan(p),/Unzulässige/)});
 test('duplicate id rejected',()=>{const p=demoPlan('Test');p.tasks[1].id='T01';assert.throws(()=>validatePlan(p),/Doppelte/)});

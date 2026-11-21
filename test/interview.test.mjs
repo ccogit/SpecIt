@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { estimate } from '../planner.mjs';
 import assert from 'node:assert/strict';
-import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant, adjustDemo, cleanFeatures, demoFeatures, workPackages, suggestExtensions, featureDuration, mapAnswers, cleanNames, demoNames, cleanFindings, cleanSvg, cleanLogos, demoLogos, brandLevels, stylePrompt } from '../interview.mjs';
+import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant, adjustDemo, cleanFeatures, demoFeatures, workPackages, suggestExtensions, featureDuration, mapAnswers, cleanNames, demoNames, cleanFindings, cleanSvg, cleanLogos, demoLogos, brandLevels, stylePrompt, modulators } from '../interview.mjs';
 
 test('autonomy decides a share of the questions itself and gives them back when lowered', () => {
   const qs = demoQuestions(), n = qs.length;
@@ -225,4 +225,34 @@ test('branding wit fades from informal to formal and names keep an optional clai
   assert.match(stylePrompt(2, 4), /keinerlei Humor/);
   assert.doesNotMatch(stylePrompt(2, 3), /Bezeichnung in der App/);
   assert.deepEqual(cleanNames([{ name: 'Pair Pressure', why: 'Wortspiel', claim: ' Heute ist Paarungszwang. ' }]), [{ name: 'Pair Pressure', why: 'Wortspiel', claim: 'Heute ist Paarungszwang.' }]);
+});
+
+test('sliders act as prompt modulators with one source for prompt text and sketch', () => {
+  const quick = modulators({ autonomy: 100, duration: '15 Minuten', minutes: 15, creativity: 0, tone: 4 }), big = modulators({ autonomy: 0, minutes: 480, duration: '1 Tag', creativity: 4, tone: 0 });
+  const by = (list, key) => list.find(m => m.key === key);
+  assert.equal(by(quick, 'duration').sketch.areas, 1);
+  // Mehr Zielzeit heißt mehr Komplexität: Jede Stufe des Reglers ändert die Skizze sichtbar
+  const steps = [15, 30, 60, 120, 240, 480, 960, 2400].map(minutes => by(modulators({ minutes, duration: 'x' }), 'duration'));
+  assert.deepEqual(steps.map(m => m.sketch.level), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(steps.map(m => m.sketch.areas), [1, 2, 2, 3, 3, 4, 5, 6]);
+  assert.equal(new Set(steps.map(m => JSON.stringify(m.sketch))).size, 8);
+  assert.equal(new Set(steps.map(m => m.text)).size, 8);
+  assert.equal(by(big, 'duration').sketch.areas, 4);
+  assert.equal(by(quick, 'creativity').sketch.more, -1);
+  assert.equal(by(big, 'creativity').sketch.extra, true);
+  assert.equal(by(quick, 'tone').sketch.round, 0);
+  assert.equal(by(big, 'tone').sketch.fun, 9);
+  assert.match(by(quick, 'duration').text, /15 Minuten/);
+  assert.match(by(modulators(), 'duration').text, /Keine Zielzeit/);
+  // derselbe Satz, der auch in den Prompt der Spezifikation eingeht
+  assert.ok(framePrompt(100, '', 2, 2).includes(by(quick, 'autonomy').text));
+  assert.ok(framePrompt(40, '', 0, 2).includes(by(quick, 'creativity').text));
+});
+
+test('logo, layout and name sliders modulate prompt and sketch as well', () => {
+  const none = modulators(), all = modulators({ logos: 2, layouts: 3, names: 3 }), by = (list, key) => list.find(m => m.key === key);
+  assert.deepEqual([by(none, 'logos').sketch.logo, by(none, 'layouts').sketch.rough, by(none, 'names').sketch.placeholder], [false, true, true]);
+  assert.deepEqual([by(all, 'logos').sketch.logo, by(all, 'layouts').sketch.rough, by(all, 'names').sketch.placeholder], [true, false, false]);
+  assert.equal(by(modulators({ named: true }), 'names').sketch.placeholder, false);
+  assert.match(by(none, 'layouts').text, /kein Layout gestaltet/);
 });

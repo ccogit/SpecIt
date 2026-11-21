@@ -76,14 +76,19 @@ export const demoRelevant = questions => questions.map((q, i) => (q.state === 'o
 export const triagePrompt = 'Die Liste open enthält offene Entscheidungen eines Softwareprojekts (id, Thema, Frage, Optionen, default = vorgeschlagener Standard). Bestimme, welche davon wirklich relevant sind und deshalb vom Menschen getroffen werden müssen: Entscheidungen, die Zweck, Zielgruppe oder Kernfunktion festlegen, die Kosten, Datenschutz oder Sicherheit berühren, die später nur mit großem Aufwand umkehrbar sind oder bei denen der Standard für genau diese Idee erkennbar riskant ist. Alle übrigen kann das Werkzeug mit dem Standard selbst entscheiden. Sei streng: im Zweifel ist eine Entscheidung nicht relevant. Liefere ausschließlich JSON ohne Markdown-Codeblock: {"relevant":[ids]}.';
 
 /** Zusatz für die Prompts: wie viel Claude selbst entscheiden darf und wie viel Entwicklungszeit zur Verfügung steht. */
-export function framePrompt(autonomy, duration, creativity = 2, tone = 2) {
-  const a = autonomy >= 100 ? 'Auto-Modus: Es wird nicht rückgefragt. Triff jede noch offene Entscheidung selbst, begründe sie knapp und kennzeichne sie als Annahme; der Abschnitt „Offene Entscheidungen“ bleibt leer. Der Nutzer hat diesem Vorgehen zugestimmt: Fordere keine nachträgliche Bestätigung der Annahmen.'
+/** Der Satz, mit dem der Entscheidungsmodus in den Prompt eingeht. */
+export function autonomyPrompt(autonomy) {
+  return autonomy >= 100 ? 'Auto-Modus: Es wird nicht rückgefragt. Triff jede noch offene Entscheidung selbst, begründe sie knapp und kennzeichne sie als Annahme; der Abschnitt „Offene Entscheidungen“ bleibt leer. Der Nutzer hat diesem Vorgehen zugestimmt: Fordere keine nachträgliche Bestätigung der Annahmen.'
     : autonomy <= 0 ? 'Triff keinerlei eigene Annahmen und setze keine Standards: Alles, was Idee und Antworten nicht ausdrücklich festlegen, ist eine offene Entscheidung.'
     : (autonomy <= 20 ? 'Entscheide nur Nebensächliches selbst; alles andere, was Idee und Antworten nicht festlegen, bleibt eine offene Entscheidung.'
       : autonomy <= 40 ? 'Entscheide Detailfragen selbst; alle wichtigen Entscheidungen, die Idee und Antworten nicht festlegen, bleiben offene Entscheidungen.'
       : autonomy <= 60 ? 'Entscheide alles selbst, was Idee und Antworten nicht festlegen, außer richtungsweisenden Entscheidungen (Zweck, Zielgruppe, Kernfunktion, Datenhaltung, Kosten, schwer Umkehrbares); nur diese bleiben offene Entscheidungen.'
       : 'Entscheide nahezu alles selbst; offen bleiben nur die wenigen grundlegenden Entscheidungen, von denen das ganze Vorhaben abhängt.')
       + ' Kennzeichne jede eigene Entscheidung als Annahme. Erwähne diese Vorgabe selbst nicht in der Spezifikation.';
+}
+
+export function framePrompt(autonomy, duration, creativity = 2, tone = 2) {
+  const a = autonomyPrompt(autonomy);
   return ' ' + a + ' Schreibe für Leser ohne Kenntnis dieses Werkzeugs: keine internen Bezeichner wie state=default.' + stylePrompt(creativity, tone) + (duration ? ' Ziel-Entwicklungsdauer (targetDuration): ' + duration + ' reine Entwicklungszeit mit KI und Coding-Agenten. Schneide den Umfang so zu, dass er in dieser Zeit umsetzbar ist, nenne die Dauer als Rahmenbedingung und verschiebe, was nicht hineinpasst, ausdrücklich in Nicht-Ziele oder eine spätere Version. Rechne dabei mit der Laufzeit autonomer Coding-Agenten, nicht mit menschlicher Arbeitszeit: Grundgerüst 5–15 Minuten, übliches Feature 3–10, aufwendiges 15–30; was nicht voneinander abhängt, kann parallel entstehen. Der Kern der Anwendung muss sicher in die Zielzeit passen – wähle im Zweifel die einfachere Lösung (weniger Rollen, einfachere Datenhaltung, vorhandene Bibliotheken statt Eigenbau) und kennzeichne bewusst Weggelassenes als spätere Version.' : '');
 }
 
@@ -435,7 +440,7 @@ const svgAttrs = new Set(['viewBox', 'xmlns', 'width', 'height', 'd', 'cx', 'cy'
  */
 export function cleanSvg(svg) {
   const src = String(svg || ''), start = src.indexOf('<svg'), end = src.lastIndexOf('</svg>');
-  if (src.length > 12000 || start < 0 || end < start) return '';
+  if (src.length > 40000 || start < 0 || end < start) return '';
   const body = src.slice(start, end + 6), re = /<!--[\s\S]*?-->|<(\/?)([A-Za-z][\w]*)((?:\s+[\w:-]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*(\/?)>|([^<]+)/g;
   let out = '', pos = 0, m;
   while ((m = re.exec(body))) {
@@ -487,3 +492,51 @@ export function demoLogos(name, count = 3) {
 }
 
 export const logoPrompt = 'Entwirf count deutlich unterschiedliche Logo-Entwürfe für die Anwendung (name, idea; spec als Hintergrund, context = Einsatzbereich und Ton). Jedes Logo ist eine quadratische Bildmarke als eigenständiges SVG mit viewBox="0 0 120 120": klar, einprägsam, auch in 32 Pixeln erkennbar, mit Bezug zum Zweck der Anwendung statt beliebiger Dekoration. Höchstens drei Farben als Hex-Werte; die Marke muss auf hellem wie dunklem Grund funktionieren (eigene Grundfläche oder ausreichend kräftige Farben). Text höchstens als ein bis zwei Initialen. Erlaubt sind ausschließlich die Elemente svg, g, path, circle, rect, ellipse, line, polygon, polyline, defs, linearGradient, radialGradient, stop, text, tspan und Darstellungs-Attribute wie fill, stroke, stroke-width, transform, opacity; kein style-Attribut, keine Klassen, keine Filter, keine Bilder, keine Verweise, keine Skripte. Die Entwürfe sollen sich in der Idee unterscheiden (etwa: Symbol für den Zweck, abstrakte Form, Initiale, Kombination), nicht nur in der Farbe. Je Entwurf: name (kurzer Arbeitstitel), idea (ein Satz zum Gedanken dahinter), svg (das vollständige SVG in einer Zeile). Ausschließlich JSON ohne Markdown-Codeblock: {"logos":[{"name":"...","idea":"...","svg":"<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 120 120\\">...</svg>"}]}';
+
+const sketchRules = 'Bleibe bei viewBox="0 0 480 300" und einem eigenständigen SVG. Erlaubt sind ausschließlich die Elemente svg, g, rect, line, circle, ellipse, path, polyline, polygon, text, tspan, defs, linearGradient, stop mit Darstellungs-Attributen; kein style-Attribut, keine Klassen, keine Filter, keine Bilder, keine Verweise. Schrift sans-serif, 7 bis 13 Pixel, Texte auf Deutsch. Die Skizze wird schon beim Entstehen angezeigt, also zeichne vom Groben zum Feinen: zuerst alle großen Flächen (Rahmen, Kopfzeile, Navigation, die Kästen aller Bereiche), danach Überschriften und Beschriftungen, zuletzt Inhalte und Details je Bereich. Halte das SVG kompakt: keine überflüssigen Gruppen, ganze Zahlen als Koordinaten. Antworte ausschließlich mit dem SVG – kein JSON, kein Markdown-Codeblock, kein Text davor oder danach; das erste Zeichen ist „<“ von <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300">.';
+
+export const sketchPrompt = 'Zeichne ein Drahtmodell (Wireframe) der Hauptansicht der Anwendung aus idea: eine schematische Skizze, kein fertiges Design. Zeige Kopfzeile mit dem Namen (name oder ein kurzer Arbeitstitel), Navigation und die Bereiche, die für genau diese Anwendung typisch sind (etwa Liste, Formular, Kalender, Auswertung, Karten, Zuordnungen). Wie viele Bereiche und wie viel Tiefe die Skizze zeigt, gibt die Komplexitätsstufe in den Vorgaben verbindlich vor: Eine niedrige Stufe ist sichtbar schlicht, eine hohe sichtbar umfangreich. Kurze deutsche Beschriftungen in den Begriffen der Idee, dazu glaubwürdige Beispieldaten (Namen, Daten, Zahlen) statt leerer Platzhalter. Nur Linien und Flächen in Grautönen (#d0d0d0, #9a9a9a, #555555) und genau eine Akzentfarbe #1d9a6c für die wichtigste Aktion. ' + sketchRules;
+
+/**
+ * Die Regler als Prompt-Modulatoren. Je Regler ein Eintrag mit dem Satz, der in den Prompt eingeht (text), und dem,
+ * was er an der Skizze der Anwendung bewirkt (sketch) – eine Quelle für Prompt, Sofort-Skizze und Anzeige.
+ * minutes = Zielzeit in Minuten (0 = keine Vorgabe), duration = dieselbe Zielzeit als Text.
+ */
+/** Komplexität der Anwendung aus der Zielzeit: 1 (15 Minuten) bis 8 (eine Woche); ohne Vorgabe die Mitte. */
+export const complexityOf = minutes => !minutes ? 4 : minutes <= 15 ? 1 : minutes <= 30 ? 2 : minutes <= 60 ? 3 : minutes <= 120 ? 4 : minutes <= 240 ? 5 : minutes <= 480 ? 6 : minutes <= 960 ? 7 : 8;
+// Je Stufe: Zahl der Bereiche und was die Anwendung dann umfasst (geht in den Prompt und in die Anzeige)
+export const complexityLevels = [
+  [1, 'eine einzige Ansicht mit genau einem Kernablauf – keine Navigation, keine Suche, keine Extras'],
+  [2, 'zwei Bereiche: der Kernablauf und die nötigste Eingabe, noch ohne Navigation'],
+  [2, 'zwei Bereiche mit einfacher Navigation in der Kopfzeile'],
+  [3, 'drei Bereiche, Navigation und Suche'],
+  [3, 'drei Bereiche mit Seitennavigation und Suche, mehr Tiefe je Bereich'],
+  [4, 'vier Bereiche, Seitennavigation, Suche, Filter und Sortierung'],
+  [5, 'fünf Bereiche, dazu Benutzerkonto, Benachrichtigungen, Filter und eine Statusleiste'],
+  [6, 'sechs Bereiche: eine umfangreiche Anwendung mit Übersicht, Auswertung, Verwaltung, Benutzerkonto, Filtern und Statusleiste'],
+];
+
+export function modulators({ autonomy = 40, duration = '', minutes = 0, creativity = 2, tone = 2, logos = 0, layouts = 0, names = 0, named = false } = {}) {
+  const c = level(creativity, creativityLevels, 2), t = level(tone, toneLevels, 2);
+  const lv = complexityOf(minutes), [areas, scope] = complexityLevels[lv - 1];
+  return [
+    { key: 'duration', label: 'Ziel-Entwicklungsdauer', text: (duration ? 'Zielzeit ' + duration + ' reine Laufzeit der Coding-Agenten: Mehr Zeit heißt eine komplexere Anwendung, weniger Zeit eine schlichtere. Schneide den Umfang so zu, dass er sicher hineinpasst, und nutze die Zeit aus; was nicht passt, wird Nicht-Ziel oder spätere Version.' : 'Keine Zielzeit vorgegeben: Der Umfang ist nicht durch eine Dauer begrenzt.') + ' Komplexität Stufe ' + lv + ' von 8: ' + scope + '.',
+      sketch: { areas, level: lv, nav: lv >= 3, search: lv >= 4, side: lv >= 5, filters: lv >= 6, status: lv >= 7 }, effect: 'Komplexität ' + lv + ' von 8 – ' + scope },
+    { key: 'creativity', label: 'Kreativität der KI', text: creativityLevels[c],
+      sketch: { more: c >= 3 ? 1 : c === 0 ? -1 : 0, extra: c >= 3 }, effect: c >= 3 ? 'ein Bereich mehr, Marke „Idee der KI“' : c === 0 ? 'ein Bereich weniger' : 'keine Änderung' },
+    { key: 'tone', label: 'Einsatzbereich', text: 'Einsatzbereich: ' + toneLevels[t] + '. ' + brandLevels[t],
+      sketch: { tone: t, round: [14, 10, 6, 3, 0][t], dense: t >= 3, fun: t === 0 ? 9 : t === 1 ? 1 : 0 }, effect: (t <= 1 ? 'runde, luftige Formen' : t === 2 ? 'ausgewogene Formen' : 'eckige, dichte Formen') + ', Beschriftungen ' + ['flapsig mit Wortwitz', 'locker', 'neutral', 'sachlich', 'förmlich'][t] },
+    { key: 'layouts', label: 'UI-Layouts', text: layouts > 0 ? 'Die Oberfläche wird eigens gestaltet (' + layouts + (layouts === 1 ? ' Layout-Entwurf' : ' Layout-Entwürfe') + '): saubere Ausrichtung, durchdachte Abstände, stimmige Gestaltung.' : 'Es wird kein Layout gestaltet: eine schlichte, eher rohe Standard-Oberfläche ohne Gestaltungsanspruch – einfache Kästen, Standardabstände, keine Zierde.',
+      sketch: { rough: !(layouts > 0) }, effect: layouts > 0 ? 'gestaltetes, sauberes Aussehen' : 'rohes, ungestaltetes Aussehen' },
+    { key: 'logos', label: 'Logo-Entwürfe', text: logos > 0 ? 'Die Anwendung bekommt ein Logo: Sieh in der Kopfzeile einen Platz für die Bildmarke vor.' : 'Es gibt kein Logo: Die Kopfzeile kommt ohne Bildmarke aus.',
+      sketch: { logo: logos > 0 }, effect: logos > 0 ? 'Logo in der Kopfzeile' : 'kein Logo' },
+    { key: 'names', label: 'Name der Anwendung', text: named ? 'Der Name der Anwendung steht fest; verwende genau ihn.' : names > 0 ? 'Der Name ist noch offen und wird vorgeschlagen: Verwende einen passenden Arbeitstitel.' : 'Es wird kein Name vorgeschlagen: Verwende statt eines Namens einen neutralen Platzhalter.',
+      sketch: { placeholder: !named && !(names > 0) }, effect: named ? 'gewählter Name im Titel' : names > 0 ? 'Arbeitstitel im Titel' : 'Platzhalter statt Name' },
+    { key: 'autonomy', label: 'Entscheidungsmodus', text: autonomyPrompt(autonomy), sketch: {}, effect: 'keine (betrifft Rückfragen und Annahmen)' },
+  ];
+}
+
+/** Ausarbeitung der Skizze: Aus dem Drahtmodell (previous) wird in einem Zug ein gestalteter Entwurf. */
+export function sketchRefinePrompt() {
+  return 'Entwickle die bisherige Skizze der Anwendung (previous, ein SVG) zum gestalteten Entwurf weiter. Aufbau, Bereiche und Inhalte bleiben; baue nichts Wesentliches um. Gib dem Entwurf ein Farbschema, das zum Einsatzbereich passt (eine Hauptfarbe, eine Akzentfarbe, Neutraltöne), eine klare Typohierarchie (Titel, Abschnitt, Text), gleichmäßige Abstände, erkennbare Zustände (aktiver Reiter, ausgewählte Zeile, Hauptaktion), kleine Hinweise (Zähler, Status) und einfache Symbole aus Grundformen. Texte in der Tonlage des Einsatzbereichs. ' + sketchRules;
+}

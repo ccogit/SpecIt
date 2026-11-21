@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { validatePlan, renderTask, renderSingle } from './planner.mjs';
 import { cleanSelections } from './reuse.mjs';
 import { isFileName, downloadFile } from './stitch.mjs';
+import { scanArtifacts } from './artifacts.mjs';
 
 const own = path.resolve(fileURLToPath(new URL('.', import.meta.url)));
 const model = process.env.SPECIT_AGENT_MODEL || '';
@@ -99,6 +100,7 @@ export async function startRun(r) {
       agent(it.prompt, j.dir, j.shell, j.children).then(res => {
         it.ended = Date.now(); it.note = res.note;
         it.state = j.stopped ? 'stopped' : res.ok ? 'done' : 'failed';
+        scanArtifacts(j.dir).then(o => { j.output = o; }, () => {});
         step();
       });
     }
@@ -119,6 +121,6 @@ export function killAgents() { if (job) for (const c of job.children) c.kill(); 
 export function runStatus() {
   if (!job) return { active: false, items: [] };
   const now = Date.now();
-  return { active: !job.ended, dir: job.dir, agents: job.agents, shell: job.shell, stopped: job.stopped, seconds: Math.round(((job.ended || now) - job.started) / 1000),
+  return { active: !job.ended, output: job.output || null, dir: job.dir, agents: job.agents, shell: job.shell, stopped: job.stopped, seconds: Math.round(((job.ended || now) - job.started) / 1000),
     items: job.items.map(it => ({ id: it.id, title: it.title, state: it.state, seconds: it.started ? Math.round(((it.ended || now) - it.started) / 1000) : 0, note: it.note })) };
 }

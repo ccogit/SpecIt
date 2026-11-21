@@ -226,13 +226,38 @@ main{flex:1;width:100%;max-width:var(--page);margin:0 auto;padding:16px 24px;dis
 .shot .cap{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .decisions{background:var(--error-container);color:var(--on-error-container);border-radius:6px;border-left:4px solid var(--warn-line);padding:16px 20px}
 .decisions ul{margin:8px 0 0;padding-left:18px}
-.wave{display:flex;flex-direction:column;gap:12px}
+.wave{display:flex;flex-direction:column;gap:8px}
 .wavehead{display:flex;align-items:center;gap:10px;padding-bottom:6px;border-bottom:1px solid var(--outline-soft)}
-.wavegrid{display:flex;flex-direction:column;gap:12px}
+.wavegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:8px;align-items:start}
 .toolbar{background:var(--surface-low);border-radius:8px;padding:10px 12px}
 .nested{background:var(--surface-low);border-radius:6px;padding:20px;margin-top:20px}
 .settings{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px}
-.task{padding:20px;display:flex;flex-direction:column;gap:10px}
+/* Auftrag: links Kennung, Titel, Vorgänger und Ziel, rechts die Knöpfe übereinander; der volle Auftrag klappt darunter auf */
+.task{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:start}
+#phase3 .task{padding:10px 14px}
+.taskmain{display:flex;flex-direction:column;gap:3px;min-width:0}
+.taskhead{display:flex;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
+.taskhead h3{font-size:14px;line-height:20px}
+.taskhead .chip{font-size:10px;padding:1px 6px}
+.taskmain>p{font-size:13px;line-height:19px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.taskmain>ol{margin:4px 0 0;padding-left:22px;font-size:13px;display:flex;flex-direction:column;gap:2px}
+.taskacts{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.taskacts .btn{justify-content:center}
+.taskmain>details{margin-top:2px}
+.wavehead h2{font-size:15px;line-height:20px}
+.planfacts{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+.planfacts>details{margin:0;padding:8px 14px;flex:1 1 280px}
+.planfacts>details[open]{flex-basis:100%}
+.planfacts>details>p{margin-top:8px;font-size:13px}
+#phase3 #planStatus:empty{display:none}
+#phase3 .nextrow{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#phase3 .runpanel{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:10px 16px;align-items:end}
+#phase3 .runpanel.hidden{display:none}
+#phase3 .runpanel>.switch{grid-column:1/-1}
+#phase3 #runModelCost{display:none}
+#phase3 #planConfig .advice{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+#phase3 #planConfig .advice .opts{margin-top:0}
+@media(max-width:760px){#phase3 .runpanel{grid-template-columns:1fr}}
 .task .id{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--secondary)}
 .task pre{margin:10px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface-low);padding:14px;border-radius:6px;font:12px/1.65 var(--mono);max-height:420px;overflow:auto}
 summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--secondary)}
@@ -248,7 +273,9 @@ summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;co
 .wordmark span{color:var(--secondary)}
 .brand .rule{width:1px;height:20px;background:var(--outline-soft);align-self:center}
 #project{font-size:18px;font-weight:700;letter-spacing:-.01em;color:var(--heading);background:transparent;box-shadow:none;padding:4px 8px;width:240px}
-#project:hover{background:var(--surface-mid)}
+/* Der Projektname wird in der Kopfzeile nur angezeigt; festgelegt wird er bei der Spezifikation */
+#project{cursor:default;caret-color:transparent;pointer-events:auto;outline:0}
+#project:hover,#project:focus{background:transparent;box-shadow:none;outline:0}
 .brandlogo{display:inline-flex;align-self:center;flex-shrink:0;margin-right:-6px}
 .brandlogo svg{display:block;border-radius:6px}
 .tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -298,7 +325,9 @@ summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;co
 .phases .phase:not(:last-child)::after{display:none}
 .phases .phase .num{display:inline;width:auto;height:auto;border-radius:0;background:none;box-shadow:none;color:var(--outline);font-size:12px;font-weight:500}
 .phases .phase .num::after{content:"."}
-.phases .phase[aria-current=page],.phases .phase.pct:not(.done)[aria-current=page]{background:var(--card);color:var(--heading);font-weight:600;box-shadow:var(--shadow)}
+.phases .phase[aria-current=page],.phases .phase.pct:not(.done)[aria-current=page]{background:var(--card);color:var(--heading);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--go),0 1px 3px rgba(0,0,0,.06)}
+.phases .phase[aria-current=page] .num,.phases .phase[aria-current=page] .chip{color:inherit}
+
 .phases .phase .chip{transform:none;line-height:16px}
 .phases .phase .state::before{content:none}
 .phases .phase .state{gap:0;margin-left:2px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.04em;background:color-mix(in srgb,#e5484d 20%,transparent);color:color-mix(in srgb,#e5484d 62%,var(--ink))}
@@ -317,7 +346,60 @@ summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;co
 .hero{margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column;gap:30px;padding-top:28px}
 .ideahead{margin-bottom:-18px;padding:0 4px}
 .ideacard{flex:1;display:flex;flex-direction:column;gap:12px;min-height:200px;max-height:340px}
-.ideacard #idea{flex:1}
+/* Das Ideenfeld ist kompakt; darunter steht die Live-Skizze und füllt den Rest der Karte */
+.ideacard #idea{flex:0 0 auto;height:132px}
+.sketchbox{flex:1;min-height:150px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.sketch{flex:1;min-height:0;display:grid;place-items:center;border-radius:8px;background:var(--surface-low);padding:12px;overflow:hidden}
+.sketch svg{width:100%;height:100%;max-height:100%;display:block}
+.sketchbox.empty .sketch{border:1.5px dashed var(--outline-soft);background:none}
+.sk-frame{fill:var(--card);stroke:var(--outline-soft);stroke-width:1.5}
+.sk-bar,.sk-side{fill:var(--surface-mid)}
+.sk-box{fill:none;stroke:var(--outline-soft);stroke-width:1.2}
+.sk-input{fill:var(--surface-mid)}
+.sk-line,.sk-dot{fill:var(--outline-soft)}
+.sk-rule{stroke:var(--outline-soft);stroke-width:1.5}
+.sk-ring{fill:none;stroke:var(--secondary);stroke-width:5}
+.sk-accent{fill:var(--secondary)}
+.sk-title{font:600 12px var(--sans);fill:var(--ink)}
+.sk-cap{font:600 8px var(--mono);letter-spacing:.08em;fill:var(--outline)}
+.sk-big{font:700 22px var(--mono);fill:var(--ink)}
+.sk-btn{font:600 7.5px var(--sans);fill:var(--on-go)}
+.sk-link{font:600 7.5px var(--mono);fill:var(--secondary)}
+.sk-idea{fill:none;stroke:var(--secondary);stroke-width:1;stroke-dasharray:3 2}
+.sk-rough .sk-box{stroke-dasharray:5 3;stroke:var(--outline)}
+.sk-rough .sk-accent,.sk-rough .sk-ring{fill:var(--outline);stroke:var(--outline)}
+.sk-rough .sk-ring{fill:none}
+.sk-rough .sk-title,.sk-rough .sk-big{font-family:var(--mono)}
+.sk-rough .sk-btn{fill:var(--card)}
+.sk-rough .sk-link{fill:var(--ink-soft)}
+/* Was in einer Stufe neu dazukommt, blendet weich ein */
+.sk-new{animation:skin .25s ease-out both}
+/* Claude zeichnet als Strom über den bisherigen Stand, der solange zurücktritt */
+.sketch.streaming>*{grid-area:1/1}
+.sketch>.sk-under{opacity:.2;transition:opacity .25s}
+/* Stiftstrich: Rahmen und Bereiche zeichnen sich im Grundaufbau wie von Hand */
+.sk-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:skdraw .5s ease-out forwards}
+.sk-frame.sk-draw{fill-opacity:0;animation:skdraw .5s ease-out forwards,skfill .3s .35s ease-out forwards}
+@keyframes skdraw{to{stroke-dashoffset:0}}
+@keyframes skfill{to{fill-opacity:1}}
+.sk-build{fill:var(--secondary);opacity:0}
+.sk-agent{fill:#e2a336;stroke:var(--card);stroke-width:2}
+.sketchpalette{gap:6px;align-items:center}
+/* Wirksamer Prompt: Idee und Modulatoren, eingeklappt unter der Skizze */
+.promptview>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;padding:4px 2px}
+.promptview>summary::-webkit-details-marker{display:none}
+.promptview>summary .eyebrow::before{content:"▸ "}
+.promptview[open]>summary .eyebrow::before{content:"▾ "}
+.promptbody{display:flex;flex-direction:column;gap:8px;max-height:190px;overflow-y:auto;padding:6px 2px 2px}
+.modrow{display:flex;flex-direction:column;gap:2px;padding:6px 8px;border-radius:6px;background:var(--surface-low)}
+.modrow p{margin:0;font-size:12px;line-height:1.4}
+.modrow .meta{color:var(--secondary)}
+.modrow.tick{animation:tick 1.2s ease-out}
+.sketchpalette .chip{cursor:pointer}
+.sketchbox>.spread{flex-wrap:wrap;gap:6px 10px}
+@media(prefers-reduced-motion:reduce){.sk-draw,.sk-frame.sk-draw{animation:none;stroke-dashoffset:0;fill-opacity:1}}
+@keyframes skin{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.sk-new{animation:none}}
 /* Skalen zweispaltig, damit die Idee-Seite ohne langes Scrollen auskommt */
 /* Deutlicher Abstand und eine Trennlinie zwischen den Reglern, damit Überschrift und Regler als Einheit lesbar sind */
 .scales{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:12px}
@@ -325,6 +407,16 @@ summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;co
 .scales>.spread{grid-column:1/-1}
 /* gewählter Wert als Marke; Achsenenden bleiben klein und grau */
 .picked{font-size:11px}
+/* Stand je Regler: gelb = voreingestellt, grün = selbst eingestellt, rot = fehlt */
+.scales>div{position:relative}
+.setdot{position:absolute;top:12px;right:12px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 var(--mono);color:#231700;background:#e2a336;box-shadow:0 0 0 3px color-mix(in srgb,#e2a336 24%,transparent)}
+.setdot.own{color:var(--on-go)}
+.setdot.missing{color:#fff}
+.scales>div.confirmable{cursor:pointer}
+.scales>div.confirmable:hover{box-shadow:var(--shadow),inset 0 0 0 1px color-mix(in srgb,#e2a336 55%,transparent)}
+.setdot.own{background:var(--go);box-shadow:0 0 0 3px color-mix(in srgb,var(--go) 24%,transparent)}
+.setdot.missing{background:#e5484d;box-shadow:0 0 0 3px color-mix(in srgb,#e5484d 26%,transparent);animation:dotpulse 1.6s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.setdot.missing{animation:none}}
 /* Die Marken „gewählt: …“ entfallen: Die Stellung des Reglers und die Bedeutung daneben sagen dasselbe.
    Nur bei „Name der Anwendung“ bleibt die Anzahl als schlichter Text, weil es dort keine Bedeutungszeile gibt. */
 .scales .chip.picked{display:none}
@@ -531,6 +623,41 @@ body{padding-bottom:62px}
 .effortbar .t b{font-family:var(--mono);font-size:15px;line-height:1;font-weight:700;color:var(--heading);font-variant-numeric:tabular-nums}
 .effortbar .t i{font-style:normal;font-family:var(--mono);font-size:9px;line-height:1;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);white-space:nowrap}
 .effortbar .arr{color:var(--secondary);font-size:15px}
+/* Drei Quellen des Inputs in drei Farben; dieselben Farben teilen den Balken der Festlegungen */
+:root{--src-user:var(--go);--src-std:#8b93a1;--src-ai:#7c6cf0}
+:root[data-theme=dark]{--src-std:#7d8794;--src-ai:#a99bff}
+.effortbar{cursor:pointer}
+.effortbar .t{cursor:pointer}
+.effortbar .t.user i{color:var(--src-user)}.effortbar .t.std i{color:var(--src-std)}.effortbar .t.ai i{color:var(--src-ai)}
+.effortbar .t.user i,.effortbar .t.std i,.effortbar .t.ai i{font-weight:700}
+.effortbar.tight .t.more{display:none}
+.effortbar.tighter .t:not(.m),.effortbar.tighter .arr{display:none}
+.effortbar .t.pending b{color:var(--outline)}
+.effortbar .ebar{display:flex!important}
+.effortbar .ebar>i{border-radius:0}
+.effortbar .ebar>i.user{background:var(--src-user)}.effortbar .ebar>i.std{background:var(--src-std)}.effortbar .ebar>i.ai{background:var(--src-ai)}
+.lightbox.balance{width:min(94vw,1040px);height:fit-content;max-height:92vh}
+.balance .lightscroll{flex:0 1 auto}
+.balance .lightscroll{text-align:left;background:var(--card)}
+
+.balbody{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px 20px;padding:20px;align-items:start}
+.balcol{display:flex;flex-direction:column;gap:10px}
+.balcol h3{font-size:16px}
+.balarrow{align-self:center;font-size:26px;color:var(--secondary)}
+.balrow{--src:var(--heading);padding:10px 12px;border-radius:8px;background:var(--surface-low);border-left:4px solid var(--src);display:flex;flex-direction:column;gap:4px}
+.balrow.user{--src:var(--src-user)}.balrow.std{--src:var(--src-std)}.balrow.ai{--src:var(--src-ai)}
+.balrow.pending{opacity:.6}
+.balhead{display:flex;align-items:center;gap:8px}
+.balhead i{width:9px;height:9px;border-radius:50%;background:var(--src)}
+.balnums{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--ink-soft)}
+.balfact b{font-family:var(--mono);font-size:15px;color:var(--heading);font-variant-numeric:tabular-nums}
+.balshare{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--surface-high)}
+.balshare i{font-style:normal;font-family:var(--mono);font-size:11px;line-height:22px;text-align:center;color:#fff;white-space:nowrap;overflow:hidden}
+.balshare i.user{background:var(--src-user);color:var(--on-go)}.balshare i.std{background:var(--src-std)}.balshare i.ai{background:var(--src-ai)}
+.balgroups{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.balgroups li{display:flex;justify-content:space-between;gap:12px}
+.balsum{grid-column:1/-1;padding-top:12px;border-top:1px solid var(--outline-soft);font-size:14px}
+@media(max-width:760px){.balbody{grid-template-columns:1fr}.balarrow{display:none}}
 /* Füllstände in der Kopfzeile: Balken für die Festlegungen, sechs Felder für die Themen, Farbe nach Stand */
 .effortbar .m{--st:#e5484d;align-items:flex-start;gap:4px}
 .effortbar .m.part{--st:#e2a336}
@@ -544,11 +671,13 @@ body{padding-bottom:62px}
 .tools .effortbar{margin-right:14px;padding-right:26px;border-right:1px solid var(--outline-soft);overflow:visible}
 .effortbar .t{padding:3px 6px;margin:-3px -6px;border-radius:5px}
 .effortbar .t.tick{animation:tick .8s ease-out}
+.effortbar.wiped .t.tick{animation:tickreset 2.2s ease-out}
+@keyframes tickreset{0%,35%{background:color-mix(in srgb,var(--go) 42%,transparent)}100%{background:transparent}}
 @keyframes tick{0%,25%{background:color-mix(in srgb,#e5484d 42%,transparent)}100%{background:transparent}}
 @media(prefers-reduced-motion:reduce){.effortbar .t.tick{animation:none}}
 @media(max-width:1500px){.effortbar{gap:10px}.effortbar .arr{display:none}}
 /* Damit die Schritte auch in schmaleren Fenstern genau in der Mitte bleiben, werden die Werkzeuge rechts schrittweise kompakter */
-@media(max-width:1699px){.effortbar .t:not(.m),.effortbar .arr{display:none}}
+
 @media(max-width:1559px){#reset{font-size:0;gap:0;padding-inline:10px}#reset::before{content:"↺";font-size:15px;line-height:16px}.effortbar .ebar{width:64px}.tools{gap:8px}.tools .effortbar{margin-right:8px;padding-right:16px}}
 @media(max-width:1100px){.effortbar{display:none}.stepnav .inner{grid-template-columns:auto minmax(0,1fr) auto}}
 #effort{display:none}
@@ -606,6 +735,11 @@ body{padding-bottom:62px}
 .askbox p{font-size:15px;margin-bottom:18px}
 .askbox .btn{white-space:normal;text-align:left}
 .need{box-shadow:0 0 0 2px var(--error)!important}
+/* Fehlende Pflichtangabe: rote Kontur am Feld, „fehlt“ an der Beschriftung, deutlicher Hinweis mit Sprung zur Stelle */
+.field-label:has(+.need)::after{content:" · fehlt";color:var(--error);font-weight:700}
+.status.missing{cursor:pointer;padding:8px 12px;border-radius:6px;border-left:4px solid var(--error);background:var(--error-container);color:var(--on-error-container);font-weight:600}
+.status.missing::after{content:" →"}
+#plan.need{background:var(--error-container);color:var(--on-error-container)}
 .catitem.need{box-shadow:inset 3px 0 0 var(--error)!important}
 .catitem.need .cathd .q{color:var(--error)}
 .upcoming.need{opacity:1}
@@ -698,22 +832,26 @@ body{padding-bottom:62px}
 #phase3 .advice{margin-top:10px;padding:10px 14px;font-size:13px}
 #phase3 #planConfig .settings{margin-top:12px!important}
 /* Gestaltung: UI-Layouts und Logo stehen an derselben Stelle nebeneinander */
-.designrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:stretch}
+.brandgroup{display:flex;flex-direction:column;gap:8px}
+.brandgroup>.eyebrow{padding:0 4px}
+.catpanel.off>summary h2,.catpanel.off>summary .meta{opacity:.5}
+.catpanel.off{background:var(--surface-low);box-shadow:none}
+.countfield{display:inline-flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-soft)}
+.countfield input{width:64px;padding:6px 8px;font-size:14px}
+#layoutSection .layoutgrid{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+#layoutSection .gallery{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
 /* Solange keine Layouts aktiv sind, deuten leere Rahmen die Entwürfe an (gleiche Höhe wie die Logo-Box) */
-.layoutghost{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:28px 0 6px}
-.layoutghost i{width:88px;height:88px;flex-shrink:0;border-radius:10px;border:1.5px dashed var(--outline-soft);background:linear-gradient(var(--outline-soft),var(--outline-soft)) 10px 10px/60% 6px no-repeat,linear-gradient(var(--outline-soft),var(--outline-soft)) 10px 24px/35% 6px no-repeat,linear-gradient(var(--outline-soft),var(--outline-soft)) 10px 44px/80% 30px no-repeat;opacity:.45}
+.layoutghost{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 0}
+.layoutghost i{width:64px;height:64px;flex-shrink:0;border-radius:10px;border:1.5px dashed var(--outline-soft);background:linear-gradient(var(--outline-soft),var(--outline-soft)) 10px 10px/60% 6px no-repeat,linear-gradient(var(--outline-soft),var(--outline-soft)) 10px 24px/35% 6px no-repeat,linear-gradient(var(--outline-soft),var(--outline-soft)) 10px 44px/80% 30px no-repeat;opacity:.45}
 .layoutghost .meta{flex-basis:100%}
 #layoutBody:not(.hidden)~#layoutGhost{display:none}
 #logoPanel h2{font-size:16px}
-#layoutBody:not(.hidden){margin-top:28px}
+#layoutBody:not(.hidden){margin-top:6px}
 /* Beide Gestaltungs-Boxen: Inhalt füllt die gemeinsame Höhe und steht darin mittig, damit oben und unten gleich viel Luft bleibt */
-.designrow>section{display:flex;flex-direction:column}
-.designrow>section>.namebox{flex:1;justify-content:center}
-.designrow>section>.layoutghost{flex:1;align-content:center}
-#logoPanel .namerow{flex-wrap:nowrap;align-items:center;gap:10px}
+#logoPanel .namerow{flex-wrap:wrap;align-items:center;gap:10px}
 #logoPanel .logotile{flex-shrink:0}
-#logoPanel .logoidea{flex:1;min-width:120px;margin:0 0 0 6px}
-#logoPanel .namebox{margin:28px 0 6px;padding:0;background:none;box-shadow:none;border-left:0;border-radius:0}
+#logoPanel .logoidea{flex-basis:100%;margin:0}
+#logoPanel .namebox{margin:14px 0 0;padding:0;background:none;box-shadow:none;border-left:0;border-radius:0}
 /* „Weiteres Vorgehen“: Auswahl in der Größe der übrigen Knöpfe */
 #phase3 .nextin .choice2{display:flex;flex-wrap:wrap;gap:8px}
 #phase3 .nextin .choice{padding:8px 14px;border-width:1px;border-radius:6px}
@@ -749,7 +887,7 @@ body{padding-bottom:62px}
 .repoextra:not(:has(#repoForm:not(.hidden))):has(#repoStatus:empty){display:none}
 #phase3 #planConfig>.actions{margin-top:12px!important}
 #layoutSection:has(#layoutOn:not(:disabled)) #layoutHint{display:none}
-#phase3 #runPanel{margin-top:12px!important}
+#phase3 #runPanel{margin-top:10px}
 #phase3 .review{font-size:13px}
 #phase3 .reviewrow{grid-template-columns:130px minmax(0,1fr) auto;gap:12px;padding:8px 2px;font-size:13px}
 /* Grundsatz für die ganze Anwendung: Die Seite selbst rollt nie. Gerollt wird nur innerhalb der Ansicht –
@@ -793,7 +931,8 @@ body.merged.decqa #decDerive{margin-top:12px}
   .hero>.presets{grid-column:2;grid-row:1;align-self:center}
   /* Alle Parameter in einer Spalte, je Parameter eine flache Zeile: Bezeichnung | Regler mit Achse | gewählter Wert und Bedeutung */
   .hero>.scales{grid-column:2;grid-row:2;grid-template-columns:1fr;gap:14px;align-content:start;max-height:100%;overflow-y:auto;padding:0}
-  .hero>.scales>div{display:grid;grid-template-columns:238px minmax(0,1fr) minmax(0,236px);column-gap:18px;row-gap:1px;align-items:center;padding:13px 16px}
+  .hero>.scales>div>.setdot{position:static;grid-column:4;grid-row:1/3;align-self:center}
+  .hero>.scales>div{display:grid;grid-template-columns:238px minmax(0,1fr) minmax(0,236px) 20px;column-gap:18px;row-gap:1px;align-items:center;padding:13px 16px}
   .hero>.scales>div>.spread:first-child{display:contents}
   .hero>.scales>div .scalelabel{grid-column:1;grid-row:1/3;align-self:center;display:flex;align-items:center;justify-content:flex-start;gap:10px;width:100%}
   .hero>.scales>div .scalelabel>label{flex:1;min-width:0;white-space:nowrap}
@@ -801,7 +940,7 @@ body.merged.decqa #decDerive{margin-top:12px}
   .hero>.scales>div .scalelabel>.info{flex-shrink:0;order:-1;margin:0}
   .hero>.scales>div>.spread:first-child>.chip{grid-column:3;grid-row:1/3;align-self:center;justify-self:stretch;justify-content:flex-start;overflow:hidden;text-overflow:ellipsis}
   .hero>.scales>div>input[type=range]{grid-column:2;grid-row:1;margin:0}
-  .hero>.scales>div>.axis{grid-column:2;grid-row:2}
+  .hero>.scales>div>:is(.spread.meta,.durscale){grid-column:2;grid-row:2}
   .hero>.scales>div>.scaletext{grid-column:3;grid-row:1/3;align-self:center;margin:0;font-size:13px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .hero>.scales>div>.spread:first-child>.chip{white-space:nowrap}
   .hero>.scales>div>p.muted{grid-column:2/-1;margin:0}
@@ -809,16 +948,20 @@ body.merged.decqa #decDerive{margin-top:12px}
   .hero>.scales>div>#projectIdea{grid-column:3;grid-row:2;margin:0!important;padding:5px 9px!important}
   .hero>.scales>div>.actions{grid-column:2;grid-row:1/3;margin:0!important;flex-wrap:nowrap;min-width:0}
   .hero>.scales>div>.actions select{min-width:0!important;flex:1 1 0}
-  .hero>.scales>div>.axis{white-space:nowrap;gap:8px}
-  .hero>.scales>div>.axis span{overflow:hidden;text-overflow:ellipsis}
+  .hero>.scales>div>:is(.spread.meta,.durscale){white-space:nowrap;gap:8px}
+  .hero>.scales>div>:is(.spread.meta,.durscale) span{overflow:hidden;text-overflow:ellipsis}
   .hero>.scales>div>#reviewCost{grid-column:3;grid-row:1/3;align-self:center;margin:0!important;font-size:11px;line-height:1.3}
   .hero>p{grid-column:1;grid-row:3;margin:0}
 }
-/* Wird die rechte Spalte schmal, entfallen die Achsenbeschriftungen der Regler (Wert und Bedeutung stehen rechts daneben) */
-@media(min-width:1181px) and (max-width:1560px){
-  .hero>.scales>div{grid-template-columns:232px minmax(0,1fr) minmax(0,210px);column-gap:14px}
-  .hero>.scales>div>.axis{display:none}
-  .hero>.scales>div>#projectIdea{grid-row:2}
+/* Ist die Regler-Spalte selbst schmal (unabhängig von der Fensterbreite), rückt die Bedeutung unter den Regler und die Achse entfällt */
+@media(min-width:1181px){.hero>.scales{container:scales/inline-size}}
+@container scales (max-width:800px){
+  .hero>.scales>div{grid-template-columns:232px minmax(0,1fr) 20px;column-gap:14px}
+  .hero>.scales>div>:is(.spread.meta,.durscale){display:none}
+  .hero>.scales>div>.scaletext,.hero>.scales>div>#reviewCost,.hero>.scales>div>.spread:first-child>.chip{grid-column:2;grid-row:2;align-self:start}
+  .hero>.scales>div>input[type=range]{grid-row:1}
+  .hero>.scales>div>.actions{grid-row:1}
+  .hero>.scales>div>.setdot{grid-column:3}
 }
 /* Druck / PDF: nur die Spezifikation, A4, helle Farben unabhängig vom Thema */
 @media print{
@@ -847,11 +990,11 @@ body.merged.decqa #decDerive{margin-top:12px}
       <span class="wordmark">Spec<span>It.</span></span>
       <span class="rule" aria-hidden="true"></span>
       <span id="brandLogo" class="brandlogo hidden"></span>
-      <input id="project" type="text" maxlength="100" placeholder="Projektname" aria-label="Projektname">
+      <input id="project" type="text" maxlength="100" placeholder="Projektname" aria-label="Projektname (wird bei der Spezifikation festgelegt)" title="Der Name wird bei der Spezifikation unter „Name der Anwendung“ festgelegt." readonly tabindex="-1">
     </div>
     <nav class="phases" id="phases" aria-label="Schritte"></nav>
     <div class="tools">
-      <div class="effortbar" id="navHint"></div>
+      <div class="effortbar" id="navHint" role="button" tabindex="0"></div>
       <span id="mode" class="pill hidden" role="status">Demo-Modus</span>
       <label class="switch" id="aiSwitch"><input type="checkbox" id="ai"><span class="track"></span><span>Claude</span></label>
       <button id="theme" class="btn ghost" type="button" aria-pressed="false">Dunkel</button>
@@ -866,6 +1009,12 @@ body.merged.decqa #decDerive{margin-top:12px}
     <div class="spread ideahead"><label class="field-label" for="idea" style="margin:0">Deine Idee in einem Satz</label><span class="meta" id="ideaCount"></span></div>
     <div class="card ideacard">
       <textarea id="idea" rows="7" maxlength="2000" aria-label="Was willst du bauen?" placeholder="Was willst du bauen? Ein Satz genügt – z. B. „Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost“. Mehr Details sind willkommen (Umschalt+Enter für eine neue Zeile)."></textarea>
+      <div class="sketchbox" id="sketchBox">
+        <div class="spread"><span class="eyebrow">Skizze · live aus deiner Idee</span><span class="actions"><span class="meta" id="sketchNote"></span><button id="sketchPlay" class="btn small hidden" type="button" title="Zeigt, wie Agenten die Bereiche der Skizze bauen würden: erst das Grundgerüst, dann parallel.">▶ Bau-Vorschau</button><button id="sketchDevice" class="btn small hidden" type="button" aria-pressed="false">▯ Handy</button><button id="sketchRefine" class="btn small hidden" type="button" title="Claude zeichnet ohnehin live mit, sobald du einen Moment nichts änderst (verbraucht Claude-Kontingent). Hier beginnt er sofort von vorn.">✦ Von Claude zeichnen lassen</button></span></div>
+        <div id="sketch" class="sketch"></div>
+        <div id="sketchPalette" class="actions sketchpalette hidden"></div>
+        <details class="promptview hidden" id="promptView"><summary><span class="eyebrow">Wirksamer Prompt</span><span class="meta" id="promptMeta"></span></summary><div id="promptBody" class="promptbody"></div></details>
+      </div>
       <div class="spread">
         <span class="status" id="ideaStatus" role="status"></span>
         <button id="derive" class="btn primary hidden" type="button"><span id="deriveLabel">✦ Fragen ableiten →</span> <kbd>Enter</kbd></button>
@@ -874,14 +1023,14 @@ body.merged.decqa #decDerive{margin-top:12px}
     <div class="presets"><span class="field-label" style="margin:0">Voreinstellung</span><div class="actions" id="presets" role="group" aria-label="Voreinstellungen für die Regler"></div></div>
     <div class="scales">
       <div>
-        <div class="spread"><span class="scalelabel"><label class="field-label" for="autonomy" style="margin:0">Modus</label><span class="info" id="autonomyInfo" tabindex="0" role="note"><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true"></span></span></span><span class="chip ok picked" id="autonomyValue"></span></div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="autonomy" style="margin:0">Entscheidungsmodus</label><span class="info" id="autonomyInfo" tabindex="0" role="note"><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true"></span></span></span><span class="chip ok picked" id="autonomyValue"></span></div>
         <input type="range" id="autonomy" min="0" max="5" step="1" list="autonomyTicks">
         <datalist id="autonomyTicks"><option value="0"></option><option value="1"></option><option value="2"></option><option value="3"></option><option value="4"></option><option value="5"></option></datalist>
         <div class="spread meta"><span>fragt bei allem nach</span><span>entscheidet alles selbst</span></div>
         <p id="autonomyText" class="scaletext" aria-live="polite"></p>
       </div>
       <div>
-        <div class="spread"><span class="scalelabel"><label class="field-label" for="creativity" style="margin:0">Eigene Ideen der KI</label><span class="info" id="creativityInfo" tabindex="0" role="note"><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true"></span></span></span><span class="chip ok picked" id="creativityValue"></span></div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="creativity" style="margin:0">Kreativität der KI</label><span class="info" id="creativityInfo" tabindex="0" role="note"><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true"></span></span></span><span class="chip ok picked" id="creativityValue"></span></div>
         <input type="range" id="creativity" min="0" max="4" step="1" list="fiveTicks">
         <datalist id="fiveTicks"><option value="0"></option><option value="1"></option><option value="2"></option><option value="3"></option><option value="4"></option></datalist>
         <div class="spread meta"><span>nur was du vorgibst</span><span>denkt kreativ weiter</span></div>
@@ -901,7 +1050,7 @@ body.merged.decqa #decDerive{margin-top:12px}
         <p id="durText" class="scaletext" aria-live="polite"></p>
       </div>
       <div>
-        <div class="spread"><span class="scalelabel"><label class="field-label" for="layoutIdea" style="margin:0">UI-Layouts mit Stitch</label><span class="info" tabindex="0" role="note" aria-label="Erzeugt Layout-Entwürfe aus dem abgeschlossenen Konzept (Schritt 4); die Spezifikation wird dafür an Google Stitch gesendet. Die Zahl gilt je Kombination aus Gerät und Farbmodus, die dort gewählt wird. 0 = keine Entwürfe."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Erzeugt Layout-Entwürfe aus dem abgeschlossenen Konzept (Schritt 4); die Spezifikation wird dafür an Google Stitch gesendet. Die Zahl gilt je Kombination aus Gerät und Farbmodus, die dort gewählt wird. 0 = keine Entwürfe.</span></span></span><span class="chip ok picked" id="layoutIdeaValue"></span></div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="layoutIdea" style="margin:0">UI-Layouts mit Stitch</label><span class="info" tabindex="0" role="note" aria-label="Erzeugt Layout-Entwürfe bei der Spezifikation (Schritt 3); die Spezifikation wird dafür an Google Stitch gesendet. Die Zahl gilt je Kombination aus Gerät und Farbmodus, die dort gewählt wird. 0 = keine Entwürfe."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Erzeugt Layout-Entwürfe bei der Spezifikation (Schritt 3); die Spezifikation wird dafür an Google Stitch gesendet. Die Zahl gilt je Kombination aus Gerät und Farbmodus, die dort gewählt wird. 0 = keine Entwürfe.</span></span></span><span class="chip ok picked" id="layoutIdeaValue"></span></div>
         <input type="range" id="layoutIdea" min="0" max="5" step="1" list="autonomyTicks" disabled>
         <div class="spread meta axis"><span>0</span><span>5</span></div>
         <p id="layoutIdeaText" class="scaletext" aria-live="polite"></p>
@@ -965,9 +1114,6 @@ body.merged.decqa #decDerive{margin-top:12px}
 
   <!-- Schritt 3 · Spezifikation -->
   <div id="phase2" class="hidden" style="display:flex;flex-direction:column;gap:20px">
-    <div class="pagehead">
-      <div class="headline"><h1>Spezifikation<span class="info" tabindex="0" role="note" aria-label="Der konsolidierte Entwurf aus Idee und Antworten. Annahmen und offene Entscheidungen prüfen, Antworten im Fragen-Katalog ändern, direkt bearbeiten oder eine vorhandene Spezifikation einfügen."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Der konsolidierte Entwurf aus Idee und Antworten. Annahmen und offene Entscheidungen prüfen, Antworten im Fragen-Katalog ändern, direkt bearbeiten oder eine vorhandene Spezifikation einfügen.</span></span></h1><span class="chip" id="specBadge"></span><span id="specStatus" role="status" class="status"></span></div>
-    </div>
     <div class="wishbox hidden" id="wishBox">
       <label class="wishlabel" for="wish"><span class="spark" aria-hidden="true">✦</span>Spezifikation anpassen</label>
       <textarea id="wish" rows="1" maxlength="500" placeholder="Was soll anders werden? z. B. „Zusätzlich ein CSV-Export der Notizen“"></textarea>
@@ -975,6 +1121,7 @@ body.merged.decqa #decDerive{margin-top:12px}
     </div>
     <div class="specbar">
       <div class="actions"><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="specPdf" class="btn small" type="button" title="Öffnet die Druckvorschau des Browsers mit der Spezifikation im A4-Format. Dort als Ziel „Als PDF speichern“ wählen.">↓ PDF / Vorschau</button><button id="generate" class="btn primary small" type="button">↻ Spezifikation aktualisieren</button><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div></div>
+      <div class="actions"><span class="chip" id="specBadge"></span><span id="specStatus" role="status" class="status" style="min-height:0"></span></div>
     </div>
     <div id="changeBar" class="changebar hidden" role="status"></div>
     <div class="split">
@@ -985,10 +1132,48 @@ body.merged.decqa #decDerive{margin-top:12px}
       </div>
       <div class="side sticky">
         <!-- Features der Spezifikation: einzeln an- und abwählbar, mit Aufwand je Feature und laufender Gesamtdauer -->
+        <!-- Auftritt der Anwendung als Teil des Konzepts: Name, Layout-Entwürfe und Logo -->
+        <div class="brandgroup" role="group" aria-labelledby="brandTitle">
+        <p class="eyebrow" id="brandTitle">Name, Layout und Logo</p>
         <details class="card catpanel" id="namePanel">
           <summary><h2>Name der Anwendung</h2><span class="meta" id="nameMeta"></span></summary>
           <div class="namebox" id="nameBox"></div>
         </details>
+        <details class="card catpanel" id="layoutSection">
+          <summary><h2 id="layoutTitle">UI-Layouts</h2><span class="meta" id="layoutMeta"></span></summary>
+          <div>
+      <div class="spread">
+        <p class="muted" id="layoutHint" style="font-size:13px">Erzeugt Layout-Entwürfe aus der Spezifikation; sie wird dafür an Google Stitch gesendet. Wähle danach den Entwurf, der umgesetzt werden soll.</p>
+        <label class="switch"><input type="checkbox" id="layoutOn" disabled><span class="track"></span><span>Entwürfe erstellen</span></label>
+      </div>
+      <div id="layoutBody" class="hidden">
+        <div class="layoutgrid">
+          <div><label class="field-label" for="layoutCount">Anzahl Varianten</label><input type="number" id="layoutCount" min="1" max="5" step="1" inputmode="numeric" required></div>
+          <div><label class="field-label" for="layoutDevice">Optimiert für</label><select id="layoutDevice"><option value="DESKTOP">Desktop</option><option value="MOBILE">Mobil</option><option value="BOTH">Desktop und Mobil</option></select></div>
+          <div><label class="field-label" for="layoutTheme">Farbmodus</label><select id="layoutTheme"><option value="LIGHT">Hell</option><option value="DARK">Dunkel</option><option value="BOTH">Hell und dunkel</option></select></div>
+        </div>
+        <div style="margin-top:14px"><label class="field-label" for="layoutWish">Änderungswunsch für die Layouts (optional)</label><textarea id="layoutWish" rows="2" maxlength="500" placeholder="z. B. Navigation links statt oben, mehr Weißraum, die Liste als Karten"></textarea></div>
+        <div class="actions" style="margin-top:14px"><button id="layoutRun" class="btn primary" type="button">▦ Layouts generieren</button><span class="meta" id="layoutPlan" style="flex:1;min-width:240px"></span></div>
+        <p id="layoutStatus" class="status" role="status" style="margin-top:12px"></p>
+        <div id="layoutLinkRow" class="linkrow hidden">
+          <span class="eyebrow">Stitch-Projekt</span>
+          <a id="layoutLink" target="_blank" rel="noopener noreferrer"></a>
+          <button id="layoutCopy" class="btn small" type="button">⧉ Link kopieren</button>
+        </div>
+        <p id="layoutChoice" class="status" role="status" style="margin-top:12px;font-weight:600"></p>
+        <div id="layoutGallery" class="gallery"></div>
+      </div>
+      <div class="layoutghost" id="layoutGhost" aria-hidden="true"><i></i><i></i><i></i><span class="meta">Entwürfe erscheinen hier, sobald die Layouts aktiviert sind.</span></div>
+          </div>
+        </details>
+        <details class="card catpanel" id="logoPanel">
+          <summary><h2 id="logoTitle">Logo</h2><span class="meta" id="logoMeta"></span></summary>
+          <div>
+            <div class="spread"><label class="countfield" for="logoCountSpec">Anzahl Entwürfe <input type="number" id="logoCountSpec" min="0" max="5" step="1" inputmode="numeric"></label><span class="actions" id="logoActs"></span></div>
+            <div class="namebox" id="logoBox"></div>
+          </div>
+        </details>
+        </div>
         <details class="card catpanel" id="featPanel">
           <summary><h2>Features<span class="info" tabindex="0" role="note" aria-label="Basis-Features gehören zur grundsätzlichen Funktionsweise und sind fest; Erweiterungen lassen sich an- und abwählen. Der Aufwand gilt je Feature für einen einzelnen Agenten; die geschätzte Dauer passt sich sofort an."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Basis-Features gehören zur grundsätzlichen Funktionsweise und sind fest; Erweiterungen lassen sich an- und abwählen. Der Aufwand gilt je Feature für einen einzelnen Agenten; die geschätzte Dauer passt sich sofort an.</span></span></h2><span class="meta" id="featCount"></span></summary>
           <div id="featBox"></div>
@@ -1015,9 +1200,6 @@ body.merged.decqa #decDerive{margin-top:12px}
 
   <!-- Schritt 4 · Agent Tasks -->
   <div id="phase3" class="hidden" style="display:flex;flex-direction:column;gap:20px">
-    <div class="pagehead">
-      <div><h1>Umsetzung<span class="info" tabindex="0" role="note" aria-label="Zerlege die Spezifikation in delegierbare Aufgaben mit Abhängigkeiten, Akzeptanzkriterien, Tests und Zuständigkeiten. Agenten starten nur, wenn du „Direkt umsetzen“ wählst und die Umsetzung dort selbst startest."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Zerlege die Spezifikation in delegierbare Aufgaben mit Abhängigkeiten, Akzeptanzkriterien, Tests und Zuständigkeiten. Agenten starten nur, wenn du „Direkt umsetzen“ wählst und die Umsetzung dort selbst startest.</span></span></h1></div>
-    </div>
     <!-- Sperre: Aufträge gibt es erst, wenn das Konzept vollständig ist oder der Nutzer das automatische Entscheiden bestätigt hat -->
     <div id="planGate" class="card gate hidden" role="status">
       <h2 id="gateTitle"></h2>
@@ -1026,36 +1208,6 @@ body.merged.decqa #decDerive{margin-top:12px}
     </div>
     <div class="impl">
       <div class="implmain">
-    <div class="designrow">
-    <section class="card" id="layoutSection" aria-labelledby="layoutTitle">
-      <div class="spread">
-        <div><h2 id="layoutTitle">UI-Layouts mit Stitch <span class="chip">optional</span></h2><p class="muted" id="layoutHint" style="font-size:13px;margin-top:4px">Erzeugt Layout-Entwürfe aus dem abgeschlossenen Konzept. Die Spezifikation wird dafür an Google Stitch gesendet. Wähle danach den Entwurf, der umgesetzt werden soll.</p></div>
-        <label class="switch"><input type="checkbox" id="layoutOn" disabled><span class="track"></span><span>aktivieren</span></label>
-      </div>
-      <div id="layoutBody" class="hidden">
-        <div class="layoutgrid">
-          <div><label class="field-label" for="layoutCount">Anzahl Varianten</label><input type="number" id="layoutCount" min="1" max="5" step="1" inputmode="numeric" required></div>
-          <div><label class="field-label" for="layoutDevice">Optimiert für</label><select id="layoutDevice"><option value="DESKTOP">Desktop</option><option value="MOBILE">Mobil</option><option value="BOTH">Desktop und Mobil</option></select></div>
-          <div><label class="field-label" for="layoutTheme">Farbmodus</label><select id="layoutTheme"><option value="LIGHT">Hell</option><option value="DARK">Dunkel</option><option value="BOTH">Hell und dunkel</option></select></div>
-        </div>
-        <div style="margin-top:14px"><label class="field-label" for="layoutWish">Änderungswunsch für die Layouts (optional)</label><textarea id="layoutWish" rows="2" maxlength="500" placeholder="z. B. Navigation links statt oben, mehr Weißraum, die Liste als Karten"></textarea></div>
-        <div class="actions" style="margin-top:14px"><button id="layoutRun" class="btn primary" type="button">▦ Layouts generieren</button><span class="meta" id="layoutPlan" style="flex:1;min-width:240px"></span></div>
-        <p id="layoutStatus" class="status" role="status" style="margin-top:12px"></p>
-        <div id="layoutLinkRow" class="linkrow hidden">
-          <span class="eyebrow">Stitch-Projekt</span>
-          <a id="layoutLink" target="_blank" rel="noopener noreferrer"></a>
-          <button id="layoutCopy" class="btn small" type="button">⧉ Link kopieren</button>
-        </div>
-        <p id="layoutChoice" class="status" role="status" style="margin-top:12px;font-weight:600"></p>
-        <div id="layoutGallery" class="gallery"></div>
-      </div>
-      <div class="layoutghost" id="layoutGhost" aria-hidden="true"><i></i><i></i><i></i><span class="meta">Entwürfe erscheinen hier, sobald die Layouts aktiviert sind.</span></div>
-    </section>
-    <section class="card hidden" id="logoPanel" aria-labelledby="logoTitle">
-      <div class="spread"><span class="actions"><h2 id="logoTitle">Logo <span class="chip">optional</span></h2><span class="actions" id="logoActs"></span></span><span class="meta" id="logoMeta"></span></div>
-      <div class="namebox" id="logoBox"></div>
-    </section>
-    </div>
     <div id="planStale" class="banner hidden" role="status">VERALTET – der Plan passt nicht mehr zu Spezifikation oder Einstellungen. Bitte neu erstellen.</div>
     <div class="card" id="planConfig">
       <div class="stephead"><span class="stepno">1</span><div><h2>Abarbeitung festlegen</h2><p class="muted" id="formHint"></p></div></div>
@@ -1070,23 +1222,21 @@ body.merged.decqa #decDerive{margin-top:12px}
           <div class="actions repoextra"><span id="repoForm" class="actions hidden"><input type="text" id="repoName" maxlength="100" placeholder="name-des-repositorys" aria-label="Name des neuen Repositorys" style="width:240px;padding:7px 10px;font-size:14px"><select id="repoVis" aria-label="Sichtbarkeit"><option value="private">privat</option><option value="public">öffentlich</option></select><button id="repoCreate" class="btn primary small" type="button">Auf GitHub anlegen</button></span><span class="status" id="repoStatus" role="status"></span></div></div>
         <div><label class="field-label" for="agent">Zielagent</label><select id="agent"><option>Agent-neutral</option><option>Claude Code</option><option>Codex</option><option>GitHub Copilot</option><option>Cursor</option></select></div>
       </div>
-      <div id="nextCard" class="nextin"><span class="field-label">Weiteres Vorgehen</span>
+      <div id="nextCard" class="nextin"><div class="nextrow"><div><span class="field-label">Weiteres Vorgehen</span>
       <div class="choice2" role="group" aria-label="Weiteres Vorgehen">
         <button id="nextDownload" type="button" class="choice"><b>Zum Download bereitstellen</b><span>Spezifikation, Plan und Aufträge als Dateien – zur Übergabe an Coding-Agenten deiner Wahl.</span></button>
         <button id="nextRun" type="button" class="choice"><b>Direkt umsetzen</b><span>Die Umsetzung startet auf diesem Rechner über Claude Code in einem Zielordner.</span></button>
+      </div></div><button id="plan" class="btn" type="button">⚙ Plan erstellen</button></div>
+      <div id="runPanel" class="hidden runpanel">
+        <div><label class="field-label" for="runDir">Zielordner (vollständiger Pfad)</label><input type="text" id="runDir" maxlength="400" placeholder="C:\Projekte\meine-app"></div>
+        <div><label class="field-label" for="runModel">Modell der Agenten</label><select id="runModel" aria-describedby="runModelCost"></select></div>
+        <p class="meta" id="runModelCost"></p>
+        <label class="switch" title="Tests, Build und Installation laufen ohne Rückfrage mit deinen Rechten. Die Agenten schreiben Dateien nur im Zielordner und verbrauchen dein Claude-Kontingent."><input type="checkbox" id="runShell"><span class="track"></span><span>Agenten dürfen Befehle ausführen – ohne Rückfrage, mit deinen Rechten</span></label>
       </div>
-      <div id="runPanel" class="hidden" style="margin-top:16px">
-        <label class="field-label" for="runDir">Zielordner (vollständiger Pfad)</label><input type="text" id="runDir" maxlength="400" placeholder="C:\Projekte\meine-app">
-        <label class="field-label" for="runModel" style="margin-top:14px">Modell der Agenten</label><select id="runModel" aria-describedby="runModelCost"></select>
-        <p class="meta" id="runModelCost" style="margin:8px 0 0"></p>
-        <label class="switch" style="margin-top:14px"><input type="checkbox" id="runShell"><span class="track"></span><span>Agenten dürfen Befehle ausführen (Tests, Build, Installation) – ohne Rückfrage, mit deinen Rechten</span></label>
-        <p class="meta" style="margin-top:10px">Die Agenten schreiben Dateien nur im Zielordner und verbrauchen dein Claude-Kontingent.</p>
       </div>
-      </div>
-      <div class="actions" style="margin-top:16px"><button id="plan" class="btn" type="button">⚙ Plan erstellen</button></div>
     </div>
     <p id="planStatus" class="status" role="status"></p>
-    <div id="planOutput" style="display:flex;flex-direction:column;gap:24px"></div>
+    <div id="planOutput" style="display:flex;flex-direction:column;gap:12px"></div>
       </div>
       <div class="implside">
     <div class="card" id="reviewCard">
@@ -1109,6 +1259,10 @@ body.merged.decqa #decDerive{margin-top:12px}
   <div class="lightbar"><span id="lightCap" class="meta"></span><div class="actions"><button id="lightPrev" class="btn small" type="button">← Vorige</button><button id="lightNext" class="btn small" type="button">Nächste →</button><button id="lightClose" class="btn small" type="button">Schließen</button></div></div>
   <div class="lightscroll"><img id="lightImg" alt=""></div>
 </dialog>
+<dialog id="balance" class="lightbox balance" aria-label="Bilanz von Input und Output">
+  <div class="lightbar"><span class="meta">Bilanz · Input nach Quelle, Output nach Artefakt</span><div class="actions"><button id="balanceClose" class="btn small" type="button">Schließen</button></div></div>
+  <div class="lightscroll balbody" id="balanceBody"></div>
+</dialog>
 <dialog id="wbs" class="lightbox" aria-label="Work Breakdown Structure">
   <div class="lightbar"><span id="wbsCap" class="meta"></span><div class="actions"><button id="wbsClose" class="btn small" type="button">Schließen</button></div></div>
   <div class="lightscroll wbsbody" id="wbsBody"></div>
@@ -1129,8 +1283,9 @@ function applyTheme(){document.documentElement.dataset.theme=theme;const b=docum
 applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('specit-theme',theme)}catch{}applyTheme()};
 
 import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate} from '/planner.mjs';
-import { cleanSvg, cleanLogos,topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
+import { modulators, cleanSvg, cleanLogos,topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
+import {balance} from '/balance.mjs';
 
 const $=id=>document.getElementById(id),pageTitle=document.title;
 // Höhe der Kopfzeile (bricht bei schmalem Fenster um) für alles, was darunter haften bleibt
@@ -1181,7 +1336,7 @@ const toneNames=[
   ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung. Beschreibender Name, kein Humor.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({logoCount:0,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({usage:{context:0,ai:0,calls:0},runOutput:null,own:{},sketch:null,logoCount:0,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -1192,6 +1347,7 @@ try{
     if(![0,1,2,3].includes(s.phase))s.phase=0;
     if(!Number.isInteger(s.active)||s.active>=s.questions.length)s.active=-1;
     if(!Number.isInteger(s.clicks)||s.clicks<0)s.clicks=0;
+    {const u=s.usage&&typeof s.usage==='object'?s.usage:{},n=v=>Number.isFinite(v)&&v>0?Math.round(v):0;s.usage={context:n(u.context),ai:n(u.ai),calls:n(u.calls)};if(!s.runOutput||typeof s.runOutput!=='object'||!Array.isArray(s.runOutput.groups))s.runOutput=null}
     s.last=-1;
     if(!Number.isInteger(s.layoutCount)||s.layoutCount<1||s.layoutCount>5)s.layoutCount=3;
     if(!['DESKTOP','MOBILE','BOTH'].includes(s.layoutDevice))s.layoutDevice='DESKTOP';
@@ -1211,6 +1367,8 @@ try{
     if(!Number.isInteger(s.nameCount)||s.nameCount<0||s.nameCount>5)s.nameCount=3;
     s.names=cleanNames(saved.names);
     s.logoCount=Number.isInteger(s.logoCount)?Math.min(5,Math.max(0,s.logoCount)):0;s.logos=cleanLogos(s.logos);s.logoChosen=Number.isInteger(s.logoChosen)&&s.logos[s.logoChosen]?s.logoChosen:-1;
+    if(!s.own||typeof s.own!=='object'||Array.isArray(s.own))s.own={};
+    if(!s.sketch||typeof s.sketch.svg!=='string'||!cleanSvg(s.sketch.svg))s.sketch=null;else s.sketch.pass=Number.isInteger(s.sketch.pass)?Math.min(2,Math.max(1,s.sketch.pass)):2;
     if(typeof s.runModel!=='string')s.runModel='';if(typeof s.reviewBy!=='string')s.reviewBy='';if(typeof s.reviewModel!=='string')s.reviewModel='';
     if(!s.review||!Array.isArray(s.review.findings))s.review=null;
     if(!Number.isInteger(s.featAgents)||s.featAgents<1)s.featAgents=1;
@@ -1262,30 +1420,100 @@ function firstOpen(from=0){const n=s.questions.length;for(let k=0;k<n;k++){const
 let effortSave=null;
 // Wächst ein Zähler durch eine Aktion, blitzt er kurz rot auf – wie ein Kurs, der sich gerade bewegt hat
 // (Die Leiste wird je Aktion mehrfach neu gezeichnet; deshalb merkt sich tickAt den Zeitpunkt des Zuwachses.)
-let effortPrev=null;const tickAt={};
+let effortPrev=null,resetAt=0;const tickAt={};
+// Der feste Kontext von SpecIt und die Antworten der KI werden je Anfrage vom Server gezählt (usage) und hier aufsummiert.
+// Was zum Ergebnis selbst wird (Spezifikation, Plan, Logos), zählt nicht als Input der KI.
+function addUsage(mode,u){
+  const n=v=>Number.isFinite(v)&&v>0?Math.round(v):0;
+  s.usage.context+=n(u.context);s.usage.calls+=n(u.calls);
+  if(!['final','revise','adjust','scope','plan','logos','sketch'].includes(mode))s.usage.ai+=n(u.out);
+  save();effortBar();
+}
+// Wörter aller Aufträge des aktuellen Plans (teuer zu rechnen, deshalb je Plan und Auftragsform gemerkt)
+let planWordsKey=null,planWordsN=0;
+function planWords(p){
+  if(!p)return 0;const key=agentsNow()===1?'1':'n';
+  if(planWordsKey!==p||planWordsN.key!==key){planWordsKey=p;planWordsN={key,n:words((key==='1'?renderSingle:renderBacklog)(p,'',exportCtx()))}}
+  return planWordsN.n;
+}
+function bal(){
+  const p=s.plan&&!stale()?s.plan:null;
+  return balance({idea:s.idea,questions:s.questions,extras:s.extras,features:s.features,clicks:s.clicks,usage:s.usage,spec:s.spec,name:s.project,logos:s.logos.length,layouts:s.layout?s.layout.screens.length:0,
+    plan:p,planWords:planWords(p),nextStep:s.nextStep,finished:!!p&&s.finished===finishKey(),output:s.runOutput});
+}
+const compact=n=>n>=10000?(n/1000).toLocaleString('de-DE',{maximumFractionDigits:n>=100000?0:1})+'k':n.toLocaleString('de-DE');
 function effortBar(){
-  const now0=effort(),grew=k=>{if(effortPrev&&now0[k]>effortPrev[k])tickAt[k]=Date.now();return Date.now()-(tickAt[k]||0)<600};
-  const e=now0,box=$('navHint'),total=s.questions.length+s.extras.length,cls=(n,max)=>!max||!n?'open':n>=max?'done':'part';
-  const tile=(n,label,tip,key)=>{const t=node('span',undefined,'t'+(key&&grew(key)?' tick':''));t.append(node('b',String(n)),node('i',label));t.title=tip;return t};
-  // Füllstand: wie viel von allem Fragbaren schon festgelegt ist – rot ohne, gelb mit einem Teil, grün vollständig
-  const meter=node('span',undefined,'t m '+cls(e.facts,total)+(grew('facts')?' tick':'')),bar=node('span',undefined,'ebar'),fill=node('i');
-  fill.style.width=(total?Math.round(100*Math.min(e.facts,total)/total):0)+'%';bar.append(fill);
+  const now0=effort(),wiped=Date.now()-resetAt<2200,grew=k=>{if(wiped)return true;if(effortPrev&&now0[k]>effortPrev[k])tickAt[k]=Date.now();return Date.now()-(tickAt[k]||0)<600};
+  const e=now0,b=bal(),box=$('navHint'),total=s.questions.length+s.extras.length,cls=(n,max)=>!max||!n?'open':n>=max?'done':'part';
+  const tile=(n,label,tip,key)=>{const t=node('span',undefined,'t'+(key&&grew(key)?' tick':''));t.append(node('b',typeof n==='number'?compact(n):String(n)),node('i',label));t.title=tip;return t};
+  // Jede Zahl trägt die Farbe ihrer Quelle; „more“ fällt als Erstes weg, wenn die Kopfzeile eng wird
+  const src=(kind,t,more)=>{t.classList.add(kind);if(more)t.classList.add('more');return t};
+  // Anteile an den Festlegungen: Nutzer, Standard, KI – der Rest des Balkens ist noch offen
+  const meter=node('span',undefined,'t m '+cls(e.facts,total)+(grew('facts')?' tick':'')),bar=node('span',undefined,'ebar');
+  const all=Math.max(1,b.user.decisions+b.std.decisions+b.ai.suggestions+b.open);
+  for(const [kind,n] of [['user',b.user.decisions],['std',b.std.decisions],['ai',b.ai.suggestions]]){const fill=node('i',undefined,kind);fill.style.width=(100*n/all)+'%';bar.append(fill)}
   meter.append(bar,node('i',total?e.facts+'/'+total+' festgelegt':'festgelegt'));
-  meter.title='Festlegungen: beantwortete Fragen (selbst entschieden oder Standard übernommen) und Zusatzanforderungen – '+e.facts+' von '+total+'.';
-  // Sechs Felder für die sechs Themen: gefüllt, sobald es dazu mindestens eine Festlegung gibt
+  meter.title='Festlegungen nach Quelle: '+b.user.decisions+' vom Nutzer, '+b.std.decisions+' als Standard übernommen'+(b.std.auto?' (davon '+b.std.auto+' ohne Rückfrage)':'')+', '+b.ai.suggestions+' Vorschläge der KI im Umfang'+(b.open?', '+b.open+' noch offen':'')+'.';
   const cov=coverage(s.questions).perTopic,them=node('span',undefined,'t m '+cls(e.topics,6)+(grew('topics')?' tick':'')),segs=node('span',undefined,'segs');
   topics.forEach((name,i)=>{const sq=node('i');if(cov[i]>0)sq.className='on';sq.title=name+(cov[i]>0?': abgedeckt':': noch offen');segs.append(sq)});
   them.append(segs,node('i',e.topics+'/6 Themen'));them.title='Themen mit mindestens einer Festlegung: '+topics.map((n,i)=>n+(cov[i]>0?' ✓':' –')).join(', ')+'.';
   box.replaceChildren(
-    tile(e.typed.toLocaleString('de-DE'),e.typed===1?'Wort':'Wörter','Dein Aufwand: von dir getippte Wörter (Idee, eigene Antworten, Zusatzanforderungen).','typed'),
-    tile(e.clicks.toLocaleString('de-DE'),e.clicks===1?'Klick':'Klicks','Dein Aufwand: deine Klicks auf Bedienelemente in dieser Sitzung.','clicks'),
+    src('user',tile(e.typed,e.typed===1?'Wort':'Wörter','Nutzer: von dir getippte Wörter (Idee, eigene Antworten, Zusatzanforderungen).','typed')),
+    src('user',tile(e.clicks,e.clicks===1?'Klick':'Klicks','Nutzer: deine Klicks auf Bedienelemente in dieser Sitzung.','clicks')),
+    src('std',tile(b.std.decisions,'Standard','Standard: '+plural(b.std.decisions,'Antwort','Antworten')+' als Standard übernommen'+(b.std.auto?' (davon '+b.std.auto+' ohne Rückfrage)':'')+'; dazu '+compact(b.std.words)+' Wörter fester Kontext von SpecIt in den Anfragen an die KI.','std'),true),
+    src('ai',tile(b.ai.words,'KI-Wörter','KI: erzeugte Zwischenergebnisse – Fragen, Optionen, Features, Review, Namen – aus '+plural(b.ai.calls,'Anfrage','Anfragen')+'.','ai'),true),
     node('span','→','arr'),meter,them);
-  if(e.specWords)box.append(tile(e.specWords.toLocaleString('de-DE'),'Wörter Spez.','Umfang der Spezifikation, die daraus entstanden ist.','specWords'));
-  effortPrev={typed:e.typed,clicks:e.clicks,facts:e.facts,topics:e.topics,specWords:e.specWords};
-  box.setAttribute('aria-label','Dein Aufwand und was daraus entstanden ist: '+effortText());
+  // Ergebnis: immer die Spezifikation, dazu das am weitesten gediehene Artefakt (Aufträge, Dateien)
+  const outs=b.outputs.filter(o=>o.key!=='brand'),shown=outs.length>2?[outs[0],outs[outs.length-1]]:outs;
+  shown.forEach((o,i)=>{const x=src('out',tile(o.value,o.short,o.label+': '+compact(o.value)+' '+o.unit+(o.detail?' · '+o.detail:''),o.key==='spec'?'specWords':'out'+o.key),i>0);if(o.pending)x.classList.add('pending');box.append(x)});
+  effortPrev={typed:e.typed,clicks:e.clicks,facts:e.facts,topics:e.topics,specWords:e.specWords,std:b.std.decisions,ctx:b.std.words,ai:b.ai.words,...Object.fromEntries(b.outputs.map(o=>['out'+o.key,o.value]))};
+  for(const k of ['std','ctx','ai','outplan','outcode','outfiles','outbrand'])if(now0[k]===undefined)now0[k]=effortPrev[k]||0;
+  // Nach „Zurücksetzen“ leuchten alle Zähler grün und deutlich länger: Sie sind nicht gewachsen, sondern wieder bei null
+  box.classList.toggle('wiped',wiped);
+  box.setAttribute('aria-label','Bilanz von Input und Output – öffnet die Übersicht. '+effortText());
+  if($('balance').open)balanceUI();
+  fitBar();
 }
+// Reicht der Platz neben der Navigation nicht, fallen erst die Zusatzzahlen weg, dann alle Zahlen; die Füllstände bleiben
+function fitBar(){
+  const box=$('navHint'),nav=$('phases');box.classList.remove('tight','tighter');
+  const clash=()=>{const a=box.getBoundingClientRect(),n=nav.getBoundingClientRect();return a.width>0&&n.width>0&&a.left<n.right+16&&a.top<n.bottom&&a.bottom>n.top};
+  if(clash()){box.classList.add('tight');if(clash())box.classList.add('tighter')}
+}
+addEventListener('resize',fitBar);
+// Übersicht: links die drei Quellen des Inputs, rechts die entstandenen Artefakte
+function balanceUI(){
+  const b=bal(),box=$('balanceBody'),col=(title,sub)=>{const c=node('section',undefined,'balcol');c.append(node('h3',title),node('p',sub,'meta'));return c};
+  const fact=(n,label)=>{const x=node('span',undefined,'balfact');x.append(node('b',compact(n)),' '+label);return x};
+  const row=(kind,name,note,...facts)=>{const r=node('div',undefined,'balrow '+kind),head=node('div',undefined,'balhead'),nums=node('div',undefined,'balnums');head.append(node('i'),node('b',name));nums.append(...facts);r.append(head,nums,node('p',note,'meta'));return r};
+  const input=col('Input','Wer wie viel zum Konzept beigetragen hat'),output=col('Output','Was daraus entstanden ist');
+  const share=node('div',undefined,'balshare');for(const [kind,n] of [['user',b.shares.user],['std',b.shares.std],['ai',b.shares.ai]]){const x=node('i',n>=8?n+' %':'',kind);x.style.width=n+'%';share.append(x)}
+  share.title='Anteile an den Festlegungen: Nutzer '+b.shares.user+' %, Standard '+b.shares.std+' %, KI '+b.shares.ai+' %';
+  input.append(share,
+    row('user','Nutzer','Was du selbst eingegeben und entschieden hast.',fact(b.user.words,b.user.words===1?'Wort getippt':'Wörter getippt'),fact(b.user.clicks,b.user.clicks===1?'Klick':'Klicks'),fact(b.user.decisions,b.user.decisions===1?'eigene Festlegung':'eigene Festlegungen')),
+    row('std','Standard','Was SpecIt ohne dein Zutun beisteuert: übernommene Standardantworten und der feste Kontext (Anweisungen, Regeln, Vorlagen), der mit jeder Anfrage an die KI geht.',fact(b.std.decisions,b.std.decisions===1?'Annahme übernommen':'Annahmen übernommen'),...(b.std.auto?[fact(b.std.auto,'davon ohne Rückfrage')]:[]),fact(b.std.words,'Wörter Kontext')),
+    row('ai','KI','Was die KI als Zwischenergebnis erzeugt hat: Fragen, Optionen, Features, Review, Namen – und eigene Vorschläge, die im Umfang stehen.',fact(b.ai.words,'Wörter erzeugt'),fact(b.ai.calls,b.ai.calls===1?'Anfrage':'Anfragen'),fact(b.ai.suggestions,b.ai.suggestions===1?'eigener Vorschlag im Umfang':'eigene Vorschläge im Umfang')));
+  if(b.open)input.append(node('p',plural(b.open,'Entscheidung ist','Entscheidungen sind')+' noch offen. Je mehr du selbst beantwortest, desto größer wird dein Anteil und desto kleiner der des Standards.','meta'));
+  if(!b.ai.calls)input.append(node('p','Ohne Claude (Demo-Modus) gibt es keine Anfragen an die KI; Kontext und KI stehen dann bei null.','meta'));
+  if(!b.outputs.length)output.append(node('p','Noch nichts entstanden. Zuerst kommt die Spezifikation; danach, je nach Vorgehen, die Aufträge zum Download oder der Code im Zielordner.','meta'));
+  for(const o of b.outputs){
+    const r=row('out'+(o.pending?' pending':''),o.label,o.detail||'',fact(o.value,o.unit));
+    if(o.groups&&o.groups.length){const ul=node('ul',undefined,'balgroups');for(const g of o.groups){const li=node('li');li.append(node('span',g.label),node('span',plural(g.files,'Datei','Dateien')+(g.lines?' · '+g.lines.toLocaleString('de-DE')+' Zeilen':''),'meta'));ul.append(li)}r.append(ul)}
+    output.append(r);
+  }
+  const sum=node('p',undefined,'balsum');sum.append(node('b',compact(b.user.words)),' getippte Wörter und ',node('b',compact(b.user.clicks)),' Klicks → ',node('b',compact(b.outWords)),' Wörter Spezifikation und Aufträge'+(s.runOutput&&s.nextStep==='run'?', ':''),...(s.runOutput&&s.nextStep==='run'?[node('b',compact(s.runOutput.lines||0)),' Zeilen im Zielordner']:[]),'.');
+  box.replaceChildren(input,node('span','→','balarrow'),output,sum);
+}
+$('navHint').onclick=()=>{balanceUI();if(!$('balance').open)$('balance').showModal()};
+$('navHint').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('navHint').click()}};
+$('balanceClose').onclick=()=>$('balance').close();$('balance').onclick=e=>{if(e.target===$('balance'))$('balance').close()};
 const effortNow=()=>{effortBar();clearTimeout(effortSave);effortSave=setTimeout(save,800)};
-document.addEventListener('click',e=>{if(e.isTrusted&&e.target.closest&&e.target.closest('button,a,input,select,summary,label,textarea')){s.clicks++;effortNow()}},true);
+document.addEventListener('click',e=>{
+  if(!e.isTrusted||!e.target.closest)return;
+  // „Zurücksetzen“ zählt nicht als Klick; es setzt die Zähler zurück und lässt sie grün aufleuchten
+  if(e.target.closest('#reset')){resetAt=Date.now();for(const k in tickAt)delete tickAt[k];setTimeout(effortNow,0);setTimeout(effortBar,2300);return}
+  if(e.target.closest('button,a,input,select,summary,label,textarea')){s.clicks++;effortNow()}
+},true);
 document.addEventListener('input',e=>{if(e.isTrusted)setTimeout(effortNow,0)},true);
 function effort(){
   const typed=words(s.idea)+s.questions.reduce((n,q)=>n+words(q.custom),0)+s.extras.reduce((n,x)=>n+words(x),0);
@@ -1347,11 +1575,13 @@ function navUI(){
   next.style.visibility=target?'visible':'hidden';
   if(target){next.textContent=s.phase===0?$('deriveLabel').textContent:target.textContent;next.disabled=target.disabled}
   // Grün heißt überall: Das Nötige für den nächsten Schritt ist da. Sonst bleibt der Knopf neutral (ein Klick zeigt, was fehlt).
-  const open=s.questions.some(q=>q.state==='open'),okNow=[!!s.idea.trim(),s.questions.length>0&&!open,!!s.spec.trim()&&!s.dirty&&!open&&!s.features.some(f=>f.on!==f.inSpec),!!s.plan&&!stale()&&!s.finished&&(s.nextStep!=='run'||!!s.runDir.trim())][s.phase];
+  const open=s.questions.some(q=>q.state==='open'),okNow=[!!s.idea.trim()&&!scaleMissing().length,s.questions.length>0&&!open,!!s.spec.trim()&&!s.dirty&&!open&&!s.features.some(f=>f.on!==f.inSpec),!!s.plan&&!stale()&&!s.finished&&(s.nextStep!=='run'||!!s.runDir.trim())][s.phase];
   next.classList.toggle('ready',!!okNow&&!!target&&!target.disabled&&!active);
   // Derselbe Grundsatz über dem leeren Dokument: „Spezifikation erstellen“ wird grün, sobald der Umfang steht und in die Zielzeit passt
   $('generate').classList.toggle('ready',!s.spec.trim()&&s.features.length>0&&!open&&!overTarget()&&!active);
   suggestRunDir();
+  sketchUI();
+  scaleDots();
   panelsUI();
   // Spezifikations-Ansicht: Die Seite selbst rollt nicht; Dokument und Festlegungen rollen je für sich
   document.body.classList.add('fitview');
@@ -1411,6 +1641,7 @@ const presetOn=p=>s.autonomy===p.autonomy&&s.creativity===p.creativity&&s.durLev
 function applyPreset(p){
   if(s.durLevel!==p.durLevel)goalChanged=true;
   s.autonomy=p.autonomy;s.creativity=p.creativity;s.durLevel=p.durLevel;
+  {const o={...(s.own||{})};for(const k of ['autonomy','creativity','durLevel','layout','review'])delete o[k];s.own=o}
   if(stitch){s.layoutOn=p.layouts>0;if(p.layouts>0)s.layoutCount=p.layouts}
   const c=claudeReview();
   if(p.review&&c){s.reviewBy='claude';s.reviewModel=c.models.some(m=>m.id===p.review)?p.review:''}else if(c||!p.review){s.reviewBy='';s.reviewModel=''}
@@ -1433,6 +1664,8 @@ async function derive(more){
   if(active)return;
   const idea=s.idea.trim(),status=more?$('busy'):$('ideaStatus');
   if(!idea){$('ideaStatus').textContent='Bitte die Idee in einem Satz beschreiben.';$('idea').focus();return}
+  // Weiter geht es erst, wenn kein Regler mehr rot ist
+  if(!more&&scaleMissing().length){$('ideaStatus').textContent='Noch nicht eingestellt (roter Punkt): '+scaleMissing().join(', ')+'.';return}
   if(!more&&s.questions.length&&idea===s.askedIdea){setPhase(1);return}
   if(!more&&s.questions.some(q=>q.state!=='open')&&!confirm('Die Idee wurde geändert. Vorhandene Fragen und Antworten ersetzen?'))return;
   const rev=revision;lock(true,more?'Weitere Fragen werden abgeleitet':'Fragen werden abgeleitet');status.textContent=more?'Weitere Fragen werden abgeleitet …':'Fragen werden abgeleitet …';
@@ -1954,8 +2187,7 @@ function planUI(){
   // gibt es keine Aufträge. Offenes muss beantwortet oder ausdrücklich an SpecIt abgegeben werden.
   const openCount=s.questions.filter(q=>q.state==='open').length,gate=openCount?'open':!s.spec.trim()?'none':s.dirty?'dirty':s.features.some(f=>f.on!==f.inSpec)?'features':'';
   $('planGate').classList.toggle('hidden',!gate);
-  for(const id of ['planConfig','planStatus','planOutput','layoutSection','nextCard','reviewCard'])$(id).classList.toggle('hidden',!!gate);
-  if(gate)$('logoPanel').classList.add('hidden');else logoUI();
+  for(const id of ['planConfig','planStatus','planOutput','nextCard','reviewCard'])$(id).classList.toggle('hidden',!!gate);
   if(gate){
     $('planStale').classList.add('hidden');
     const acts=$('gateActions');acts.replaceChildren();
@@ -1979,7 +2211,7 @@ function planUI(){
     return;
   }
   // Das Konzept ist abgeschlossen: gewünschte Layout-Entwürfe jetzt einmal von selbst anstoßen
-  if(s.phase===3)autoLayouts();
+  if(s.phase===3||(s.phase===2&&s.spec.trim()&&!s.dirty))autoLayouts();
   // 1) Abarbeitung: nacheinander durch einen Agenten (ein Gesamtauftrag) oder parallel durch mehrere (Teilaufträge).
   // Die Agentenzahl ist dieselbe wie bei der Feature-Auswahl in Schritt 3 und wird von dort übernommen.
   const agents=agentsNow(),single=agents===1,direct=s.nextStep==='run',max=planMax(),current=p&&!old?p:null;
@@ -2000,48 +2232,49 @@ function planUI(){
   // 3) Übersicht und Abschluss
   reviewUI(current,agents);
   const out=$('planOutput');out.replaceChildren();if(!p)return;
-  out.append(node('p',p.summary,'muted'));
+  const facts=node('div',undefined,'planfacts'),sumBox=node('details',undefined,'nested');
+  sumBox.append(node('summary','Zusammenfassung des Plans'),node('p',p.summary,'muted'));facts.append(sumBox);
   // Nachverfolgung: Trägt die Spezifikation Anforderungs-IDs (FR-/NFR-), wird geprüft, ob jede einem Auftrag zugeordnet ist.
   const tr=s.planTrace;
   if(tr&&tr.ids){
     const gaps=tr.missing.length||tr.unknown.length||tr.untraced.length,note=node('p',undefined,gaps?'banner':'meta');
     note.textContent=gaps?'Nachverfolgung unvollständig'+(tr.missing.length?' · ohne Auftrag: '+tr.missing.join(', '):'')+(tr.unknown.length?' · unbekannte Kennungen im Plan: '+tr.unknown.join(', '):'')+(tr.untraced.length?' · ohne Anforderungsbezug: '+tr.untraced.join(', '):'')+'. Plan bei Bedarf neu erstellen.'
       :'Nachverfolgung: alle '+tr.ids+' Anforderungen der Spezifikation sind einem Auftrag zugeordnet.';
-    out.append(note);
+    if(gaps)out.append(note);else sumBox.append(note);
   }
+  out.append(facts);
   if(p.decisions.length){
     // Keine Rückfragen: Was die Spezifikation für die Umsetzung offen ließ, hat der Plan selbst festgelegt und hier ausgewiesen.
-    const box=node('details',undefined,'nested'),ul=node('ul');box.style.marginTop='0';ul.style.cssText='margin:10px 0 0;padding-left:20px;font-size:13px';
-    box.append(node('summary','Vom Plan getroffene Festlegungen ('+p.decisions.length+') – entschieden, keine Rückfragen'),ul);
-    for(const d of p.decisions)ul.append(node('li',d));out.append(box);
+    const box=node('details',undefined,'nested'),ul=node('ul');ul.style.cssText='margin:8px 0 0;padding-left:20px;font-size:13px';
+    box.append(node('summary','Festlegungen des Plans ('+p.decisions.length+')'),ul);box.title='Vom Plan entschieden – keine Rückfragen';
+    for(const d of p.decisions)ul.append(node('li',d));facts.append(box);
   }
   if(single){
-    const order=p.waves.flat().map(id=>p.tasks.find(t=>t.id===id)),box=node('article',undefined,'card task'),top=node('div',undefined,'spread'),ol=node('ol'),details=node('details'),row=node('div',undefined,'actions'),text=()=>renderSingle(p,s.planSpec,exportCtx());
-    top.append(node('span','Gesamtauftrag','id'));if(p.blocked.length)top.append(node('span','OFFENE ENTSCHEIDUNGEN','chip warn'));
-    ol.style.cssText='margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px';
-    for(const t of order){const li=node('li');li.append(node('b',t.title),' – '+t.goal);ol.append(li)}
+    const order=p.waves.flat().map(id=>p.tasks.find(t=>t.id===id)),box=node('article',undefined,'card task'),top=node('div',undefined,'taskhead'),main=node('div',undefined,'taskmain'),ol=node('ol'),details=node('details'),row=node('div',undefined,'taskacts'),text=()=>renderSingle(p,s.planSpec,exportCtx());
+    top.append(node('span','Gesamtauftrag','id'),node('h3',plural(order.length,'Arbeitsschritt','Arbeitsschritte')+' für einen Agenten'));if(p.blocked.length)top.append(node('span','OFFENE ENTSCHEIDUNGEN','chip warn'));
+    box.title='Die Schritte stehen in der Reihenfolge ihrer Abhängigkeiten in einem einzigen Prompt, Spezifikation und Regeln nur einmal.';
+    for(const t of order){const li=node('li',t.title);li.title=t.goal;ol.append(li)}
     details.append(node('summary','Vollständiger Agent-Auftrag'));
     details.ontoggle=()=>{if(details.open&&!details.querySelector('pre'))details.append(node('pre',text()))};
     const copy=button('⧉ Prompt kopieren','btn small',()=>copyText(text(),$('planStatus'))),dl=button('↓ Markdown','btn small',()=>download('AUFTRAG.md',text()));
     copy.disabled=dl.disabled=old;row.append(copy,dl);
-    box.append(top,node('h3','Ein Auftrag für einen Agenten · '+plural(order.length,'Arbeitsschritt','Arbeitsschritte')),node('p','Die Schritte stehen in der Reihenfolge ihrer Abhängigkeiten in einem einzigen Prompt, Spezifikation und Regeln nur einmal.','muted'),ol,details,row);
+    main.append(top,ol,details);box.append(main,row);
     out.append(box);return;
   }
-  out.append(node('p','Gleiche Stufe bedeutet nur potenziell parallel. Dateikonflikte und Schnittstellen vor Start prüfen.','meta'));
   const byId=new Map(p.tasks.map(t=>[t.id,t]));
   p.waves.forEach((w,i)=>{
     const wave=node('section',undefined,'wave'),head=node('div',undefined,'wavehead'),grid=node('div',undefined,'wavegrid');
-    head.append(node('h2','Stufe '+(i+1)),node('span',plural(w.length,'Aufgabe','Aufgaben'),'chip'));wave.append(head,grid);
+    head.append(node('h2','Stufe '+(i+1)),node('span',plural(w.length,'Aufgabe','Aufgaben'),'chip'));head.title='Gleiche Stufe bedeutet nur potenziell parallel. Dateikonflikte und Schnittstellen vor Start prüfen.';wave.append(head,grid);
     for(const id of w){
-      const t=byId.get(id),blocked=p.blocked.includes(t.id),box=node('article',undefined,'card task'),top=node('div',undefined,'spread'),deps=node('div',undefined,'actions'),details=node('details'),row=node('div',undefined,'actions');
-      top.append(node('span',t.id,'id'));if(blocked)top.append(node('span','BLOCKIERT','chip warn'));
-      deps.append(node('span','Abhängigkeiten:','meta'));
-      if(t.dependsOn.length)for(const d of t.dependsOn)deps.append(node('span',d,'chip'));else deps.append(node('span','keine','meta'));
+      const t=byId.get(id),blocked=p.blocked.includes(t.id),box=node('article',undefined,'card task'),top=node('div',undefined,'taskhead'),main=node('div',undefined,'taskmain'),details=node('details'),row=node('div',undefined,'taskacts'),goal=node('p',t.goal,'muted');
+      top.append(node('span',t.id,'id'),node('h3',t.title));if(blocked)top.append(node('span','BLOCKIERT','chip warn'));
+      if(t.dependsOn.length){top.append(node('span','nach','meta'));for(const d of t.dependsOn)top.append(node('span',d,'chip'))}
+      goal.title=t.goal;
       const text=()=>renderTask(t,p,s.planSpec,exportCtx());
       details.append(node('summary','Vollständiger Agent-Auftrag'));
       details.ontoggle=()=>{if(details.open&&!details.querySelector('pre'))details.append(node('pre',text()))};
       const copy=button('⧉ Prompt kopieren','btn small',()=>copyText(text(),$('planStatus'))),dl=button('↓ Markdown','btn small',()=>download(t.id+'.md',text()));
-      copy.disabled=dl.disabled=old;row.append(copy,dl);box.append(top,node('h3',t.title),node('p',t.goal,'muted'),deps,details,row);grid.append(box);
+      copy.disabled=dl.disabled=old;row.append(copy,dl);main.append(top,goal,details);box.append(main,row);grid.append(box);
     }
     out.append(wave);
   });
@@ -2076,7 +2309,7 @@ let aborter=null,layoutAbort=null;
 const aborted=e=>e&&e.name==='AbortError'?Error('Abgebrochen.'):e;
 async function post(url,data,signal){
   let r;try{r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data),signal:signal||aborter?.signal})}catch(e){throw aborted(e)}
-  const x=await r.json();if(!r.ok)throw Error(x.error||'Anfrage fehlgeschlagen.');return x;
+  const x=await r.json();if(!r.ok)throw Error(x.error||'Anfrage fehlgeschlagen.');if(x&&x.usage)addUsage(data&&data.mode,x.usage);return x;
 }
 const call=data=>post('/api/spec',data);
 // Antwort zeilenweise lesen (je Zeile ein JSON-Objekt) und jede Zeile sofort weiterreichen
@@ -2088,7 +2321,7 @@ async function stream(url,data,onRow){
     let part;try{part=await reader.read()}catch(e){throw aborted(e)}
     const {value,done}=part;if(done)break;
     buffer+=decoder.decode(value,{stream:true});
-    for(let i;(i=buffer.indexOf('\n'))>=0;){const row=buffer.slice(0,i);buffer=buffer.slice(i+1);if(row.trim())onRow(JSON.parse(row))}
+    for(let i;(i=buffer.indexOf('\n'))>=0;){const row=buffer.slice(0,i);buffer=buffer.slice(i+1);if(row.trim()){const m=JSON.parse(row);if(m.done&&m.usage)addUsage(data&&data.mode,m.usage);onRow(m)}}
   }
 }
 async function generate(){
@@ -2410,7 +2643,7 @@ function runModelUI(){
   const sel=$('runModel');sel.replaceChildren(new Option('Standard von Claude Code',''),...agentModels.map(modelOption));
   if(s.runModel&&agentModels.length&&!agentModels.some(m=>m.id===s.runModel))s.runModel='';
   sel.value=s.runModel;const m=agentModels.find(x=>x.id===s.runModel);
-  $('runModelCost').textContent=m?modelHint(m):'Es gilt das in Claude Code eingestellte Modell. Kosten und Laufzeit gelten je Agent.';
+  $('runModelCost').textContent=m?modelHint(m):'Es gilt das in Claude Code eingestellte Modell. Kosten und Laufzeit gelten je Agent.';$('runModel').title=$('runModelCost').textContent;
 }
 $('runModel').onchange=e=>{s.runModel=e.target.value;save();renderAll()};
 // Neues Repository auf GitHub anlegen und gleich als Repository eintragen
@@ -2484,13 +2717,14 @@ function specReviewUI(){
 
 /* ---------- Festlegungen in der rechten Spalte: Stand je Bereich als Punkt, Führung zum nächsten offenen Bereich ---------- */
 // done = erledigt (grün), todo = hier ist noch etwas zu tun (gelb), idle = freiwillig und noch nicht genutzt (grau)
-const panelNames={namePanel:'Name der Anwendung',featPanel:'Features',decPanel:'Entscheidungen',reviewPanel:'Review',reusePanel:'Open-Source-Bausteine'};
+const panelNames={namePanel:'Name der Anwendung',layoutSection:'UI-Layouts',logoPanel:'Logo',featPanel:'Features',decPanel:'Entscheidungen',reviewPanel:'Review',reusePanel:'Open-Source-Bausteine'};
 let panelBefore={};
 function panelStates(){
   const open=s.questions.filter(q=>q.state==='open').length,v=s.review,left=v?v.findings.filter(f=>!f.done).length:0;
   return {
     namePanel:s.project.trim()?'done':'todo',
     logoPanel:s.logos[s.logoChosen]?'done':s.logoCount>0||s.logos.length?'todo':'idle',
+    layoutSection:!(s.layoutOn&&stitch)?'idle':chosenLayout()?'done':'todo',
     featPanel:!s.features.length||overTarget()||(s.spec.trim()&&s.features.some(f=>f.on!==f.inSpec))?'todo':'done',
     decPanel:open?'todo':s.questions.length?'done':'idle',
     reviewPanel:v?(left?'todo':'done'):s.reviewBy&&s.spec.trim()?'todo':'idle',
@@ -2514,7 +2748,8 @@ function panelsUI(){
     if(!dot){dot=node('span',undefined,'dot');sum.prepend(dot)}
     $(id).dataset.state=st[id];dot.className='dot '+st[id];dot.title=label[st[id]];dot.setAttribute('aria-label',label[st[id]]);dot.setAttribute('role','img');
   }
-  const todo=ids.filter(id=>st[id]==='todo');
+  // Ausgeschaltetes (keine Logo-Entwürfe, keine Layouts) ist ausgegraut, bleibt aber aufklappbar und dort einschaltbar
+  $('logoPanel').classList.toggle('off',!(s.logoCount>0||s.logos.length));$('layoutSection').classList.toggle('off',!(s.layoutOn&&stitch));
   panelBefore=st;
 }
 
@@ -2531,23 +2766,293 @@ function logoUI(){
   const n=s.logoCount;$('logoCount').value=n;
   levelMark('logoCountValue',n,5,String(n),n?plural(n,'Entwurf','Entwürfe'):'keine Entwürfe');$('logoCount').setAttribute('aria-valuetext',n?plural(n,'Entwurf','Entwürfe'):'keine Entwürfe');
   $('logoCountText').replaceChildren(node('b',n?plural(n,'Logo-Entwurf','Logo-Entwürfe'):'Keine Logo-Entwürfe'));
-  const box=$('logoBox');box.replaceChildren();
-  box.classList.toggle('hidden',!s.spec.trim()||!(n>0||s.logos.length));
-  $('logoPanel').classList.toggle('hidden',box.classList.contains('hidden'));
-  if(box.classList.contains('hidden'))return;
-  const head=node('div',undefined,'namehead'),row=node('div',undefined,'namerow'),pick=s.logos[s.logoChosen];
-  $('logoMeta').textContent=pick?pick.name:s.logos.length?plural(s.logos.length,'Entwurf','Entwürfe')+' · keiner gewählt':'noch keine Entwürfe';
+  const box=$('logoBox'),off=!(n>0||s.logos.length),pick=s.logos[s.logoChosen];box.replaceChildren();box.classList.toggle('hidden',off);
+  if(document.activeElement!==$('logoCountSpec'))$('logoCountSpec').value=n;
+  $('logoMeta').textContent=off?'aus · Anzahl erhöhen':pick?pick.name:s.logos.length?plural(s.logos.length,'Entwurf','Entwürfe')+' · keiner gewählt':'noch keine Entwürfe';
+  const acts=$('logoActs');acts.replaceChildren();
+  if(n>0){const more=button(s.logos.length?'↻ Neue Entwürfe':'✦ Logos entwerfen','btn small',()=>deriveLogos(true));more.disabled=active;acts.append(more)}
+  if(pick)acts.append(button('↓ SVG','btn small',()=>download('logo.svg',cleanSvg(pick.svg))));
+  if(off)return;
+  const head=node('div',undefined,'namehead'),row=node('div',undefined,'namerow');
   s.logos.forEach((l,i)=>{
     const b=button('','logotile'+(i===s.logoChosen?' on':''),()=>{s.logoChosen=i===s.logoChosen?-1:i;save();logoUI();panelsUI()});
     b.append(logoNode(l.svg,72));b.title=l.name+(l.idea?' – '+l.idea:'')+' · Klicken, um diesen Entwurf zu wählen';b.setAttribute('aria-label','Logo-Entwurf '+l.name);b.setAttribute('aria-pressed',String(i===s.logoChosen));b.disabled=active;row.append(b);
   });
-  // Aktionen stehen oben neben dem Titel, der Gedanke zum gewählten Entwurf rechts neben den Kacheln
-  const acts=$('logoActs');acts.replaceChildren();
-  if(n>0){const more=button(s.logos.length?'↻ Neue Entwürfe':'✦ Logos entwerfen','btn small',()=>deriveLogos(true));more.disabled=active;acts.append(more)}
-  if(pick){acts.append(button('↓ SVG','btn small',()=>download('logo.svg',cleanSvg(pick.svg))));if(pick.idea)row.append(node('p',pick.idea,'meta logoidea'))}
+  if(pick&&pick.idea)row.append(node('p',pick.idea,'meta logoidea'));
   box.append(head,row);
 }
 $('sideGoBtn').onclick=()=>$('generate').click();
+/* ---------- Live-Skizze: sofort aus Stichwörtern der Idee, auf Wunsch von Claude verfeinert ---------- */
+const sketchKinds=[
+  ['pairs','Paarungen',/auslos|paar|kennenlern|match|zuordn|tandem|wichtel/i],
+  ['calendar','Kalender',/kalender|termin|wöchentlich|woche|planung|schicht|buchung|reserv|dienstplan/i],
+  ['chart','Auswertung',/statistik|auswert|dashboard|verlauf|kennzahl|diagramm|analyse|tracking|budget|ausgaben|fortschritt/i],
+  ['chat','Nachrichten',/chat|nachricht|messenger|support|forum|kommentar/i],
+  ['cards','Karten',/galerie|rezept|produkt|katalog|shop|fotos|bilder|portfolio|angebot/i],
+  ['map','Karte',/landkarte|standort|route|gps|orte\b|in der nähe/i],
+  ['timer','Timer',/timer|countdown|stoppuhr|pomodoro|minütig|\bminuten\b/i],
+  ['form','Eingabe',/formular|anmeld|erfass|eingabe|umfrage|bewerb|registr|notiz|eintrag/i],
+  ['list','Liste',/liste|verwalt|einträge|tagebuch|bücher|aufgabe|todo|inventar|sammlung|übersicht|teammitglied|teilnehmer|mitglieder/i],
+];
+// Was die Regler an der Skizze ändern: Zieldauer und Kreativität bestimmen, wie viele Bereiche sie zeigt,
+// der Einsatzbereich die Formensprache (locker = runder und luftiger, formell = eckig und dichter).
+let sketchPhone=false;
+// Die Regler sind Prompt-Modulatoren: Aus derselben Tabelle (modulators in interview.mjs) kommen der Satz für den Prompt
+// und die Wirkung auf die Skizze. Die Skizze setzt hier nur noch zusammen, was die Modulatoren vorgeben.
+// Was die Options-Regler beitragen: Logo (auch ein schon gewähltes), Layouts über Stitch, Namensvorschläge bzw. ein feststehender Name
+const modInput=()=>({logos:s.logos[s.logoChosen]?Math.max(1,s.logoCount):s.logoCount,layouts:s.layoutOn?s.layoutCount:0,names:s.nameCount,named:!!s.project.trim()});
+const modsNow=()=>modulators({autonomy:s.autonomy,duration:duration(),minutes:targetMinutes(),creativity:s.creativity,tone:s.tone,...modInput()});
+const modSig=()=>s.creativity+'|'+s.tone+'|'+duration()+'|'+JSON.stringify(modInput())+'|'+s.project.trim();
+function sketchOpts(){
+  const k=Object.assign({},...modsNow().map(m=>m.sketch)),max=Math.max(1,Math.min(6,k.areas+k.more));
+  return {max:sketchPhone?Math.min(3,max):max,level:k.level,nav:k.nav,search:k.search,side:k.side,filters:k.filters,status:k.status,tone:k.tone,round:k.rough?0:k.round,dense:k.dense,extra:k.extra,logo:k.logo,rough:k.rough,placeholder:k.placeholder,phone:sketchPhone};
+}
+// „Wirksamer Prompt“: die Idee und je Regler der Satz, der sie moduliert – mit dem, was er an der Skizze bewirkt
+let modBefore={};
+function promptUI(){
+  const body=$('promptBody'),idea=s.idea.trim(),mods=modsNow();body.replaceChildren();
+  $('promptView').classList.toggle('hidden',!idea);if(!idea)return;
+  $('promptMeta').textContent='Idee + '+mods.length+' Modulatoren';
+  const row=(label,text,effect,changed)=>{const r=node('div',undefined,'modrow'+(changed?' tick':''));r.append(node('span',label,'eyebrow'),node('p',text));if(effect)r.append(node('span','→ Skizze: '+effect,'meta'));body.append(r)};
+  row('Idee',idea);
+  for(const m of mods){row(m.label,m.text,m.effect,modBefore[m.key]!==undefined&&modBefore[m.key]!==m.text);modBefore[m.key]=m.text}
+}
+// Jede Beschriftung der Skizze gibt es in fünf Tonlagen – von flapsig (privat und locker) bis förmlich (formell und arbeitsbezogen):
+// [Name des Bereichs je Stufe], [Aktion je Stufe]. Der Regler „Einsatzbereich“ wählt die Spalte.
+const sketchWords={
+  pairs:[['Shuffle Happens','Wer mit wem?','Paarungen','Zuordnungen','Paarungsliste'],['Würfeln!','Neu mischen','Neu auslosen','Auslosen','Erzeugen']],
+  list:[['The Usual Suspects','Wer ist dabei?','Liste','Übersicht','Bestandsliste'],['Noch wer!','+ Dazu','+ Neu','Anlegen','Erfassen']],
+  calendar:[['Save the Date','Wann geht’s?','Kalender','Terminplan','Terminübersicht'],['Jetzt!','Heute','Heute','Woche','KW']],
+  chart:[['Zahlen, bitte!','Wie läuft’s?','Auswertung','Kennzahlen','Berichtswesen'],['Zeig her','Monat','Monat','Zeitraum','Periode']],
+  chat:[['Awkward Silence Kit','Schnack','Nachrichten','Mitteilungen','Korrespondenz'],['Raus damit','Senden','Senden','Absenden','Übermitteln']],
+  cards:[['Eye Candy','Schau mal','Karten','Katalog','Bestandskatalog'],['Stöbern','Filter','Filter','Filtern','Selektion']],
+  map:[['You Are Here','Wo ist was?','Karte','Standorte','Standortliste'],['Los!','Route','Route','Planen','Routing']],
+  timer:[['Talk O’Clock','Zeit läuft','Timer','Zeitmessung','Zeiterfassung'],['Go!','Start','Start','Starten','Messen']],
+  form:[['Fill Me In','Erzähl mal','Eingabe','Erfassung','Datenerfassung'],['Ab dafür','Speichern','Speichern','Übernehmen','Sichern']],
+};
+const sketchAct=(kind,tone)=>sketchWords[kind][1][tone];
+// Bei lockerem Einsatzbereich tragen die Bereiche augenzwinkernde Namen (bei „eher informell“ nur der erste)
+const sketchFun={pairs:'Shuffle Happens',list:'The Usual Suspects',chat:'Awkward Silence Kit',chart:'Social Coverage',timer:'Talk O’Clock',calendar:'Save the Date',form:'Fill Me In',cards:'Eye Candy',map:'You Are Here'};
+// Baustein-Palette: Ein Klick ergänzt den Bereich in der Skizze, indem er die Idee um einen Halbsatz erweitert
+const sketchPhrase={pairs:'mit Auslosung von Paaren',calendar:'mit Kalender',chart:'mit Statistik',chat:'mit Chat',cards:'mit Galerie',map:'mit Landkarte',timer:'mit Timer',form:'mit Formular zur Eingabe',list:'mit Liste'};
+// Grobe Bauzeit je Bereich in Agenten-Minuten – nur für die Bau-Vorschau, keine Schätzung des Projekts
+const sketchMinutes={pairs:7,calendar:9,chart:8,chat:10,cards:6,map:10,timer:4,form:5,list:6};
+let sketchBoxes=[],sketchSeen=new Set();const sketchFresh=new Map();
+// Bereiche, die dazukommen, wenn die Komplexitätsstufe mehr Bereiche vorsieht, als die Idee nennt
+const sketchFill=['list','form','chart','calendar','cards','chat','timer','map','pairs'];
+// Die Sofort-Skizze steht ohne Verzögerung vollständig. Nur was gegenüber dem vorigen Stand neu ist
+// (ein Bereich, die Suche, die Seitenleiste …), blendet kurz ein.
+function localSketch(idea,name,o){
+  const NS='http://www.w3.org/2000/svg',svg=document.createElementNS(NS,'svg'),stage=4,now=new Set();let grp='chrome';
+  const el=(st,tag,attrs,text)=>{
+    const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;
+    now.add(grp);if(!sketchSeen.has(grp)&&!sketchFresh.has(grp))sketchFresh.set(grp,performance.now());
+    // Das Einblenden läuft über erneutes Zeichnen hinweg weiter, statt jedes Mal neu zu beginnen
+    const age=sketchFresh.has(grp)?performance.now()-sketchFresh.get(grp):999;if(age<250){e.classList.add('sk-new');e.style.animationDelay=-Math.round(age)+'ms'}
+    svg.append(e);
+  };
+  svg.setAttribute('viewBox','0 0 480 300');svg.setAttribute('role','img');
+  let kinds=sketchKinds.filter(k=>k[2].test(idea));if(!kinds.length)kinds=[sketchKinds[8],sketchKinds[7]];
+  // Mehr Zielzeit, mehr Anwendung: Nennt die Idee weniger Bereiche, als die Stufe vorsieht, kommen naheliegende dazu
+  for(const fill of sketchFill){if(kinds.length>=o.max)break;if(!kinds.some(k=>k[0]===fill))kinds.push(sketchKinds.find(k=>k[0]===fill))}
+  kinds=kinds.slice(0,o.max);
+  // Seitenleiste ab Stufe 5; bei Verwaltungs- und Team-Anwendungen ersetzt sie schon ab Stufe 3 die Navigation in der Kopfzeile
+  const side=!o.phone&&(o.side||(o.nav&&/admin|verwalt|dashboard|team|mitarbeit|kunden/i.test(idea))),nav=!o.phone&&o.nav&&!side;
+  const nouns=(idea.match(/[A-ZÄÖÜ][a-zäöüß-]{3,}/g)||[]).filter(w=>!/^(Eine[rsnm]?|Diese[rsnm]?|App|Apps|Anwendung|Tool|Webapp|Web-App|Programm|Software|Plattform|Seite|Erstelle|Baue|Entwickle|Mache|Schreibe|Bitte|Soll|Sollte)$/.test(w)),title=(name||(o.placeholder?'‹ Name ›':nouns[0]||'Deine Anwendung')).slice(0,o.phone?16:nav?22:o.search?30:34);
+  // Ohne gestaltetes Layout wirkt die Skizze roh: gestrichelte Kästen, keine Akzentfarbe, leicht schief
+  if(o.rough)svg.classList.add('sk-rough');
+  // Unterschiedliche Sichten oder Rollen („eine für die Teilnehmer, eine weitere für den Organisator“) werden zu Reitern
+  const roles=/sicht|ansicht|rolle|bereich für|oberfläche für/i.test(idea)?[...new Set([...idea.matchAll(/für\s+(?:den|die|das|einen|eine|alle|jeden)?\s*([A-ZÄÖÜ][A-Za-zäöüß-]{3,})/g)].map(m=>m[1]))].slice(0,3):[];
+  const tabs=roles.length>1,filters=!o.phone&&o.filters&&!tabs,foot=!o.phone&&o.status?18:0,top=tabs||filters?62:44,H=(tabs||filters?226:244)-foot;
+  svg.setAttribute('aria-label','Skizze ('+(o.phone?'Handy':'Desktop')+'): '+title+' mit '+kinds.map(k=>k[1]).join(', ')+(tabs?'; Sichten: '+roles.join(', '):''));
+  const R=o.round,r=Math.min(R,6),q=1,n=full=>Math.ceil(full*q),g=o.dense?6:10;
+  let boxes;
+  if(o.phone){
+    // Handy: schmaler Rahmen, Bereiche untereinander, Leiste mit Tabs unten
+    el(0,'rect',{x:160,y:3,width:160,height:294,rx:18,class:'sk-frame'});el(0,'rect',{x:161,y:4,width:158,height:28,rx:17,class:'sk-bar'});
+    if(o.logo)el(1,'circle',{cx:176,cy:18,r:6,class:'sk-accent'});el(1,'text',{x:o.logo?188:172,y:22,class:'sk-title'},title);
+    el(0,'rect',{x:161,y:268,width:158,height:28,rx:17,class:'sk-bar'});for(let i=0;i<4;i++)el(1,'circle',{cx:186+i*36,cy:282,r:5,class:i?'sk-dot':'sk-accent'});
+    if(tabs)roles.slice(0,2).forEach((role,i)=>{el(0,'rect',{x:170+i*72,y:36,width:68,height:14,rx:7,class:i?'sk-input':'sk-accent'});el(1,'text',{x:204+i*72,y:46,class:i?'sk-link':'sk-btn','text-anchor':'middle'},role.slice(0,13))});
+    const y0=tabs?56:38,h=(268-y0-2-g*(kinds.length-1)-4)/kinds.length;boxes=kinds.map((k,i)=>[170,y0+i*(h+g),140,h]);
+  }else{
+    el(0,'rect',{x:1,y:1,width:478,height:298,rx:Math.max(2,R),class:'sk-frame'});
+    el(0,'rect',{x:1,y:1,width:478,height:30,rx:Math.max(2,R),class:'sk-bar'});
+    if(o.logo)el(1,'circle',{cx:18,cy:16,r:7,class:'sk-accent'});
+    el(1,'text',{x:o.logo?32:14,y:20,class:'sk-title'},title);
+    el(1,'rect',{x:392,y:8,width:74,height:16,rx:Math.min(8,R+2),class:'sk-accent'});
+    el(4,'text',{x:429,y:19.5,class:'sk-btn','text-anchor':'middle'},sketchAct(kinds[0][0],o.tone));
+    // Was mit der Komplexität dazukommt: Navigation, Suche, Seitenleiste, Filter, Konto und Statusleiste
+    if(nav){grp='nav';for(let i=0;i<3;i++)el(1,'rect',{x:196+i*38,y:13,width:28,height:6,rx:3,class:i?'sk-line':'sk-accent'})}
+    if(o.search){grp='search';const sx=o.status?284:306;el(1,'rect',{x:sx,y:8,width:78,height:16,rx:Math.min(8,R+2),class:'sk-input'});el(1,'circle',{cx:sx+10,cy:16,r:3,class:'sk-dot'});el(1,'rect',{x:sx+18,y:14,width:34,height:4,rx:2,class:'sk-line'})}
+    const x0=side?96:14;
+    if(side){grp='side';el(0,'rect',{x:1,y:31,width:84,height:268-foot,class:'sk-side'});const items=Math.min(10,(o.dense?7:5)+Math.max(0,(o.level||0)-5));for(let i=0;i<items;i++)el(1,'rect',{x:12,y:46+i*(o.dense?18:22),width:i?44+((i*13)%20):60,height:8,rx:Math.min(4,r),class:i?'sk-line':'sk-accent'});
+      if(o.side){grp='sidefoot';el(1,'line',{x1:10,y1:262-foot,x2:76,y2:262-foot,class:'sk-rule'});el(1,'circle',{cx:18,cy:280-foot,r:6,class:'sk-dot'});el(1,'rect',{x:30,y:277-foot,width:42,height:6,rx:3,class:'sk-line'})}}
+    if(o.status){grp='status';el(1,'circle',{cx:377,cy:16,r:7,class:'sk-dot'});el(1,'circle',{cx:383,cy:10,r:3,class:'sk-accent'});
+      el(0,'rect',{x:2,y:282,width:476,height:16,class:'sk-bar'});el(1,'rect',{x:14,y:288,width:70,height:5,rx:2,class:'sk-line'});el(1,'rect',{x:96,y:288,width:44,height:5,rx:2,class:'sk-line'});el(1,'circle',{cx:462,cy:290,r:3,class:'sk-accent'})}
+    if(tabs){grp='tabs';let tx=x0;roles.forEach((role,i)=>{const tw=Math.max(58,role.length*5.4+18);el(0,'rect',{x:tx,y:38,width:tw,height:16,rx:Math.min(8,R+2),class:i?'sk-input':'sk-accent'});el(1,'text',{x:tx+tw/2,y:49,class:i?'sk-link':'sk-btn','text-anchor':'middle'},role);tx+=tw+6})}
+    if(filters){grp='filters';for(let i=0;i<4;i++)el(1,'rect',{x:x0+i*50,y:39,width:44,height:14,rx:Math.min(7,R+2),class:i?'sk-input':'sk-accent'});el(1,'rect',{x:392,y:39,width:74,height:14,rx:Math.min(7,R+2),class:'sk-input'})}
+    grp='chrome';
+    const W=466-x0,half=(H-g)/2,rowOf=(count,y)=>Array.from({length:count},(_,i)=>[x0+i*(W+g)/count,y,(W+g)/count-g,half]);
+    boxes=kinds.length===1?[[x0,top,W,H]]:kinds.length===2?[[x0,top,W*.56,H],[x0+W*.56+g,top,W*.44-g,H]]:kinds.length===3?[[x0,top,W*.56,H],[x0+W*.56+g,top,W*.44-g,half],[x0+W*.56+g,top+half+g,W*.44-g,half]]:kinds.length===4?[...rowOf(2,top),...rowOf(2,top+half+g)]:[...rowOf(kinds.length===5?2:3,top),...rowOf(3,top+half+g)];
+  }
+  sketchBoxes=kinds.map(([kind],k)=>({kind,x:boxes[k][0],y:boxes[k][1],w:boxes[k][2],h:boxes[k][3]}));
+  kinds.forEach(([kind,label],k)=>{
+    grp='box:'+kind;const [x,y,w,h]=boxes[k],step=o.dense?18:22,cap=sketchWords[kind][0][o.tone];
+    el(0,'rect',{x,y,width:w,height:h,rx:r,class:'sk-box',...(o.rough?{transform:'rotate('+[-.7,.6,-.4,.8][k%4]+' '+(x+w/2)+' '+(y+h/2)+')'}:{})});el(1,'text',{x:x+10,y:y+16,class:'sk-cap'},cap.toUpperCase());
+    if(k&&!o.phone&&w>150)el(4,'text',{x:x+w-10,y:y+16,class:'sk-link','text-anchor':'end'},sketchAct(kind,o.tone));
+    const ix=x+10,iy=y+26,iw=w-20,ih=h-36;
+    if(kind==='list')for(let i=0;i<n(Math.min(o.dense?10:7,Math.floor(ih/step)));i++){el(2,'circle',{cx:ix+5,cy:iy+8+i*step,r:4,class:i?'sk-dot':'sk-accent'});el(2,'rect',{x:ix+16,y:iy+4+i*step,width:iw*(.5+((i*37)%30)/100)-16,height:8,rx:Math.min(4,r),class:'sk-line'});el(4,'rect',{x:ix+iw-22,y:iy+3+i*step,width:22,height:10,rx:Math.min(5,r),class:'sk-input'})}
+    if(kind==='form'){for(let i=0;i<n(Math.min(o.dense?4:3,Math.floor((ih-26)/34)));i++){el(2,'rect',{x:ix,y:iy+i*34,width:iw*.4,height:6,rx:3,class:'sk-line'});el(2,'rect',{x:ix,y:iy+10+i*34,width:iw,height:16,rx:Math.min(4,r),class:'sk-input'})}el(3,'rect',{x:ix,y:iy+ih-18,width:Math.min(90,iw),height:18,rx:Math.min(5,r),class:'sk-accent'});el(4,'text',{x:ix+Math.min(90,iw)/2,y:iy+ih-5.5,class:'sk-btn','text-anchor':'middle'},sketchAct('form',o.tone))}
+    if(kind==='calendar'){const cw=iw/7,rows=Math.max(2,Math.min(o.dense?5:4,Math.floor(ih/26)));for(let rr=0;rr<n(rows);rr++)for(let c=0;c<7;c++)el(2,'rect',{x:ix+c*cw+1,y:iy+rr*(ih/rows)+1,width:cw-2,height:ih/rows-2,rx:Math.min(3,r),class:stage>=3&&(rr*7+c)%6===2?'sk-accent':'sk-input'})}
+    if(kind==='chart'){const m=Math.max(4,Math.min(o.dense?10:8,Math.floor(iw/26))),bw=iw/m;for(let i=0;i<n(m);i++){const bh=ih*(.3+((i*53)%60)/100);el(2,'rect',{x:ix+i*bw+3,y:iy+ih-bh,width:bw-6,height:bh,rx:Math.min(3,r),class:i===m-2?'sk-accent':'sk-line'})}el(2,'line',{x1:ix,y1:iy+ih,x2:ix+iw,y2:iy+ih,class:'sk-rule'});el(4,'line',{x1:ix,y1:iy+ih*.35,x2:ix+iw,y2:iy+ih*.35,class:'sk-rule','stroke-dasharray':'3 3'})}
+    if(kind==='chat')for(let i=0;i<n(Math.min(o.dense?6:4,Math.floor(ih/30)));i++){const bw=iw*(.45+((i*29)%25)/100);el(2,'rect',{x:i%2?ix+iw-bw:ix,y:iy+i*30,width:bw,height:20,rx:Math.min(10,R+2),class:i%2?'sk-accent':'sk-line'})}
+    if(kind==='cards'){const cols=iw>170?3:2,rows=ih>120?2:1,cw=iw/cols,ch=ih/rows;for(let rr=0;rr<n(rows);rr++)for(let c=0;c<cols;c++){el(2,'rect',{x:ix+c*cw+2,y:iy+rr*ch+2,width:cw-4,height:ch-4,rx:r,class:'sk-input'});el(3,'rect',{x:ix+c*cw+8,y:iy+rr*ch+ch-16,width:(cw-16)*.7,height:6,rx:3,class:'sk-line'})}}
+    if(kind==='map'){el(2,'rect',{x:ix,y:iy,width:iw,height:ih,rx:r,class:'sk-input'});el(3,'path',{d:'M'+ix+' '+(iy+ih*.7)+' C'+(ix+iw*.3)+' '+(iy+ih*.2)+','+(ix+iw*.6)+' '+(iy+ih*.9)+','+(ix+iw)+' '+(iy+ih*.3),class:'sk-rule',fill:'none'});el(3,'circle',{cx:ix+iw*.55,cy:iy+ih*.5,r:7,class:'sk-accent'})}
+    if(kind==='timer'){const rad=Math.max(8,Math.min(iw,ih)/2-4),min=(idea.match(/(\d{1,3})\s*-?\s*min/i)||[])[1];el(2,'circle',{cx:ix+iw/2,cy:iy+ih/2,r:rad,class:'sk-ring'});el(3,'text',{x:ix+iw/2,y:iy+ih/2+6,class:'sk-big','text-anchor':'middle'},(min||'25')+':00')}
+    if(kind==='pairs')for(let i=0;i<n(Math.min(o.dense?6:4,Math.floor(ih/(o.dense?28:34))));i++){const cy=iy+14+i*(o.dense?28:34);el(3,'line',{x1:ix+22,y1:cy,x2:ix+iw-22,y2:cy,class:'sk-rule'});el(2,'circle',{cx:ix+12,cy,r:o.dense?8:10,class:'sk-dot'});el(2,'circle',{cx:ix+iw-12,cy,r:o.dense?8:10,class:i?'sk-dot':'sk-accent'})}
+    if(o.extra&&k===kinds.length-1&&!o.phone){el(3,'rect',{x:x+w-70,y:y+h-22,width:62,height:14,rx:Math.min(7,R+2),class:'sk-idea'});el(4,'text',{x:x+w-39,y:y+h-12,class:'sk-link','text-anchor':'middle'},'✦ Idee der KI')}
+  });
+  sketchSeen=now;for(const key of [...sketchFresh.keys()])if(!now.has(key))sketchFresh.delete(key);
+  return {svg,kinds:kinds.map(k=>k[0]),sig:kinds.map(k=>k[0]).join()+'|'+side+'|'+roles.join()+'|'+[o.max,o.level,o.phone,o.extra,o.logo].join()};
+}
+// Bau-Vorschau: Agenten-Punkte ziehen zu den Bereichen und „bauen“ sie – erst gemeinsam das Grundgerüst, dann parallel.
+// Eine Veranschaulichung mit groben Richtwerten je Bereich, keine Schätzung des Projekts.
+let sketchPlaying=false;
+function playBuild(){
+  const svg=$('sketch').querySelector('svg');if(!svg||sketchPlaying||!sketchBoxes.length)return;
+  const NS='http://www.w3.org/2000/svg',ms=170,scaffold=8,boxes=sketchBoxes,agents=Math.max(1,Math.min(boxes.length,s.featAgents>1?s.featAgents:targetMinutes()&&targetMinutes()<=30?3:2));
+  const lanes=Array.from({length:agents},()=>({t:scaffold,jobs:[]}));
+  // jeder Bereich geht an den Agenten, der am frühesten frei ist
+  for(const bx of [...boxes].sort((p,q)=>sketchMinutes[q.kind]-sketchMinutes[p.kind])){const l=lanes.reduce((m,c)=>c.t<m.t?c:m,lanes[0]);l.jobs.push({bx,from:l.t,to:l.t+sketchMinutes[bx.kind]});l.t+=sketchMinutes[bx.kind]}
+  const total=Math.max(...lanes.map(l=>l.t)),single=scaffold+boxes.reduce((m,bx)=>m+sketchMinutes[bx.kind],0),layer=document.createElementNS(NS,'g');
+  sketchPlaying=true;svg.append(layer);$('sketchPlay').disabled=true;
+  const add=(tag,attrs)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);layer.append(e);return e};
+  const frame=sketchPhone?{x:160,w:160}:{x:1,w:478};
+  add('rect',{x:frame.x,y:sketchPhone?30:29,width:0,height:3,class:'sk-accent'}).animate([{width:'0px'},{width:frame.w+'px'}],{duration:scaffold*ms,fill:'both'});
+  for(const l of lanes)for(const j of l.jobs){
+    add('rect',{x:j.bx.x,y:j.bx.y,width:j.bx.w,height:j.bx.h,rx:5,class:'sk-build'}).animate([{opacity:0},{opacity:.22}],{delay:j.from*ms,duration:(j.to-j.from)*ms,fill:'both'});
+    add('rect',{x:j.bx.x,y:j.bx.y+j.bx.h-4,width:0,height:4,rx:2,class:'sk-accent'}).animate([{width:'0px'},{width:j.bx.w+'px'}],{delay:j.from*ms,duration:(j.to-j.from)*ms,fill:'both'});
+  }
+  lanes.forEach((l,i)=>{
+    const dot=add('circle',{cx:0,cy:0,r:7,class:'sk-agent'}),start={x:frame.x+20+i*18,y:16},frames=[{transform:'translate('+start.x+'px,'+start.y+'px)',offset:0},{transform:'translate('+start.x+'px,'+start.y+'px)',offset:scaffold/total}];
+    for(const j of l.jobs){const p='translate('+(j.bx.x+j.bx.w-14)+'px,'+(j.bx.y+14)+'px)';frames.push({transform:p,offset:Math.min(1,(j.from+.6)/total)},{transform:p,offset:Math.min(1,j.to/total)})}
+    frames.push({transform:frames[frames.length-1].transform,offset:1});
+    dot.animate(frames,{duration:total*ms,fill:'both',easing:'ease-in-out'});
+  });
+  let minute=0;const tick=setInterval(()=>{minute=Math.min(total,minute+1);$('sketchNote').textContent='Bau-Vorschau · Minute '+minute+' von '+total+(minute<=scaffold?' · Grundgerüst':' · '+agents+(agents===1?' Agent':' Agenten parallel'))},ms);
+  setTimeout(()=>{clearInterval(tick);$('sketchNote').textContent='Bau-Vorschau: etwa '+total+' min mit '+(agents===1?'einem Agenten':agents+' Agenten')+(agents>1?' statt '+single+' min mit einem':'')+' (grobe Veranschaulichung)';
+    setTimeout(()=>{sketchPlaying=false;sketchUI()},2600)},total*ms+200);
+}
+// Die Sofort-Skizze steht mit jedem Tastendruck und jeder Reglerbewegung ohne Verzögerung. Ist Claude eingeschaltet,
+// zeichnet er nach einer halben Sekunde Ruhe darüber – als Strom, sichtbar vom Groben zum Feinen: erst das Drahtmodell,
+// dann der gestaltete Entwurf. Jede Änderung an Idee oder Reglern bricht ab und beginnt von vorn; nichts sperrt die Seite.
+let sketchSig='',sketchAuto=null,sketchIdle=null,sketchPauseUntil=0;
+const sketchKey=()=>digest(s.idea.trim()+'|'+modSig());
+// Aus dem bisher angekommenen Stück ein gültiges SVG machen: angefangenes Element abschneiden, offene Elemente schließen
+function partialSvg(text){
+  const a=text.indexOf('<svg');if(a<0)return '';
+  let b=text.slice(a);if(b.includes('</svg>'))return b.slice(0,b.lastIndexOf('</svg>')+6);
+  b=b.slice(0,b.lastIndexOf('>')+1);if(!b.startsWith('<svg'))return '';
+  const open=[];for(const m of b.matchAll(/<(\/?)([A-Za-z]\w*)[^>]*?(\/?)>/g)){if(m[1])open.pop();else if(!m[3])open.push(m[2])}
+  return b+open.reverse().map(tag=>'</'+tag+'>').join('');
+}
+function drawStream(){
+  const job=sketchAuto;if(!job||!job.text)return;
+  const svg=partialSvg(job.text);if(!svg)return;
+  const fresh=logoNode(svg,'100%');if(fresh.nodeName!=='svg')return;
+  const box=$('sketch'),old=box.querySelector('.sk-stream');fresh.classList.add('sk-stream');
+  if(old)old.replaceWith(fresh);else{box.classList.add('streaming');for(const c of box.children)c.classList.add('sk-under');box.append(fresh)}
+}
+function scheduleAuto(){
+  clearTimeout(sketchIdle);
+  const key=sketchKey(),done=s.sketch&&s.sketch.idea===key?(s.sketch.pass||2):0;
+  if(sketchAuto&&(sketchAuto.key!==key||s.phase!==0||!$('ai').checked)){sketchAuto.ac.abort();sketchAuto=null}
+  if(sketchAuto||!$('ai').checked||active||s.phase!==0||done>=2||words(s.idea)<4||Date.now()<sketchPauseUntil)return;
+  sketchIdle=setTimeout(()=>runAuto(key,done+1),done?50:500);
+}
+async function runAuto(key,pass){
+  if(sketchAuto||active||s.phase!==0||key!==sketchKey())return;
+  const ac=new AbortController(),job={key,ac,pass,text:'',timer:0};sketchAuto=job;sketchUI();
+  try{
+    const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'sketch',bg:true,pass,prev:pass>1&&s.sketch?s.sketch.svg:'',idea:s.idea.trim(),project:s.project,ai:true,...frame(),minutes:targetMinutes(),...modInput()}),signal:ac.signal});
+    if(!res.ok||!res.body)throw Error('Skizze nicht möglich.');
+    const reader=res.body.getReader(),decoder=new TextDecoder();let buffer='',fin=null;
+    for(;;){
+      const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});
+      for(let i;(i=buffer.indexOf('\n'))>=0;){
+        const line=buffer.slice(0,i);buffer=buffer.slice(i+1);if(!line.trim())continue;
+        const m=JSON.parse(line);if(m.error)throw Error(m.error);
+        if(m.done)fin=m;
+        // Stücke gebündelt zeichnen: höchstens alle 80 ms
+        else if(m.t&&sketchAuto===job){job.text+=m.t;if(!job.timer)job.timer=setTimeout(()=>{job.timer=0;if(sketchAuto===job)drawStream()},80)}
+      }
+    }
+    if(sketchAuto===job&&fin&&fin.svg&&key===sketchKey()){s.sketch={idea:key,svg:fin.svg,pass:fin.pass||pass};save()}
+  }catch(e){if(!ac.signal.aborted)sketchPauseUntil=Date.now()+6000}
+  finally{clearTimeout(job.timer);if(sketchAuto===job)sketchAuto=null;sketchUI()}
+}
+function sketchUI(){
+  const box=$('sketch'),idea=s.idea.trim(),note=$('sketchNote');
+  $('sketchBox').classList.toggle('empty',!idea);promptUI();
+  const tools=[$('sketchPlay'),$('sketchDevice'),$('sketchPalette')];
+  // zuerst: Ein laufender Strom, der nicht mehr zu Idee und Reglern passt, endet hier
+  scheduleAuto();
+  if(!idea){sketchSig='';delete box.dataset.shown;box.classList.remove('streaming');box.replaceChildren(node('p','Hier entsteht beim Tippen eine Skizze deiner Anwendung.','meta'));note.textContent='';$('sketchRefine').classList.add('hidden');tools.forEach(tool=>tool.classList.add('hidden'));return}
+  const own=s.sketch&&s.sketch.idea===sketchKey()?s.sketch.svg:'';
+  $('sketchRefine').classList.toggle('hidden',!$('ai').checked);$('sketchRefine').disabled=active;$('sketchRefine').textContent=own?'↻ Neu zeichnen':'✦ Jetzt von Claude zeichnen';
+  tools.forEach(tool=>tool.classList.toggle('hidden',!!own));
+  if(own){
+    const p=s.sketch.pass||2,tag=s.sketch.idea+p;
+    if(box.dataset.shown!==tag){box.classList.remove('streaming');box.replaceChildren(logoNode(own,'100%'));box.dataset.shown=tag}
+    note.textContent='Claude · '+(p>=2?'gestalteter Entwurf':'Drahtmodell')+(sketchAuto?' · Gestaltung entsteht live …':'');
+  }else{
+    delete box.dataset.shown;
+    const o=sketchOpts(),draft=localSketch(idea,s.project.trim(),o);
+    if(draft.sig!==sketchSig){sketchSig=draft.sig;sketchPlaying=false}
+    else if(sketchPlaying)return;
+    box.classList.remove('streaming');box.replaceChildren(draft.svg);
+    note.textContent='Sofort-Skizze · Komplexität '+o.level+' von 8 · '+plural(draft.kinds.length,'Bereich','Bereiche')+(sketchAuto?' · Claude zeichnet live …':'');
+    $('sketchPlay').disabled=false;$('sketchDevice').textContent=sketchPhone?'▭ Desktop':'▯ Handy';$('sketchDevice').setAttribute('aria-pressed',String(sketchPhone));
+    // Palette: Bausteine, die in der Idee noch fehlen
+    const pal=$('sketchPalette');pal.replaceChildren(node('span','Baustein ergänzen','eyebrow'));
+    for(const [kind,label] of sketchKinds)if(!sketchKinds.find(k=>k[0]===kind)[2].test(idea)){const b=button('＋ '+label,'chip pickchip',()=>{const field=$('idea');field.value=s.idea.replace(/[\s.]*$/,'')+' '+sketchPhrase[kind]+'.';field.dispatchEvent(new Event('input'))});b.title='Ergänzt „'+sketchPhrase[kind]+'“ in deiner Idee';pal.append(b);if(pal.children.length>5)break}
+  }
+  // Was Claude gerade zeichnet, liegt über dem bisherigen Stand
+  if(sketchAuto&&sketchAuto.text)drawStream();
+  else{box.classList.remove('streaming');box.querySelector('.sk-stream')?.remove();for(const c of box.children)c.classList.remove('sk-under')}
+}
+$('idea').addEventListener('input',()=>sketchUI());
+$('sketchPlay').onclick=playBuild;
+$('sketchDevice').onclick=()=>{sketchPhone=!sketchPhone;sketchUI()};
+// Auch die Regler formen die Skizze: Zieldauer, Kreativität, Einsatzbereich, Logo
+for(const id of ['durLevel','creativity','tone','logoCount','autonomy','layoutIdea','nameCount'])$(id).addEventListener('input',()=>setTimeout(sketchUI,0));
+// Sofort von vorn: ohne Sperre, die Skizze entsteht sichtbar im Strom
+$('sketchRefine').onclick=()=>{
+  if(active||!s.idea.trim())return;
+  clearTimeout(sketchIdle);if(sketchAuto){sketchAuto.ac.abort();sketchAuto=null}
+  s.sketch=null;sketchPauseUntil=0;save();sketchUI();clearTimeout(sketchIdle);runAuto(sketchKey(),1);
+};
+/* ---------- Stand je Regler auf der Idee-Seite ---------- */
+// auto = aus Grundeinstellung oder Voreinstellung (gelb), own = selbst eingestellt (grün), missing = Wert fehlt (rot)
+const scaleRows=[['autonomy','autonomy','Entscheidungsmodus'],['creativity','creativity','Kreativität der KI'],['tone','tone','Einsatzbereich'],['durLevel','durLevel','Ziel-Entwicklungsdauer'],['layoutIdea','layout','UI-Layouts'],['logoCount','logoCount','Logo-Entwürfe'],['nameCount','nameCount','Name der Anwendung'],['reviewBy','review','Review der Spezifikation']];
+const scaleState=key=>key==='durLevel'&&!s.durLevel?'missing':(s.own&&s.own[key])?'own':'auto';
+const scaleMissing=()=>scaleRows.filter(([,key])=>scaleState(key)==='missing').map(([,,name])=>name);
+function scaleDots(){
+  // Das Zeichen sagt, wer den Wert gesetzt hat – nicht, wie stark er ist: ? = voreingestellt und noch nicht bestätigt, ✓ = von dir bestätigt oder eingestellt, ! = fehlt
+  const text={auto:'Voreingestellt und noch nicht bestätigt. Ein Klick auf die Zeile bestätigt den Wert; du kannst ihn auch ändern.',own:'Von dir bestätigt oder eingestellt.',missing:'Fehlt noch: Bitte einstellen, sonst geht es nicht weiter.'},sign={auto:'?',own:'✓',missing:'!'};
+  for(const [id,key] of scaleRows){
+    const row=$(id).closest('.scales>div');if(!row)continue;
+    let dot=row.querySelector(':scope>.setdot');
+    if(!dot){
+      dot=node('span',undefined,'setdot');dot.setAttribute('role','img');row.append(dot);
+      // Ein Klick auf die Zeile (nicht auf Regler, Auswahl oder Info) bestätigt den voreingestellten Wert
+      row.addEventListener('click',e=>{if(e.target.closest('input,select,button,a,.info,label')||scaleState(key)!=='auto')return;s.own={...(s.own||{}),[key]:true};scaleDots();navUI();save()});
+    }
+    const st=scaleState(key);dot.className='setdot '+st;dot.textContent=sign[st];dot.title=text[st];dot.setAttribute('aria-label',text[st]);row.classList.toggle('confirmable',st==='auto');
+  }
+}
+for(const [id,key] of scaleRows)$(id).addEventListener($(id).tagName==='SELECT'?'change':'input',()=>{s.own={...(s.own||{}),[key]:true};scaleDots();navUI();save()});
+$('reviewModel').addEventListener('change',()=>{s.own={...(s.own||{}),review:true};scaleDots();save()});
 $('decDerive').onclick=()=>deriveDecisions();
 // Zielordner vorschlagen: Projektordner im Home-Verzeichnis (oder laut SPECIT_PROJECTS_DIR) plus Kurzname der Anwendung.
 // Der Vorschlag folgt dem Namen, solange das Feld leer ist oder noch den letzten Vorschlag enthält.
@@ -2560,7 +3065,9 @@ function suggestRunDir(){
 // Umsetzung: Die Erklärtexte der Auswahlkacheln und Abschnitte stehen als Tooltip statt als Fließtext
 for(const c of document.querySelectorAll('#phase3 .choice'))c.title=c.querySelector('span')?.textContent||'';
 for(const h of document.querySelectorAll('#phase3 .stephead')){const p=h.querySelector('p');if(p&&!p.id&&p.textContent)h.querySelector('h2').title=p.textContent}
-$('logoCount').oninput=e=>{s.logoCount=Number(e.target.value);save();logoUI()};
+$('logoCount').oninput=e=>{s.logoCount=Number(e.target.value);save();logoUI();panelsUI()};
+// Dieselbe Anzahl bei der Spezifikation: 0 schaltet das Logo aus, jede Zahl darüber wieder ein
+$('logoCountSpec').oninput=e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isInteger(n)||n<0||n>5)return;s.logoCount=n;save();logoUI();panelsUI()};
 async function deriveLogos(force){
   if(active||!s.logoCount||(!force&&s.logos.length))return;
   if(!s.idea.trim()&&!s.spec.trim())return;
@@ -2685,6 +3192,7 @@ function layoutUI(){
   presetsUI();
   $('layoutIdeaText').replaceChildren(node('b',on?plural(s.layoutCount,'Layout-Entwurf','Layout-Entwürfe'):'Keine Layout-Entwürfe'));  $('layoutIdeaHint').textContent=stitch?'':'Kein STITCH_API_KEY konfiguriert – siehe README.';
   $('layoutBody').classList.toggle('hidden',!on);$('layoutRun').disabled=layoutBusy;
+  $('layoutMeta').textContent=!stitch?'kein Stitch-Schlüssel':!on?'aus · einschalten':chosenLayout()?'Entwurf gewählt':l&&l.screens.length?plural(l.screens.length,'Entwurf','Entwürfe')+' · keiner gewählt':'noch keine Entwürfe';
   $('layoutLinkRow').classList.toggle('hidden',!l);
   if(l){$('layoutLink').href=l.url;$('layoutLink').textContent=l.url}
   const out=$('layoutGallery');out.replaceChildren();
@@ -2698,7 +3206,7 @@ function layoutUI(){
     // je Kombination (Gerät · Farbmodus) lässt sich ein Entwurf wählen
     const chosen=l.chosen||[],mine=chosen.includes(sc.id),pick=button(mine?'✓ Gewählt':'Auswählen','btn small'+(mine?' primary':''),()=>{
       l.chosen=mine?chosen.filter(id=>id!==sc.id):[...chosen.filter(id=>{const o=l.screens.find(z=>z.id===id);return o&&groupOf(o)!==groupOf(sc)}),sc.id];
-      revision++;save();layoutUI();planUI();navUI();
+      revision++;save();layoutUI();planUI();navUI();panelsUI();
     });
     pick.setAttribute('aria-pressed',String(mine));pick.title='Diesen Entwurf zur Umsetzung auswählen';row.prepend(pick);if(mine)box.classList.add('chosen');
     const title=node('h3','Variante '+(i+1));if(sc.device)title.append(' ',node('span',comboName(sc.device,sc.theme),'chip'));
@@ -2712,9 +3220,9 @@ function layoutUI(){
   if(!layoutBusy&&!(l&&l.screens.length))$('layoutStatus').textContent='';
   layoutNote();
 }
-$('layoutOn').onchange=e=>{s.layoutOn=e.target.checked;layoutUI();planUI();navUI();save()};
+$('layoutOn').onchange=e=>{s.layoutOn=e.target.checked;layoutUI();planUI();navUI();panelsUI();save()};
 // Idee-Seite: Anzahl der Entwürfe per Schieberegler, 0 schaltet die Layout-Erstellung aus
-$('layoutIdea').oninput=e=>{const n=Number(e.target.value);s.layoutOn=n>0;if(n>0)s.layoutCount=n;$('layoutCount').value=s.layoutCount;layoutUI();planUI();navUI();save()};
+$('layoutIdea').oninput=e=>{const n=Number(e.target.value);s.layoutOn=n>0;if(n>0)s.layoutCount=n;$('layoutCount').value=s.layoutCount;layoutUI();planUI();navUI();panelsUI();save()};
 $('layoutCount').oninput=e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=1&&n<=5){s.layoutCount=n;save()}};
 $('layoutDevice').oninput=e=>{s.layoutDevice=e.target.value;save();layoutUI()};
 $('layoutTheme').oninput=e=>{s.layoutTheme=e.target.value;save();layoutUI()};
@@ -2798,11 +3306,11 @@ function adviceUI(p,agents){
   if(!p){box.append(node('span',s.plan?'Der Plan ist veraltet. Nach dem Neu-Erstellen steht hier die geschätzte Dauer je Agentenzahl.':'Sobald der Plan erstellt ist, steht hier die geschätzte Dauer je Agentenzahl'+(s.features.length?' (laut Feature-Auswahl derzeit etwa '+hm(featDuration().total)+').':'.')));return}
   const target=targetMinutes(),rec=recommendAgents(p,target),line=node('div'),opts=node('div',undefined,'opts');
   line.append(node('b','Empfehlung: '+(rec.agents===1?'nacheinander mit einem Agenten':rec.agents+' parallele Agenten')+'.'),' '+(
-    rec.fits===true?'Damit dauert die Umsetzung voraussichtlich '+hm(rec.minutes)+' und passt in die Zielvorgabe von '+duration()+' ('+hm(target)+').'
-    :rec.fits===false?'Auch damit dauert die Umsetzung voraussichtlich '+hm(rec.minutes)+' – mehr als die Zielvorgabe von '+duration()+' ('+hm(target)+'). Mehr Agenten helfen nicht, weil nie mehr Aufträge gleichzeitig bereitstehen; dafür müsste der Umfang kleiner werden.'
-    :'Voraussichtliche Dauer '+hm(rec.minutes)+'. Ohne Ziel-Entwicklungsdauer (Schritt 1) ist das die kleinste Zahl, die kaum langsamer ist als die schnellste.'));
+    rec.fits===true?'Voraussichtlich '+hm(rec.minutes)+' – passt in die Zielvorgabe ('+hm(target)+').'
+    :rec.fits===false?'Voraussichtlich '+hm(rec.minutes)+' – über der Zielvorgabe ('+hm(target)+'). Mehr Agenten helfen nicht; dafür müsste der Umfang kleiner werden.'
+    :'Voraussichtlich '+hm(rec.minutes)+'.'));
   for(const o of rec.options){const b=button((o.agents===1?'1 Agent':o.agents+' Agenten')+' ≈ '+hm(o.minutes),'chip pickchip'+(o.agents===agents?' ok':''),()=>{s.featAgents=o.agents;renderAll()});b.setAttribute('aria-pressed',String(o.agents===agents));opts.append(b)}
-  box.append(line,opts,node('p','Gewählt: '+(agents===1?'1 Agent':agents+' Agenten')+'. Grundlage: geschätzte Bearbeitungszeit je Auftrag ('+(s.planSource==='claude'?'von Claude geschätzt':'Demo-Annahmen')+') und die Abhängigkeiten im Plan. Die tatsächliche Dauer kann deutlich abweichen.','meta'));
+  box.append(line,opts);box.title='Grundlage: geschätzte Bearbeitungszeit je Auftrag ('+(s.planSource==='claude'?'von Claude geschätzt':'Demo-Annahmen')+') und die Abhängigkeiten im Plan'+(rec.fits===null?'; ohne Ziel-Entwicklungsdauer ist die Empfehlung die kleinste Zahl, die kaum langsamer ist als die schnellste':'')+'. Die tatsächliche Dauer kann deutlich abweichen.';
 }
 // Stand aller Festlegungen als Schlüssel: Ändert sich etwas nach dem Abschluss, ist erneut zu bestätigen
 function finishKey(){return digest(JSON.stringify([s.planSpec,s.plan?s.plan.tasks.map(t=>t.id):0,agentsNow(),s.nextStep,s.runDir,s.runShell,s.runModel,exportCtx()]))}
@@ -2817,14 +3325,18 @@ function reviewUI(p,agents){
   row('Spezifikation',(s.specSource==='demo'?'Demo-Entwurf':s.specSource==='claude'?'Claude-Entwurf':'Manuelle Spezifikation')+' · '+s.spec.length.toLocaleString('de-DE')+' Zeichen',()=>setPhase(2));
   if(s.features.length){const fd=featDuration(),ext=s.features.filter(f=>!f.core);row('Features',s.features.filter(f=>f.core).length+' Basis-Features · '+ext.filter(f=>f.on).length+' von '+plural(ext.length,'Erweiterung','Erweiterungen')+' · geschätzt '+hm(fd.total),()=>setPhase(2))}
   if(selectedReuse().length)row('Open-Source-Bausteine',selectedReuse().map(r=>r.name).join(', '),()=>setPhase(2));
-  row('UI-Entwurf',!s.layoutOn?'keine Layouts gewünscht':c?c.label:s.layout&&s.layout.screens.length?'noch keiner gewählt – alle Entwürfe gelten nur als Referenz':'noch nicht erzeugt',jump('layoutSection'),s.layoutOn&&!c);
+  row('UI-Entwurf',!s.layoutOn?'keine Layouts gewünscht':c?c.label:s.layout&&s.layout.screens.length?'noch keiner gewählt – alle Entwürfe gelten nur als Referenz':'noch nicht erzeugt',()=>{setPhase(2);$('layoutSection').open=true;setTimeout(jump('layoutSection'),0)},s.layoutOn&&!c);
   row('Abarbeitung',single?'Nacheinander · ein Agent · ein Gesamtauftrag':'Parallel · '+agents+' Agenten · mehrere Teilaufträge',jump('planConfig'));
   row('Plan',p?plural(p.tasks.length,single?'Arbeitsschritt':'Teilauftrag',single?'Arbeitsschritte':'Teilaufträge')+' · voraussichtlich '+hm(estimate(p,agents)):s.plan?'veraltet – bitte neu erstellen':'noch nicht erstellt',jump('planConfig'),!p);
   row('Weiteres Vorgehen',direct?'Direkt umsetzen in '+(s.runDir.trim()||'– Zielordner fehlt –')+(s.runShell?' · Befehle erlaubt':' · ohne Befehle')+(s.runModel?' · '+(agentModels.find(m=>m.id===s.runModel)?.name||s.runModel):''):'Zum Download bereitstellen',jump('nextCard'),direct&&!s.runDir.trim());
   // Abschluss: der Knopf steht in der festen Leiste unten rechts
   const done=!!p&&s.finished===finishKey(),ready=!!p&&!active&&!runBusy&&!layoutBusy&&(!direct||(agentsOk&&!!s.runDir.trim())),f=$('finish');
   f.textContent=done&&!direct?'✓ Abgeschlossen':direct?'▸ Bestätigen und Umsetzung starten':'✓ Bestätigen und bereitstellen';f.disabled=!ready||(done&&!direct);
-  $('finishHint').textContent=!p?'Zum Abschließen fehlt ein aktueller Plan (Abschnitt 1).':layoutBusy?'Die Layout-Entwürfe werden noch erzeugt.':direct&&!agentsOk?'Claude Code wurde auf diesem Rechner nicht gefunden; „Direkt umsetzen“ ist nicht möglich.':direct&&!s.runDir.trim()?'Zum Abschließen fehlt der Zielordner (Abschnitt 2).':done?(direct?'':'Abgeschlossen. Die Dateien stehen bereit; eine Änderung der Festlegungen erfordert eine neue Bestätigung.'):'Bitte prüfen. Bestätigt wird mit dem Knopf unten rechts.';
+  $('finishHint').textContent=!p?'Zum Abschließen fehlt ein aktueller Plan – „Plan erstellen“ in Abschnitt 1 (rot markiert).':layoutBusy?'Die Layout-Entwürfe werden noch erzeugt.':direct&&!agentsOk?'Claude Code wurde auf diesem Rechner nicht gefunden; „Direkt umsetzen“ ist nicht möglich.':direct&&!s.runDir.trim()?'Zum Abschließen fehlt der Zielordner (Abschnitt 1, rot markiert).':done?(direct?'':'Abgeschlossen. Die Dateien stehen bereit; eine Änderung der Festlegungen erfordert eine neue Bestätigung.'):'Bitte prüfen. Bestätigt wird mit dem Knopf unten rechts.';
+  // Was zum Abschließen fehlt, ist an Ort und Stelle rot markiert; der Hinweis führt per Klick dorthin
+  const lacks=!p?'plan':direct&&!agentsOk?'nextRun':direct&&!s.runDir.trim()?'runDir':'';
+  for(const id of ['plan','nextRun','runDir'])$(id).classList.toggle('need',lacks===id&&!active&&!runBusy);
+  $('finishHint').classList.toggle('missing',!!lacks);$('finishHint').onclick=lacks?()=>{$(lacks).scrollIntoView({block:'center',behavior:'smooth'});$(lacks).focus({preventScroll:true})}:null;
   $('doneBox').classList.toggle('hidden',!(done||(direct&&run&&run.items.length)));
   $('downloads').classList.toggle('hidden',direct||!done);$('runBox').classList.toggle('hidden',!direct);
   for(const id of ['json','backlog','copyAll'])$(id).disabled=!p;
@@ -2886,6 +3398,8 @@ let run=null,runTimer=0,agentsOk=false;const runOpen=new Set();
 async function pollRun(){
   clearTimeout(runTimer);
   try{run=await fetch('/api/run').then(r=>r.json())}catch{return}
+  // Was im Zielordner entstanden ist, bleibt auch nach einem Neustart des Servers in der Bilanz stehen
+  if(run.output&&run.output.files&&JSON.stringify(run.output)!==JSON.stringify(s.runOutput)){s.runOutput=run.output;save();effortBar()}
   const live=!!run.active,was=runBusy;
   if(live){const n=run.items.filter(x=>x.state==='done').length;if(!active)working('Umsetzung läuft · '+n+' von '+run.items.length+' Aufträgen fertig',Date.now()-run.seconds*1000)}
   else if(runBusy&&!active&&!layoutBusy)working('');
@@ -2932,7 +3446,8 @@ fetch('/api/status').then(r=>r.json()).then(r=>{
   let wanted=false;try{wanted=localStorage.getItem('specit-ai')==='1'}catch{}
   $('ai').checked=available&&wanted;aiUI();
   if(!stitch)$('layoutHint').textContent='Kein STITCH_API_KEY konfiguriert. Schlüssel in .env setzen und neu starten, siehe README.';
-  layoutUI();
+  // Erst jetzt steht fest, ob Claude Code und Stitch verfügbar sind: alles nachziehen, was davon abhängt
+  layoutUI();renderAll();
 }).catch(()=>{$('mode').classList.remove('hidden');$('mode').textContent='Server nicht erreichbar'});
 aiUI();
 // Lebenszeichen: Solange diese Verbindung steht, läuft der Server. Wird die letzte Seite geschlossen, beendet er sich.

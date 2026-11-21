@@ -2,7 +2,7 @@ export function validatePlan(plan) {
   const fail=m=>{throw Error(m)};
   if(!plan || !Array.isArray(plan.tasks)||plan.tasks.length<1||plan.tasks.length>20)fail('Es werden 1–20 Tasks benötigt.');
   const str=(v,n,max=1000)=>{if(typeof v!=='string'||!v.trim()||v.length>max)fail('Ungültiges Feld: '+n);return v.trim()};
-  const arr=(v,n,min=0)=>{if(!Array.isArray(v)||v.length<min||v.length>25)fail('Ungültige Liste: '+n);return v.map(x=>str(x,n))};
+  const arr=(v,n,min=0)=>{if(!Array.isArray(v)||v.length<min||v.length>60)fail('Ungültige Liste: '+n);return v.map(x=>str(x,n))};
   const ids=new Set();
   const tasks=plan.tasks.map(t=>{
     if(!t||typeof t!=='object')fail('Ungültiger Task.');
@@ -25,7 +25,9 @@ export function validatePlan(plan) {
   }
   const blocked=new Set();
   for(const wave of waves)for(const id of wave){const t=byId.get(id);if(t.blockedBy.length||t.dependsOn.some(d=>blocked.has(d)))blocked.add(id);}
-  return {summary:str(plan.summary,'summary',3000),decisions:arr(plan.decisions,'decisions'),tasks,waves,blocked:[...blocked]};
+  // Festlegungen sind Begleittext: Eine lange, fehlende oder unsauber geformte Liste darf den Plan nicht verwerfen.
+  const decisions=(Array.isArray(plan.decisions)?plan.decisions:typeof plan.decisions==='string'?[plan.decisions]:[]).map(x=>typeof x==='string'?x.trim().slice(0,1000):'').filter(Boolean).slice(0,80);
+  return {summary:str(plan.summary,'summary',3000),decisions,tasks,waves,blocked:[...blocked]};
 }
 
 /**
