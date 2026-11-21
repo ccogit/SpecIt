@@ -36,18 +36,21 @@ export function buildLiveConcept(s={},context={}){
   const layoutCount=s.layoutOn?integer(s.layoutCount,1,5,1):0,logoCount=integer(s.logoCount,0,5,0),nameCount=integer(s.nameCount,0,5,3);
   const device=['DESKTOP','MOBILE','BOTH'].includes(s.layoutDevice)?s.layoutDevice:'DESKTOP';
   const theme=['LIGHT','DARK','BOTH'].includes(s.layoutTheme)?s.layoutTheme:'LIGHT';
-  const p=profiles.find(x=>x.match.test(idea))||generic;
   // A small conservative negation check; this is heuristic, not language understanding.
   const chunks=idea.split(/[.;\n]|\b(?:aber|sondern)\b/iu);
-  const requested=functions.filter(([,re])=>chunks.some(part=>{
-    const found=part.match(re);if(!found)return false;
+  const negative=(before)=>/\b(?:ohne|kein(?:e[nsrm]?)?|nicht)\s+(?:[\p{L}-]+\s+){0,2}$/iu.test(before);
+  const polarity=re=>{let yes=false,no=false;for(const part of chunks){
+    const found=part.match(re);if(!found)continue;
     const before=part.slice(Math.max(0,found.index-32),found.index);
-    return !/\b(?:ohne|kein(?:e[nsrm]?)?|nicht)\s+(?:[\p{L}-]+\s+){0,2}$/iu.test(before);
-  })).map(([k])=>k);
-  const primary=p!==generic?p.primary:(requested[0]||'list');
+    if(negative(before))no=true;else yes=true;
+  }return {yes,no}};
+  const requested=functions.filter(([,re])=>polarity(re).yes&&!polarity(re).no).map(([k])=>k);
+  const excluded=new Set(functions.filter(([,re])=>polarity(re).no).map(([k])=>k));
+  const p=profiles.find(x=>polarity(x.match).yes&&!polarity(x.match).no)||generic;
+  const primary=p!==generic&&!excluded.has(p.primary)?p.primary:(requested[0]||['list','form','cards','calendar','analytics','pairs'].find(k=>!excluded.has(k))||'list');
   // Explicitly requested features never disappear when the target time is reduced.
   const kinds=[...new Set([primary,...requested])];
-  const extras=p.extras.filter(k=>!kinds.includes(k));
+  const extras=p.extras.filter(k=>!kinds.includes(k)&&!excluded.has(k));
   const cap=maxViews[level];
   // A stricter setting never invents optional features; high creativity offers more,
   // but a tight scope does not silently swallow explicit user wishes.
@@ -59,7 +62,7 @@ export function buildLiveConcept(s={},context={}){
   const scopeConflict=kinds.filter(k=>requested.includes(k)||k===primary).length>cap;
   const descriptions=[
     ['Idee',idea],
-    ['Name',name?name+' (festgelegt)':nameCount?nameCount+' Namensvorschläge gewünscht; Arbeitstitel: '+p.title:'Keine Namensvorschläge; neutraler Platzhalter'],
+    ['Name',name?name+' (festgelegt) · '+nameCount+' Namensvorschläge gewünscht':nameCount?nameCount+' Namensvorschläge gewünscht; Arbeitstitel: '+p.title:'Keine Namensvorschläge; neutraler Platzhalter'],
     ['Entscheidungsmodus',autonomyLabels[autonomy/20]],
     ['Kreativität',creativityLabels[creativity]],
     ['Einsatzbereich',toneLabels[tone]],
