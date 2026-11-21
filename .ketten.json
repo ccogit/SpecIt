@@ -1,0 +1,9 @@
+{
+  "name": "SpecIt",
+  "repo": "ccogit/SpecIt",
+  "register": "docs/aufgaben/lokale-ki/KETTEN.md",
+  "task_dir": "docs/aufgaben/lokale-ki",
+  "stack": "Node.js 20+ (ES-Module, ohne Abhängigkeiten), eine HTML-Datei als Oberfläche",
+  "quality": "npm test",
+  "rules": "keine neuen npm-Abhängigkeiten, keine Änderungen an Produktcode in dieser Analyse"
+}
