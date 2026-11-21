@@ -7,7 +7,7 @@ import { validateRun, startRun, stopRun, runStatus, killAgents } from './runner.
 import { withSkills } from './skills.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
-import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, cleanMeasures, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
+import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
 import { withToc } from './markdown.mjs';
 import { stitchKey, createProject, generateLayout, generateVariants, downloadFile, isProjectId, isScreenId, isFileName, variantCount, device } from './stitch.mjs';
 const host='127.0.0.1', port=Number(process.env.PORT||3000);
@@ -61,13 +61,20 @@ function frameIn(b){
  return {autonomy,duration,creativity,tone,excluded,frame:{duration,tone:toneLevels[tone],excluded}};
 }
 function validate(b){
- if(!b||!['questions','final','plan','revise','decisions','triage','adjust','features','scope','fit'].includes(b.mode))throw Error('Ungültiger Modus.');
+ if(!b||!['questions','final','plan','revise','decisions','triage','adjust','features','scope','fit','names'].includes(b.mode))throw Error('Ungültiger Modus.');
  if(b.mode==='adjust'){
   // Änderungswunsch in eigenen Worten; die Idee darf fehlen (eingefügte Spezifikation).
   if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
   const wish=String(b.wish||'').trim().replace(/\s+/g,' ').slice(0,2000);
   if(!wish)throw Error('Bitte den Änderungswunsch eingeben.');
   return {mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),questions:cleanQuestions(b.questions||[]),extras:cleanExtras(b.extras),...frameIn(b),spec:b.spec,wish};
+ }
+ if(b.mode==='names'){
+  // Namensvorschläge aus Idee und – falls vorhanden – Spezifikation
+  const idea=String(b.idea||'').trim().slice(0,2000),spec=typeof b.spec==='string'?b.spec.slice(0,50000):'';
+  if(!idea&&!spec.trim())throw Error('Für Namensvorschläge braucht es eine Idee oder eine Spezifikation.');
+  const tone=Number.isInteger(b.tone)&&b.tone>=0&&b.tone<=4?b.tone:2;
+  return {mode:b.mode,ai:b.ai===true,idea,spec,tone,count:Number.isInteger(b.count)?Math.min(8,Math.max(1,b.count)):3,avoid:cleanNames(b.avoid).map(n=>n.name)};
  }
  if(b.mode==='fit'){
   // Lösungsvorschlag, wie die Features in die Zielzeit passen
@@ -113,6 +120,7 @@ function demo(b){
  if(b.mode==='decisions')return {source:'demo',questions:[]};
  // Ohne KI lässt sich der Umfang nicht sinnvoll umschneiden
  if(b.mode==='fit')return {source:'demo',features:[],measures:[],summary:''};
+ if(b.mode==='names')return {source:'demo',names:demoNames(b.idea||b.spec,b.count)};
  if(b.mode==='adjust')return {markdown:adjustDemo(b.spec,b.project,b.idea,b.questions,b.extras,b.wish,b.frame)};
  if(b.mode==='features')return {source:'demo',features:demoFeatures(b.questions,b.extras)};
  if(b.mode==='scope')return {markdown:scopeDemo(b.spec,b.project,b.idea,b.questions,b.extras,{...b.frame,excluded:b.before},b.frame)};
@@ -186,6 +194,12 @@ async function claude(b){
   let md=null,answers=[];try{const parsed=parseJson(await ask(withSkills(b.mode,scope?scopePrompt:adjustPrompt),data,8000));md=applyEdits(b.spec,parsed.edits);if(scope&&md!==null)answers=mapAnswers(b.questions,parsed.answers)}catch(e){if(!(e instanceof SyntaxError)&&!/JSON/.test(String(e.message)))throw e}
   if(md===null){const full=(await ask(withSkills(b.mode,scope?scopeFullPrompt:adjustFullPrompt),data,16000)).trim().replace(/^```(?:markdown|md)?\s*/i,'').replace(/\s*```$/,'');md=full&&full.length<=50000?full:null}
   return {markdown:md===null?null:withToc(md),answers};
+ }
+ if(b.mode==='names'){
+  let parsed;try{parsed=parseJson(await ask(namesPrompt,{count:b.count,idea:b.idea,context:toneLevels[b.tone],avoid:b.avoid,spec:b.spec.slice(0,12000)},1200))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
+  const names=cleanNames(parsed.names).slice(0,b.count);
+  if(!names.length)throw Error('Es kamen keine Namensvorschläge zurück. Bitte erneut versuchen.');
+  return {source:'claude',names};
  }
  if(b.mode==='fit'){
   const data={project:b.project,idea:b.idea,targetMinutes:b.target,maxAgents:b.maxAgents,features:b.features.map(({on,inSpec,...f})=>f),spec:b.spec};

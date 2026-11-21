@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { estimate } from '../planner.mjs';
 import assert from 'node:assert/strict';
-import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant, adjustDemo, cleanFeatures, demoFeatures, workPackages, suggestExtensions, featureDuration, mapAnswers } from '../interview.mjs';
+import { topics, cleanQuestion, cleanQuestions, demoQuestions, demoSpec, acceptDefault, answerOf, summary, coverage, applyEdits, reviseDemo, specLine, applyAutonomy, framePrompt, demoRelevant, adjustDemo, cleanFeatures, demoFeatures, workPackages, suggestExtensions, featureDuration, mapAnswers, cleanNames, demoNames } from '../interview.mjs';
 
 test('autonomy decides a share of the questions itself and gives them back when lowered', () => {
   const qs = demoQuestions(), n = qs.length;
@@ -181,4 +181,12 @@ test('decisions and features stay linked: features know their decisions, changed
     { nr: single + 1, answer: 'doppelt' }, { nr: 999, answer: 'x' }, { nr: 2, answer: answerOf(qs[1]) },
   ]);
   assert.deepEqual(mapped, [{ index: single, choice: [1], custom: '' }, { index: multi, choice: [], custom: 'Entfällt in dieser Version' }]);
+});
+
+test('name suggestions are short, unique and limited to the requested count', () => {
+  assert.deepEqual(cleanNames([{ name: ' Leselog ', why: 'kurz' }, 'Buchspur', { name: 'leselog' }, null, { why: 'ohne Name' }]), [{ name: 'Leselog', why: 'kurz' }, { name: 'Buchspur', why: '' }]);
+  const names = demoNames('Ein Lesetagebuch, das gelesene Bücher mit kurzen Notizen sammelt', 4);
+  assert.equal(names.length, 4);
+  assert.ok(names[0].name.includes('Lesetagebuch') && new Set(names.map(n => n.name)).size === 4);
+  assert.equal(demoNames('', 2).length, 2);
 });

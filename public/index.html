@@ -144,13 +144,15 @@ main{flex:1;width:100%;max-width:max(1200px,88vw);margin:0 auto;padding:16px 24p
 .lightscroll img{max-width:100%;height:auto;display:block;margin:0 auto}
 /* Sperre vor den Agent Tasks und Änderungswunsch zur Spezifikation */
 .gate{border-top:4px solid var(--warn-line);display:flex;flex-direction:column;gap:14px}
+.namebox{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;font-size:14px}
+.namechip{font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:0;padding:4px 10px}
 .wishbox{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;padding:12px 14px 10px;border-radius:10px;background:var(--card);box-shadow:var(--shadow);border:1px solid transparent;transition:border-color .15s,box-shadow .15s}
 .wishbox:focus-within{border-color:var(--secondary);box-shadow:0 0 0 3px var(--hl)}
 .wishlabel{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:var(--ink-soft)}
 .wishlabel .spark{color:var(--secondary);font-size:14px}
 .wishbox textarea{border:0;background:transparent;box-shadow:none;padding:4px 0;font-size:15px;line-height:1.6;resize:none;field-sizing:content;min-height:26px;max-height:180px}
 .wishbox textarea:focus{background:transparent;box-shadow:none;border:0}
-.wishfoot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.wishfoot{display:flex;align-items:center;justify-content:flex-start;gap:12px;flex-wrap:wrap}
 .wishfoot .btn.primary.small{padding:7px 14px}
 .durscale{display:flex;justify-content:space-between;font-size:10px}
 .durscale span{flex:1;text-align:center}.durscale span:first-child{text-align:left}.durscale span:last-child{text-align:right}
@@ -195,7 +197,8 @@ summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;co
 .phases{display:flex;align-items:center;gap:4px;padding:4px;border-radius:8px;background:var(--surface-low);overflow-x:auto;max-width:100%}
 .phase{display:flex;align-items:center;gap:8px;border:0;background:transparent;border-radius:6px;padding:7px 12px;cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--ink-soft);white-space:nowrap}
 .phase:hover{color:var(--ink)}
-.phase .num{font-weight:600}
+.phase .num{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--surface-high);font-size:11px;font-weight:700}
+.phase[aria-current=page] .num{background:rgba(128,128,128,.3)}
 .phase.done .num{color:var(--secondary)}
 .phase[aria-current=page]{background:var(--primary-container);color:var(--on-primary);font-weight:600}
 .phase[aria-current=page] .chip{background:rgba(128,128,128,.28);color:var(--on-primary)}
@@ -204,10 +207,17 @@ summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;co
 /* Schritt 1: Idee */
 .hero{max-width:min(1280px,100%);margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px}
 /* Skalen zweispaltig, damit die Idee-Seite ohne langes Scrollen auskommt */
-.scales{display:grid;grid-template-columns:1fr 1fr;gap:18px 36px;padding:18px 24px}
+/* Deutlicher Abstand und eine Trennlinie zwischen den Reglern, damit Überschrift und Regler als Einheit lesbar sind */
+.scales{display:grid;grid-template-columns:1fr 1fr;gap:26px 44px;padding:22px 24px}
+.scales>div:nth-child(n+3){border-top:1px solid var(--surface-mid);padding-top:24px}
 .scales>.spread{grid-column:1/-1}
-.scaletext{font-size:13px;line-height:1.5;margin-top:6px}
-@media(max-width:980px){.scales{grid-template-columns:1fr}}
+/* gewählter Wert als Marke; Achsenenden bleiben klein und grau */
+.picked{font-size:11px}
+.scales .spread.meta{font-size:10px;color:var(--outline);opacity:.85}
+.scaletext{font-size:13px;line-height:1.5;margin-top:4px}
+.scalelabel{display:inline-flex;align-items:center}
+.scalelabel .info{text-transform:none}
+@media(max-width:980px){.scales{grid-template-columns:1fr}.scales>div:nth-child(n+2){border-top:1px solid var(--surface-mid);padding-top:24px}}
 .hero .intro{text-align:center}
 .hero h1{font-size:28px;line-height:34px;letter-spacing:-.02em;font-weight:700}
 .hero .intro p{font-size:14px;line-height:22px;color:var(--ink-soft);max-width:none;margin:2px auto 0}
@@ -394,6 +404,16 @@ body{padding-bottom:62px}
 .donebox{margin-top:16px;padding:16px;border-radius:8px;background:var(--surface-low);border-left:4px solid var(--secondary)}
 @media(max-width:760px){.choice2{grid-template-columns:1fr}.reviewrow{grid-template-columns:1fr auto}.reviewrow .eyebrow{grid-column:1/-1}}
 .decsec{margin:14px 0 2px;color:var(--secondary)}
+/* Rückfrage vor dem Konzept und rote Markierung der Stellen, an denen noch eine Entscheidung fehlt */
+.askbox{width:min(560px,92vw);padding:24px;border:0;border-radius:10px;background:var(--card);color:var(--ink);box-shadow:0 20px 80px rgba(0,0,0,.5)}
+.askbox::backdrop{background:rgba(0,0,0,.6)}
+.askbox h2{color:var(--heading);margin-bottom:8px}
+.askbox p{font-size:15px;margin-bottom:18px}
+.askbox .btn{white-space:normal;text-align:left}
+.need{box-shadow:0 0 0 2px var(--error)!important}
+.catitem.need{box-shadow:inset 3px 0 0 var(--error)!important}
+.catitem.need .cathd .q{color:var(--error)}
+.upcoming.need{opacity:1}
 .catacts{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
 /* Feature-Liste: Gesamtdauer, Schalter je Feature, Aufwand rechts */
 .reuseitem{display:flex;flex-direction:column;gap:5px;padding:12px 4px;border-top:1px solid var(--surface-mid);font-size:13px}
@@ -467,7 +487,7 @@ body{padding-bottom:62px}
       <span id="mode" class="pill hidden" role="status">Demo-Modus</span>
       <label class="switch"><input type="checkbox" id="ai"><span class="track"></span><span>Claude aktivieren</span></label>
       <button id="theme" class="btn ghost" type="button" aria-pressed="false">Dunkel</button>
-      <button id="reset" class="btn ghost" type="button" title="Idee, Modus, Dauer, alle Antworten, Spezifikation und Agent Tasks leeren">↺ Zurücksetzen</button>
+      <button id="reset" class="btn ghost" type="button" title="Idee, Modus, Dauer, alle Antworten, Spezifikation und Aufträge leeren">↺ Zurücksetzen</button>
     </div>
   </div>
   <div id="working" class="working hidden" role="status" aria-live="polite"><span class="pulse" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b id="workingText"></b><span id="workingHint"></span><button id="workingStop" class="btn small workstop" type="button" title="Die laufende Verarbeitung beenden; es entstehen keine weiteren Kosten.">✕ Abbrechen</button><span id="workingTime" class="timer" aria-hidden="true"></span><span class="stripe" aria-hidden="true"></span></div>
@@ -478,7 +498,6 @@ body{padding-bottom:62px}
   <div id="phase0" class="hero hidden">
     <div class="intro">
       <h1>Was willst du bauen?</h1>
-      <p>Ein Satz genügt. Wie viel SpecIt danach selbst entscheidet, legst du mit dem Modus fest.</p>
     </div>
     <div class="card" style="display:flex;flex-direction:column;gap:16px">
       <div class="spread"><label class="field-label" for="idea" style="margin:0">Deine Idee in einem Satz</label><span class="meta" id="ideaCount"></span></div>
@@ -490,35 +509,44 @@ body{padding-bottom:62px}
     </div>
     <div class="card scales">
       <div>
-        <div class="spread"><label class="field-label" for="autonomy" style="margin:0">Modus</label><span class="meta" id="autonomyValue"></span></div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="autonomy" style="margin:0">Modus</label><span class="info" id="autonomyInfo" tabindex="0" role="note"><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true"></span></span></span><span class="chip ok picked" id="autonomyValue"></span></div>
         <input type="range" id="autonomy" min="0" max="5" step="1" list="autonomyTicks">
         <datalist id="autonomyTicks"><option value="0"></option><option value="1"></option><option value="2"></option><option value="3"></option><option value="4"></option><option value="5"></option></datalist>
         <div class="spread meta"><span>fragt bei allem nach</span><span>entscheidet alles selbst</span></div>
         <p id="autonomyText" class="scaletext" aria-live="polite"></p>
       </div>
       <div>
-        <div class="spread"><label class="field-label" for="creativity" style="margin:0">Eigene Ideen der KI</label><span class="meta" id="creativityValue"></span></div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="creativity" style="margin:0">Eigene Ideen der KI</label><span class="info" id="creativityInfo" tabindex="0" role="note"><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true"></span></span></span><span class="chip ok picked" id="creativityValue"></span></div>
         <input type="range" id="creativity" min="0" max="4" step="1" list="fiveTicks">
         <datalist id="fiveTicks"><option value="0"></option><option value="1"></option><option value="2"></option><option value="3"></option><option value="4"></option></datalist>
         <div class="spread meta"><span>nur was du vorgibst</span><span>denkt kreativ weiter</span></div>
         <p id="creativityText" class="scaletext" aria-live="polite"></p>
       </div>
       <div>
-        <div class="spread"><label class="field-label" for="tone" style="margin:0">Einsatzbereich</label><span class="meta" id="toneValue"></span></div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="tone" style="margin:0">Einsatzbereich</label><span class="info" id="toneInfo" tabindex="0" role="note"><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true"></span></span></span><span class="chip ok picked" id="toneValue"></span></div>
         <input type="range" id="tone" min="0" max="4" step="1" list="fiveTicks">
         <div class="spread meta"><span>privat und locker</span><span>formell und arbeitsbezogen</span></div>
         <p id="toneText" class="scaletext" aria-live="polite"></p>
       </div>
       <div>
-        <div class="spread"><label class="field-label" for="durLevel" style="margin:0">Ziel-Entwicklungsdauer</label><span class="meta" id="durValueText"></span></div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="durLevel" style="margin:0">Ziel-Entwicklungsdauer</label><span class="info" id="durInfo" tabindex="0" role="note"><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true"></span></span></span><span class="chip ok picked" id="durValueText"></span></div>
         <input type="range" id="durLevel" min="0" max="8" step="1" list="durTicks">
         <datalist id="durTicks"><option value="0"></option><option value="1"></option><option value="2"></option><option value="3"></option><option value="4"></option><option value="5"></option><option value="6"></option><option value="7"></option><option value="8"></option></datalist>
         <div class="durscale meta" aria-hidden="true"><span>keine</span><span>15 min</span><span>30 min</span><span>1 h</span><span>2 h</span><span>4 h</span><span>1 Tag</span><span>2 Tage</span><span>1 Woche</span></div>
         <p id="durText" class="scaletext" aria-live="polite"></p>
       </div>
-      <div class="spread">
-        <div style="flex:1;min-width:240px"><span class="field-label" style="margin-bottom:2px">UI-Layouts mit Stitch<span class="info" tabindex="0" role="note" aria-label="Erzeugt Layout-Entwürfe aus der fertigen Spezifikation. Die Spezifikation wird dafür an Google Stitch gesendet. Die Entwürfe erscheinen auf der Spezifikationsseite; dort lässt sich die Einstellung ändern."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Erzeugt Layout-Entwürfe aus der fertigen Spezifikation. Die Spezifikation wird dafür an Google Stitch gesendet. Die Entwürfe erscheinen auf der Spezifikationsseite; dort lässt sich die Einstellung ändern.</span></span></span><p class="muted" id="layoutIdeaHint" style="font-size:13px"></p></div>
-        <label class="switch"><input type="checkbox" id="layoutIdea" disabled><span class="track"></span><span>Layout-Entwürfe erstellen</span></label>
+      <div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="layoutIdea" style="margin:0">UI-Layouts mit Stitch</label><span class="info" tabindex="0" role="note" aria-label="Erzeugt Layout-Entwürfe aus dem abgeschlossenen Konzept (Schritt 4); die Spezifikation wird dafür an Google Stitch gesendet. Die Zahl gilt je Kombination aus Gerät und Farbmodus, die dort gewählt wird. 0 = keine Entwürfe."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Erzeugt Layout-Entwürfe aus dem abgeschlossenen Konzept (Schritt 4); die Spezifikation wird dafür an Google Stitch gesendet. Die Zahl gilt je Kombination aus Gerät und Farbmodus, die dort gewählt wird. 0 = keine Entwürfe.</span></span></span><span class="chip ok picked" id="layoutIdeaValue"></span></div>
+        <input type="range" id="layoutIdea" min="0" max="5" step="1" list="autonomyTicks" disabled>
+        <div class="spread meta axis"><span>0</span><span>5</span></div>
+        <p id="layoutIdeaText" class="scaletext" aria-live="polite"></p>
+        <p class="muted" id="layoutIdeaHint" style="font-size:13px"></p>
+      </div>
+      <div>
+        <div class="spread"><span class="scalelabel"><label class="field-label" for="nameCount" style="margin:0">Name der Anwendung</label><span class="info" tabindex="0" role="note" aria-label="Entweder selbst einen Namen eintragen – er wird dann schon in der Spezifikation verwendet – oder die Anzahl der Namensvorschläge wählen. Die Vorschläge erscheinen bei der Spezifikation und lassen sich dort mit einem Klick übernehmen. 0 = keine Vorschläge."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Entweder selbst einen Namen eintragen – er wird dann schon in der Spezifikation verwendet – oder die Anzahl der Namensvorschläge wählen. Die Vorschläge erscheinen bei der Spezifikation und lassen sich dort mit einem Klick übernehmen. 0 = keine Vorschläge.</span></span></span><span class="chip ok picked" id="nameCountValue"></span></div>
+        <input type="range" id="nameCount" min="0" max="5" step="1" list="autonomyTicks">
+        <div class="spread meta axis"><span>0</span><span>5</span></div>
+        <input type="text" id="projectIdea" maxlength="100" placeholder="oder eigenen Namen eintragen" aria-label="Eigener Name der Anwendung" style="margin-top:8px;padding:7px 10px;font-size:14px">
       </div>
     </div>
     <p style="text-align:center"><button class="link" type="button" id="pasteSpec">Vorhandene Spezifikation einfügen</button></p>
@@ -567,18 +595,18 @@ body{padding-bottom:62px}
     <div class="actions"><span class="chip" id="specBadge"></span><span id="specStatus" role="status" class="status"></span></div>
     <div class="split">
       <div>
+        <div class="namebox hidden" id="nameBox"></div>
         <div class="wishbox hidden" id="wishBox">
           <label class="wishlabel" for="wish"><span class="spark" aria-hidden="true">✦</span>Spezifikation anpassen</label>
           <textarea id="wish" rows="1" maxlength="500" placeholder="Was soll anders werden? z. B. „Zusätzlich ein CSV-Export der Notizen“"></textarea>
-          <div class="wishfoot"><span class="meta"><kbd>Strg</kbd> + <kbd>Enter</kbd> · Änderungen werden in der Spezifikation hervorgehoben</span><button id="wishRun" class="btn primary small" type="button">✦ Einarbeiten</button></div>
+          <div class="wishfoot"><button id="wishRun" class="btn primary small" type="button">✦ Einarbeiten</button><span class="meta"><kbd>Strg</kbd> + <kbd>Enter</kbd></span></div>
         </div>
-        <div class="spread" style="margin-bottom:8px">
-          <label class="field-label" for="spec" style="margin:0">SPEC.md</label>
+        <div style="margin-bottom:8px">
           <div class="actions"><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="generate" class="btn primary small" type="button">↻ Konzept generieren</button><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div></div>
         </div>
         <div id="changeBar" class="changebar hidden" role="status"></div>
         <article id="specView" class="md" aria-label="Spezifikation, Ansicht"></article>
-        <textarea id="spec" class="hidden" rows="22" maxlength="50000" placeholder="Spezifikation generieren oder hier einfügen …"></textarea>
+        <textarea id="spec" aria-label="Spezifikation als Markdown bearbeiten" class="hidden" rows="22" maxlength="50000" placeholder="Spezifikation generieren oder hier einfügen …"></textarea>
         <p class="meta" id="specCount" style="text-align:right;margin-top:6px"></p>
       </div>
       <div class="side sticky">
@@ -600,13 +628,13 @@ body{padding-bottom:62px}
         <div class="notebox"><span class="eyebrow">Dein Aufwand</span><p id="effortSide" class="mono" style="font-size:12px;margin-top:6px"></p></div>
       </div>
     </div>
-    <div class="spread hidden"><button class="btn" type="button" data-phase="1">← Fragen</button><button id="toTasks" class="btn" type="button" data-phase="3">Weiter zu Agent Tasks →</button></div>
+    <div class="spread hidden"><button class="btn" type="button" data-phase="1">← Fragen</button><button id="toTasks" class="btn" type="button" data-phase="3">Weiter zur Umsetzung →</button></div>
   </div>
 
   <!-- Schritt 4 · Agent Tasks -->
   <div id="phase3" class="hidden" style="display:flex;flex-direction:column;gap:20px">
     <div class="pagehead">
-      <div><h1>Agent Task Builder<span class="info" tabindex="0" role="note" aria-label="Zerlege die Spezifikation in delegierbare Aufgaben mit Abhängigkeiten, Akzeptanzkriterien, Tests und Zuständigkeiten. Agenten starten nur, wenn du „Direkt umsetzen“ wählst und die Umsetzung dort selbst startest."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Zerlege die Spezifikation in delegierbare Aufgaben mit Abhängigkeiten, Akzeptanzkriterien, Tests und Zuständigkeiten. Agenten starten nur, wenn du „Direkt umsetzen“ wählst und die Umsetzung dort selbst startest.</span></span></h1></div>
+      <div><h1>Umsetzung<span class="info" tabindex="0" role="note" aria-label="Zerlege die Spezifikation in delegierbare Aufgaben mit Abhängigkeiten, Akzeptanzkriterien, Tests und Zuständigkeiten. Agenten starten nur, wenn du „Direkt umsetzen“ wählst und die Umsetzung dort selbst startest."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Zerlege die Spezifikation in delegierbare Aufgaben mit Abhängigkeiten, Akzeptanzkriterien, Tests und Zuständigkeiten. Agenten starten nur, wenn du „Direkt umsetzen“ wählst und die Umsetzung dort selbst startest.</span></span></h1></div>
     </div>
     <!-- Sperre: Aufträge gibt es erst, wenn das Konzept vollständig ist oder der Nutzer das automatische Entscheiden bestätigt hat -->
     <div id="planGate" class="card gate hidden" role="status">
@@ -688,6 +716,11 @@ body{padding-bottom:62px}
   <div class="lightbar"><span id="wbsCap" class="meta"></span><div class="actions"><button id="wbsClose" class="btn small" type="button">Schließen</button></div></div>
   <div class="lightscroll wbsbody" id="wbsBody"></div>
 </dialog>
+<dialog id="askBox" class="askbox" aria-labelledby="askTitle">
+  <h2 id="askTitle"></h2>
+  <p id="askText" class="muted"></p>
+  <div class="actions"><button id="askYes" class="btn primary" type="button"></button><button id="askNo" class="btn" type="button">Abbrechen – selbst entscheiden</button></div>
+</dialog>
 <div id="toast" class="toast hidden" role="status"></div>
 <nav class="stepnav" aria-label="Schrittwechsel"><div class="inner"><button id="navBack" class="btn" type="button"></button><span class="meta" id="navHint"></span><button id="navNext" class="btn primary" type="button"></button></div></nav>
 <footer class="foot"><span class="pill">Entwurf wird lokal im Browser gespeichert</span><span id="privacy">Demo ohne API. Bei aktiver KI werden Projektdaten an Anthropic gesendet. Keine vertraulichen Daten eingeben.</span></footer>
@@ -700,13 +733,13 @@ function applyTheme(){document.documentElement.dataset.theme=theme;const b=docum
 applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('specit-theme',theme)}catch{}applyTheme()};
 
 import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate} from '/planner.mjs';
-import {topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions} from '/interview.mjs';
+import {topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
 
 const $=id=>document.getElementById(id),pageTitle=document.title;
 // Höhe der Kopfzeile (bricht bei schmalem Fenster um) für alles, was darunter haften bleibt
 new ResizeObserver(([e])=>document.documentElement.style.setProperty('--top-h',Math.round(e.target.offsetHeight)+'px')).observe(document.querySelector('.top'));
-const phaseNames=['Idee','Fragen','Spezifikation','Agent Tasks'];
+const phaseNames=['Idee','Fragen','Spezifikation','Umsetzung'];
 // Modus in sechs Stufen (autonomy = Stufe × 20): von „fragt bei allem nach“ bis „entscheidet alles selbst“
 const levels=[
   ['fragt bei allem nach','Keine Annahmen, keine Standards: Jede Frage beantwortest du selbst, nichts ist vorausgewählt.'],
@@ -744,7 +777,7 @@ const toneNames=[
   ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({nameCount:3,names:[],featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -771,6 +804,8 @@ try{
     if(saved.durScale!==2){const old=[0,60,120,240,480,960,2400,4800,9600][s.durLevel]||0;s.durLevel=old?durations.reduce((best,d,i)=>i&&Math.abs(Math.log(d[1]/old))<Math.abs(Math.log(durations[best][1]/old))?i:best,1):0;s.durScale=2}
     for(const k of ['creativity','tone'])if(!Number.isInteger(s[k])||s[k]<0||s[k]>4)s[k]=2;
     s.features=cleanFeatures(saved.features);
+    if(!Number.isInteger(s.nameCount)||s.nameCount<0||s.nameCount>5)s.nameCount=3;
+    s.names=cleanNames(saved.names);
     if(!Number.isInteger(s.featAgents)||s.featAgents<1)s.featAgents=1;
     if(!s.reuse||!Array.isArray(s.reuse.projects)||typeof s.reuseSpec!=='string'){s.reuse=null;s.reuseSpec=''}
     if(!s.planTrace||!Array.isArray(s.planTrace.missing)||!Array.isArray(s.planTrace.unknown)||!Array.isArray(s.planTrace.untraced))s.planTrace=null;
@@ -878,22 +913,27 @@ function ideaUI(){
   $('deriveLabel').textContent=same?'Weiter zu den Fragen →':s.autonomy===100?'✦ Spezifikation erstellen →':s.questions.length?'✦ Fragen neu ableiten →':'✦ Fragen ableiten →';
   // Modus als Stufe mit Bedeutung statt als Prozentwert
   const level=s.autonomy/20,[title,text]=levels[level],n=s.questions.length,ask=Math.round(n*(1-s.autonomy/100)),who=$('ai').checked?'Claude':'SpecIt';
-  $('autonomyValue').textContent='Stufe '+(level+1)+' von '+levels.length;
+  $('autonomyValue').textContent='gewählt: Stufe '+(level+1)+' von '+levels.length;
   $('autonomy').setAttribute('aria-valuetext',who+' '+title);
   scalesUI();
   const d=durations[s.durLevel],fdur=s.features.length?featDuration():null,need=fdur?fdur.total:0;
-  $('durValueText').textContent=s.durLevel?'Stufe '+s.durLevel+' von '+(durations.length-1):'ohne Zeitvorgabe';$('durLevel').setAttribute('aria-valuetext',d[0]);
-  $('durText').replaceChildren(node('b',d[0]+(d[1]?' reine Laufzeit der Coding-Agenten.':'.')),' '+d[2]+(d[1]?' Der Umfang der Spezifikation wird darauf zugeschnitten.':'')
-    +(need&&d[1]?' Die derzeit gewählten Features brauchen mit '+(fdur.agents===1?'einem Agenten':fdur.agents+' parallelen Agenten')+' etwa '+hm(need)+' – '+(need<=d[1]?'das passt.':'das sind '+hm(need-d[1])+' zu viel; Features abwählen oder die Dauer erhöhen.'):''));
-  $('autonomyText').replaceChildren(node('b',who+' '+title+'.'),' '+text+(n&&level>0&&level<5?' Derzeit '+(ask===1?'geht 1 von '+n+' Fragen':'gehen '+ask+' von '+n+' Fragen')+' an dich.':''));
+  $('durValueText').textContent='gewählt: '+durations[s.durLevel][0];$('durLevel').setAttribute('aria-valuetext',d[0]);
+  $('durText').replaceChildren(node('b',d[0]),need&&d[1]?' · Features: '+hm(need)+(need<=d[1]?' – passt':' – '+hm(need-d[1])+' zu viel'):'');
+  tip('durInfo','Reine Laufzeit der Coding-Agenten, nicht menschliche Entwicklungszeit. '+d[2]+(d[1]?' Der Umfang der Spezifikation wird darauf zugeschnitten.':'')+(need&&d[1]?' Die derzeit gewählten Features brauchen mit '+(fdur.agents===1?'einem Agenten':fdur.agents+' parallelen Agenten')+' etwa '+hm(need)+(need<=d[1]?'.':'; dafür Features abwählen oder die Dauer erhöhen.'):''));
+  $('autonomyText').replaceChildren(node('b',who+' '+title),n&&level>0&&level<5?' · '+ask+' von '+n+' Fragen an dich':'');
+  tip('autonomyInfo','Legt fest, wie viel '+who+' selbst entscheidet. '+text);
 }
 // Die beiden weiteren Skalen: Stufe mit Bedeutung anzeigen; eine Änderung macht eine vorhandene Spezifikation prüfbedürftig
+// Text eines Info-Symbols setzen (sichtbar beim Überfahren, für Vorlesehilfen als Beschriftung)
+function tip(id,text){const e=$(id);e.querySelector('.tip').textContent=text;e.setAttribute('aria-label',text)}
 function scalesUI(){
   const who=$('ai').checked?'Claude':'SpecIt',c=creativityLevels[s.creativity],t=toneNames[s.tone];
-  $('creativityValue').textContent='Stufe '+(s.creativity+1)+' von 5';$('creativity').setAttribute('aria-valuetext',who+' '+c[0]);
-  $('creativityText').replaceChildren(node('b',who+' '+c[0]+'.'),' '+c[1]+($('ai').checked?'':' Wirkt nur mit Claude; im Demo-Modus kommen keine eigenen Ideen hinzu.'));
-  $('toneValue').textContent='Stufe '+(s.tone+1)+' von 5';$('tone').setAttribute('aria-valuetext',t[0]);
-  $('toneText').replaceChildren(node('b',t[0]+'.'),' '+t[1]+' Bestimmt Ton und Gestaltung der Anwendung, die entsteht.');
+  $('creativityValue').textContent='gewählt: Stufe '+(s.creativity+1)+' von 5';$('creativity').setAttribute('aria-valuetext',who+' '+c[0]);
+  $('creativityText').replaceChildren(node('b',who+' '+c[0]));
+  tip('creativityInfo','Legt fest, wie viel Eigenes die KI ins Konzept einbringt. '+c[1]+($('ai').checked?'':' Wirkt nur mit Claude; im Demo-Modus kommen keine eigenen Ideen hinzu.'));
+  $('toneValue').textContent='gewählt: Stufe '+(s.tone+1)+' von 5';$('tone').setAttribute('aria-valuetext',t[0]);
+  $('toneText').replaceChildren(node('b',t[0]));
+  tip('toneInfo','Bestimmt Ton und Gestaltung der Anwendung, die entsteht. '+t[1]);
 }
 for(const id of ['creativity','tone'])$(id).oninput=e=>{s[id]=Number(e.target.value);touched();scalesUI();statuses();save()};
 $('autonomy').oninput=e=>{
@@ -974,7 +1014,7 @@ function questionsUI(){
   const out=$('questions'),n=s.questions.length;out.replaceChildren();
   s.questions.forEach((q,i)=>{
     if(i===s.active){
-      const card=node('section',undefined,'card active'),opts=node('div'),foot=node('div',undefined,'spread'),hints=node('span',undefined,'meta'),acts=node('div',undefined,'actions');
+      const card=node('section',undefined,'card active'+(needMark&&q.state==='open'?' need':'')),opts=node('div'),foot=node('div',undefined,'spread'),hints=node('span',undefined,'meta'),acts=node('div',undefined,'actions');
       card.append(node('span','Frage '+(i+1)+' von '+n+' · '+topics[q.topic]+(q.multi?' · Mehrfachauswahl':''),'eyebrow'),node('h2',q.question));
       opts.setAttribute('role',q.multi?'group':'radiogroup');opts.setAttribute('aria-label',q.question);opts.style.cssText='display:flex;flex-direction:column;gap:8px';
       q.options.forEach((_,k)=>opts.append(optionButton(q,k)));
@@ -992,7 +1032,7 @@ function questionsUI(){
       row.append(node('span',q.state==='decided'?'✓ Entschieden':'Annahme (Standard)','chip'+(q.state==='decided'?' ok':'')),qa);
       const edit=button('ändern','link',()=>activate(i));edit.setAttribute('aria-label',q.question+' ändern');row.append(edit);out.append(row);
     }else{
-      const next=button(undefined,'upcoming',()=>activate(i)),chips=node('span',undefined,'actions');
+      const next=button(undefined,'upcoming'+(needMark?' need':''),()=>activate(i)),chips=node('span',undefined,'actions');
       q.options.forEach((o,k)=>{const std=suggest()&&q.defaults.includes(k);chips.append(node('span',o+(std?' · Standard':''),'chip'+(std?' ok':'')))});
       next.append(node('span','Frage '+(i+1)+' von '+n+' · '+topics[q.topic],'eyebrow'),node('span',q.question,'title'),chips);out.append(next);
     }
@@ -1078,6 +1118,7 @@ function catalogUI(){
   const cat=$('catalog'),pend=$('openList'),all=s.questions.map((q,i)=>[q,i]),nOpen=all.filter(([q])=>q.state==='open').length;
   cat.replaceChildren();pend.replaceChildren();
   if(catOpen>=s.questions.length)catOpen=-1;
+  if(needMark&&!nOpen)needMark=false;
   $('decCount').textContent=all.length?nOpen+' offen · '+(all.length-nOpen)+' getroffen':'';
   $('openHead').textContent='Noch offen · '+nOpen;$('doneHead').textContent='Getroffen · '+(all.length-nOpen);$('openHead').classList.toggle('hidden',!all.length);$('doneHead').classList.toggle('hidden',!all.length);
   if(nOpen){
@@ -1099,7 +1140,7 @@ function catalogUI(){
     group.dataset.g=key;group.setAttribute('aria-expanded',String(shown));group.append(node('span',t,'eyebrow'),node('span',String(own.length),'meta'));out.append(group);
     if(!shown)return;
     for(const [q,i] of own){
-      const open=i===catOpen,item=node('div',undefined,'catitem'+(open?' open':'')+(change&&change.ids.includes(i)?' fresh':'')),head=button(undefined,'cathd',()=>{catOpen=open?-1:i;syncCat();catalogUI();side().querySelector('[data-q="'+i+'"]')?.focus({preventScroll:true})}),body=node('span',undefined,'body'),answer=node('span');
+      const open=i===catOpen,item=node('div',undefined,'catitem'+(open?' open':'')+(change&&change.ids.includes(i)?' fresh':'')+(needMark&&q.state==='open'?' need':'')),head=button(undefined,'cathd',()=>{catOpen=open?-1:i;syncCat();catalogUI();side().querySelector('[data-q="'+i+'"]')?.focus({preventScroll:true})}),body=node('span',undefined,'body'),answer=node('span');
       head.dataset.q=i;head.setAttribute('aria-expanded',String(open));
       if(q.state==='open')answer.append(node('span','offen','chip warn'),' ',node('span',plural(q.options.length,'Alternative','Alternativen'),'meta'));else{answer.append(node('b',answerOf(q)));if(q.state==='default')answer.append(' ',node('span','Annahme','chip'))}
       const linked=s.features.filter(f=>(f.from||[]).includes(i));
@@ -1243,7 +1284,34 @@ $('extraOpen').onclick=()=>{$('extraForm').classList.toggle('hidden');$('extraIn
 function addExtra(){const v=$('extraInput').value.trim();if(!v||s.extras.length>=10)return;s.extras.push(v.slice(0,500));$('extraInput').value='';touched();renderAll()}
 $('extraAdd').onclick=addExtra;
 $('extraInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();addExtra()}};
-$('toSpec').onclick=()=>{setPhase(2);if(!s.spec.trim()||s.dirty)generate()};
+$('toSpec').onclick=()=>ensureDecided(()=>{setPhase(2);if(!s.spec.trim()||s.dirty)generate()});
+// Vor dem Konzept müssen alle Entscheidungen getroffen sein. Sind welche offen, fragt SpecIt nach: Die KI trifft sie
+// (vorgeschlagener Standard, als Annahme gekennzeichnet) – oder der Nutzer bricht ab und sieht rot markiert, wo etwas fehlt.
+let needMark=false,askNext=null;
+function ensureDecided(next){
+  const open=s.questions.filter(q=>q.state==='open').length;
+  if(!open){needMark=false;next();return}
+  askNext=next;
+  $('askTitle').textContent=plural(open,'Entscheidung ist','Entscheidungen sind')+' noch offen';
+  $('askText').textContent='Um das Konzept erstellen zu können, werden die noch offenen Entscheidungen von '+($('ai').checked?'Claude':'SpecIt')+' getroffen: jeweils der vorgeschlagene Standard, als Annahme gekennzeichnet und später änderbar.';
+  $('askYes').textContent='✓ '+(open===1?'Die offene Entscheidung treffen lassen':'Alle '+open+' treffen lassen')+' und Konzept erstellen';
+  if(!$('askBox').open)$('askBox').showModal();
+}
+$('askYes').onclick=()=>{
+  $('askBox').close();needMark=false;
+  s.questions=s.questions.map(q=>q.state==='open'?{...acceptDefault(q),auto:true}:q);s.last=-1;touched();activate(-1,false);
+  const next=askNext;askNext=null;renderAll();if(next)next();
+};
+function declineAsk(){
+  if($('askBox').open)$('askBox').close();askNext=null;needMark=true;
+  // Dorthin, wo die Angaben fehlen: in Schritt 2 die Fragenliste, bei der Spezifikation das Feld „Entscheidungen“
+  if(s.phase===2){$('decPanel').open=true;s.questions.forEach(q=>{if(q.state==='open')catGroups.add('o'+q.topic)})}
+  if(s.phase===1&&(s.active<0||s.questions[s.active]?.state!=='open'))activate(firstOpen(),false);
+  renderAll();
+  (s.phase===2?$('decPanel'):document.querySelector('#questions .need'))?.scrollIntoView({block:'center'});
+}
+$('askNo').onclick=declineAsk;
+$('askBox').addEventListener('cancel',e=>{e.preventDefault();declineAsk()});
 document.addEventListener('keydown',e=>{
   if(s.phase!==1||s.active<0||e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;
   const t=e.target instanceof Element?e.target:document.body,q=s.questions[s.active],typing=t.matches('input,textarea,select');
@@ -1454,6 +1522,10 @@ async function generate(){
   if(s.specSource==='claude'&&$('ai').checked&&s.autonomy<100)await deriveDecisions();
   // Danach die Features der Spezifikation mit ihrem Aufwand ermitteln
   await deriveFeatures();
+  // Passt der Umfang nicht in die Zielzeit, gleich einen Vorschlag machen, wie er hineinpasst
+  if(targetMinutes()&&s.features.length&&featDuration().total>targetMinutes())await proposeFit();
+  // Namensvorschläge, sofern gewünscht und kein eigener Name angegeben ist
+  await deriveNames(false);
 }
 
 /* ---------- Features der Spezifikation: an-/abwählen, Aufwand je Feature, Gesamtdauer ---------- */
@@ -1540,12 +1612,7 @@ async function proposeFit(){
     }
   }
   const baseBest=featureDuration(list.map(f=>({...f,on:f.core})),max);
-  if(!$('ai').checked){
-    const level=durations.findIndex(d=>d[1]>=baseBest);
-    s.features=list.map(f=>({...f,on:f.core}));
-    featNote='Die Basis-Features brauchen auch mit '+max+' parallelen Agenten '+hm(baseBest)+'. Im Demo-Modus lässt sich die Basis nicht umschneiden; passen würde die Zielvorgabe „'+(level>0?durations[level][0]:durations[durations.length-1][0])+'“. Mit aktivem Claude schlägt SpecIt einen verschlankten Umfang vor, der in '+hm(target)+' passt.';
-    renderAll();return;
-  }
+  if(!$('ai').checked){fitProposal=localFit(list,target);renderAll();return}
   lock(true,'Lösung für die Zielzeit wird gesucht');featNote='';let message='';
   try{
     const r=await call({mode:'fit',spec:s.spec,features:list,target,maxAgents:Math.min(6,max),idea:s.idea,project:s.project,ai:true});
@@ -1553,12 +1620,34 @@ async function proposeFit(){
     if(!feats.length)throw Error('Claude hat keinen Vorschlag geliefert. Bitte erneut versuchen.');
     const agents=Math.min(6,workPackages(feats).width),fit=suggestExtensions(feats,target,agents);
     fitProposal={summary:r.summary||'',measures:Array.isArray(r.measures)?r.measures:[],features:fit.features,agents,base:fit.base,total:fit.total,chosen:fit.chosen.length,target};
-  }catch(e){message=e.message}finally{lock(false)}
-  renderAll();if(message)specNote(message,true);
+  }catch(e){message=e.message;fitProposal=localFit(list,target)}finally{lock(false)}
+  renderAll();if(message)specNote(message+' Stattdessen steht ein rechnerischer Vorschlag bereit.',true);
+}
+// Rechnerischer Vorschlag ohne KI: Spätere Basis-Features werden zu Erweiterungen, bis die Basis in die Zielzeit passt
+// (das erste Basis-Feature, das Grundgerüst, bleibt); danach kommen die Erweiterungen dazu, die noch hineinpassen.
+function localFit(list,target){
+  let feats=list.map(f=>({...f,on:true})),measures=[];
+  const baseOf=()=>featureDuration(feats.map(f=>({...f,on:f.core})),Math.min(6,workPackages(feats).width));
+  const cores=()=>feats.map((f,i)=>i).filter(i=>feats[i].core).slice(1);
+  while(baseOf()>target&&cores().length){
+    const i=cores().pop();
+    measures.push({kind:'herabstufen',feature:feats[i].id,text:'„'+feats[i].name+'“ wird Erweiterung und kommt erst hinzu, wenn Zeit bleibt.',saves:feats[i].minutes,search:''});
+    feats=feats.map((f,k)=>k===i?{...f,core:false}:f);
+  }
+  const agents=Math.min(6,workPackages(feats).width),fit=suggestExtensions(feats,target,agents);
+  return {local:true,summary:'Rechnerischer Vorschlag ohne KI: Die Basis wird auf das Nötigste verkleinert, indem spätere Basis-Features zu Erweiterungen werden. Inhaltlich verschlanken (einfachere Lösung, vorhandener Code) kann nur Claude.',measures,
+    features:fit.features.map(f=>({...f,inSpec:(list.find(x=>x.id===f.id)||{inSpec:true}).inSpec})),agents,base:fit.base,total:fit.total,chosen:fit.chosen.length,target};
 }
 // Vorschlag übernehmen: Feature-Liste und Agentenzahl ersetzen und den neuen Umfang in die Spezifikation einarbeiten
 async function acceptFit(){
   const p=fitProposal;if(!p||active)return;
+  if(p.local){
+    // Ohne KI wird nichts umformuliert: Auswahl setzen und Abgewähltes über die Feature-Auswahl in die Spezifikation bringen
+    s.features=p.features;s.featAgents=p.agents;fitProposal=null;revision++;
+    featNote='Vorschlag übernommen: '+hm(p.total)+' mit '+(p.agents===1?'einem Agenten':p.agents+' parallelen Agenten')+' bei einer Zielvorgabe von '+hm(p.target)+'.';
+    if(s.features.some(f=>f.on!==f.inSpec))await applyScope();else renderAll();
+    return;
+  }
   const prev={questions:s.questions,extras:s.extras,features:s.features,featAgents:s.featAgents,spec:s.spec,specSource:s.specSource,dirty:s.dirty},rev=++revision;
   const off=p.features.filter(f=>!f.on).map(f=>f.name);
   const wish=('Umfang an die Zielzeit von '+hm(p.target)+' anpassen. '+p.measures.map(m=>(m.feature?m.feature+': ':'')+m.text).join(' ')+(off.length?' Diese Erweiterungen gehören vorerst nicht zum Umfang und stehen nur bei den Nicht-Zielen: '+off.join(', ')+'.':'')).slice(0,1950);
@@ -1644,8 +1733,8 @@ function featuresUI(){
   allOn.disabled=list.every(f=>f.on);allOff.disabled=list.every(f=>f.core||!f.on);
   // Vorschlag: Basis gesetzt, Erweiterungen der Reihe nach, solange die Zielzeit reicht
   const propose=button('✦ Vorschlag für die Zielzeit','btn small',proposeFit);
-  const canPropose=!!target&&goalChanged&&!active;propose.disabled=!canPropose;propose.classList.toggle('primary',canPropose);
-  propose.title=!target?'Dafür eine Zielvorgabe wählen.':!goalChanged?'Wird aktiv, sobald die Zielvorgabe geändert wurde.':'Sucht eine Lösung, die in die Zielvorgabe passt: mehr parallele Agenten, passende Erweiterungen – und wenn die Basis zu groß ist, ein verschlankter Umfang.';const show=button('▤ Struktur anzeigen','btn small',showWbs);show.title='Work Breakdown Structure: Arbeitspakete, Stufen und Abhängigkeiten als Schaubild';acts.append(propose,allOn,allOff,show);box.append(sum,par,acts);
+  const canPropose=!!target&&(goalChanged||over)&&!active;propose.disabled=!canPropose;propose.classList.toggle('primary',canPropose);
+  propose.title=!target?'Dafür eine Zielvorgabe wählen.':!(goalChanged||over)?'Die Auswahl passt in die Zielvorgabe. Aktiv, sobald die Zielvorgabe geändert oder überschritten wird.':'Sucht eine Lösung, die in die Zielvorgabe passt: mehr parallele Agenten, passende Erweiterungen – und wenn die Basis zu groß ist, ein verschlankter Umfang.';const show=button('▤ Struktur anzeigen','btn small',showWbs);show.title='Work Breakdown Structure: Arbeitspakete, Stufen und Abhängigkeiten als Schaubild';acts.append(propose,allOn,allOff,show);box.append(sum,par,acts);
   if(featNote)box.append(node('p',featNote,'featnote'));
   // Lösungsvorschlag von Claude: Maßnahmen, Ergebnis und die Entscheidung des Nutzers
   if(fitProposal){
@@ -1671,6 +1760,10 @@ function featuresUI(){
     body.append(node('span',f.id+(f.dependsOn.length?' · baut auf '+f.dependsOn.join(', ')+' auf':' · unabhängig'),'meta'));
     const src=(f.from||[]).filter(n=>s.questions[n]);
     if(src.length){const why=node('span',undefined,'meta');why.append('folgt aus ');src.forEach((n,k)=>{if(k)why.append(', ');const go=button('Entscheidung '+(n+1),'link',e=>{e.preventDefault();catOpen=n;syncCat();$('decPanel').open=true;catalogUI();side().querySelector('[data-q="'+n+'"]')?.scrollIntoView({block:'nearest'})});go.title=s.questions[n].question;why.append(go)});body.append(why)}
+    if(!(f.core&&i===list.findIndex(x=>x.core))){
+      const flip=button(f.core?'↓ zur Erweiterung machen':'↑ zur Basis machen','link',e=>{e.preventDefault();s.features=s.features.map((x,k)=>k===i?{...x,core:!x.core,on:x.core?x.on:true}:x);featNote='';fitProposal=null;featuresUI();ideaUI();phasesUI();save()});
+      flip.title=f.core?'Dieses Feature ist nicht zwingend: Es wird wählbar und zählt nicht mehr zur Basis.':'Dieses Feature gehört zur grundsätzlichen Funktionsweise und lässt sich dann nicht mehr abwählen.';body.append(flip);
+    }
     row.append(input,node('span',undefined,'track'),body,node('span','≈ '+hm(f.minutes),'chip mins'));box.append(row);
   });
   if(list.some(f=>f.on!==f.inSpec)){
@@ -1679,9 +1772,55 @@ function featuresUI(){
   const foot=node('p',(s.featSource==='claude'?'Aufwand von Claude geschätzt':'Aufwand: feste Demo-Annahmen')+'; die tatsächliche Dauer kann deutlich abweichen. ','meta'),again=button('Neu ermitteln','link',deriveFeatures);
   foot.style.marginTop='12px';again.disabled=active;foot.append(again);box.append(foot);
 }
-$('generate').onclick=generate;
+$('generate').onclick=()=>ensureDecided(()=>generate());
 $('pasteSpec').onclick=()=>{setPhase(2);setSpecMode('edit',true)};
-$('project').oninput=e=>{s.project=e.target.value;touched();statuses();save()};
+for(const id of ['project','projectIdea'])$(id).oninput=e=>{s.project=e.target.value;$(id==='project'?'projectIdea':'project').value=s.project;touched();namesUI();statuses();save()};
+$('nameCount').oninput=e=>{s.nameCount=Number(e.target.value);namesUI();save()};
+
+/* ---------- Name der Anwendung: eigener Name oder Vorschläge ---------- */
+function namesUI(){
+  const named=!!s.project.trim();
+  $('nameCount').disabled=named;
+  $('nameCountValue').textContent=named?'eigener Name':s.nameCount?'gewählt: '+plural(s.nameCount,'Vorschlag','Vorschläge'):'gewählt: keine';
+  $('nameCount').setAttribute('aria-valuetext',$('nameCountValue').textContent);
+  // Vorschläge bei der Spezifikation: ein Klick übernimmt den Namen
+  const box=$('nameBox');box.replaceChildren();
+  box.classList.toggle('hidden',!s.spec.trim()||!(s.names.length||(s.nameCount>0&&!named)));
+  if(box.classList.contains('hidden'))return;
+  box.append(node('span',named?'Name':'Namensvorschläge','eyebrow'));
+  if(named)box.append(node('b',s.project.trim()));
+  for(const n of s.names){
+    const mine=n.name===s.project.trim(),b=button((mine?'✓ ':'')+n.name,'chip pickchip namechip'+(mine?' ok':''),()=>applyName(n.name));
+    b.title=(n.why?n.why+' – ':'')+'Klicken, um diesen Namen zu übernehmen';b.disabled=active;b.setAttribute('aria-pressed',String(mine));box.append(b);
+  }
+  if(s.nameCount>0){const more=button(s.names.length?'↻ Neue Vorschläge':'✦ Namen vorschlagen','link',()=>deriveNames(true));more.disabled=active;box.append(more)}
+}
+async function deriveNames(force){
+  if(active||!s.nameCount||(!force&&(s.project.trim()||s.names.length)))return;
+  if(!s.idea.trim()&&!s.spec.trim())return;
+  const rev=revision;lock(true,'Namensvorschläge werden erzeugt');let message='';
+  try{
+    const r=await call({mode:'names',idea:s.idea,spec:s.spec,count:s.nameCount,tone:s.tone,avoid:s.names,ai:$('ai').checked});
+    if(rev===revision)s.names=cleanNames(r.names);
+  }catch(e){message=e.message}finally{lock(false)}
+  renderAll();if(message)specNote(message,true);
+}
+// Vorschlag übernehmen: Name setzen und in der Spezifikation nachziehen
+async function applyName(name){
+  if(active||name===s.project.trim())return;
+  const old=s.project.trim();s.project=name;revision++;
+  if(!s.spec.trim()){renderAll();return}
+  if(s.specSource==='demo'){await generate();return}
+  if(!$('ai').checked){s.dirty=true;renderAll();return}
+  const prev={questions:s.questions,extras:s.extras,features:s.features,spec:s.spec,specSource:s.specSource,dirty:s.dirty},rev=revision;
+  change=null;lock(true,'Name wird in die Spezifikation übernommen');let md=null,message='';
+  try{md=(await call({mode:'adjust',spec:s.spec,wish:'Die Anwendung heißt „'+name+'“. Ersetze den bisherigen Namen oder Arbeitstitel'+(old?' („'+old+'“)':'')+' überall durch diesen Namen, auch in der Überschrift; sonst ändert sich nichts.',idea:s.idea,project:name,questions:s.questions,extras:s.extras,ai:true,...frame()})).markdown??null}
+  catch(e){message=e.message}finally{lock(false)}
+  if(md===null||rev!==revision){s.dirty=true;renderAll();specNote(message||'Der Name ist gesetzt, die Spezifikation nennt ihn aber noch nicht. Bitte aktualisieren.',true);return}
+  s.spec=md;$('spec').value=md;specMode='view';
+  change={ids:[],title:'Name übernommen:',detail:name,prev,old:prev.spec,until:0,scroll:false};
+  renderAll();flash();
+}
 function aiUI(){
   const on=$('ai').checked;
   $('mode').textContent=on?'Claude aktiv':available?'Demo-Modus · Claude verfügbar':statusLoaded?'Demo-Modus · kein Claude-Zugang':'Demo-Modus';
@@ -1735,7 +1874,9 @@ function layoutNote(){
 }
 function layoutUI(){
   const on=s.layoutOn&&stitch,l=s.layout;
-  $('layoutOn').disabled=!stitch;$('layoutOn').checked=on;$('layoutIdea').disabled=!stitch;$('layoutIdea').checked=on;  $('layoutIdeaHint').textContent=!stitch?'Kein STITCH_API_KEY konfiguriert – siehe README.':on?'Layout-Entwürfe entstehen, sobald das Konzept abgeschlossen ist (Schritt 4).':'Es werden keine Layout-Entwürfe erzeugt.';
+  $('layoutOn').disabled=!stitch;$('layoutOn').checked=on;$('layoutIdea').disabled=!stitch;$('layoutIdea').value=on?s.layoutCount:0;
+  $('layoutIdeaValue').textContent=on?'gewählt: '+plural(s.layoutCount,'Entwurf','Entwürfe'):'gewählt: keine';$('layoutIdea').setAttribute('aria-valuetext',on?plural(s.layoutCount,'Entwurf','Entwürfe'):'keine Entwürfe');
+  $('layoutIdeaText').replaceChildren(node('b',on?plural(s.layoutCount,'Layout-Entwurf','Layout-Entwürfe'):'Keine Layout-Entwürfe'));  $('layoutIdeaHint').textContent=stitch?'':'Kein STITCH_API_KEY konfiguriert – siehe README.';
   $('layoutBody').classList.toggle('hidden',!on);$('layoutRun').disabled=layoutBusy;
   $('layoutLinkRow').classList.toggle('hidden',!l);
   if(l){$('layoutLink').href=l.url;$('layoutLink').textContent=l.url}
@@ -1764,7 +1905,9 @@ function layoutUI(){
   if(!layoutBusy&&!(l&&l.screens.length))$('layoutStatus').textContent='';
   layoutNote();
 }
-for(const id of ['layoutOn','layoutIdea'])$(id).onchange=e=>{s.layoutOn=e.target.checked;layoutUI();planUI();navUI();save()};
+$('layoutOn').onchange=e=>{s.layoutOn=e.target.checked;layoutUI();planUI();navUI();save()};
+// Idee-Seite: Anzahl der Entwürfe per Schieberegler, 0 schaltet die Layout-Erstellung aus
+$('layoutIdea').oninput=e=>{const n=Number(e.target.value);s.layoutOn=n>0;if(n>0)s.layoutCount=n;$('layoutCount').value=s.layoutCount;layoutUI();planUI();navUI();save()};
 $('layoutCount').oninput=e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=1&&n<=5){s.layoutCount=n;save()}};
 $('layoutDevice').oninput=e=>{s.layoutDevice=e.target.value;save();layoutUI()};
 $('layoutTheme').oninput=e=>{s.layoutTheme=e.target.value;save();layoutUI()};
@@ -1956,7 +2099,9 @@ $('reset').onclick=()=>{
 };
 
 function renderAll(){
-  $('project').value=s.project;if($('idea').value!==s.idea)$('idea').value=s.idea;
+  if($('project').value!==s.project)$('project').value=s.project;if($('projectIdea').value!==s.project)$('projectIdea').value=s.project;$('nameCount').value=s.nameCount;
+  namesUI();
+if($('idea').value!==s.idea)$('idea').value=s.idea;
   if($('spec').value!==s.spec)$('spec').value=s.spec;
   $('creativity').value=s.creativity;$('tone').value=s.tone;
   $('autonomy').value=s.autonomy/20;$('durLevel').value=s.durLevel;
