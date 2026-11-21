@@ -1406,14 +1406,15 @@ let catOpen=-1,catPick=[],catCustom='',change=null;
 const catGroups=new Set();
 
 // Local preview is deliberately independent of Claude, persistence and the SVG stream.
-let quickPreview=null,quickPhone=false,quickMode=true;
+let quickPreview=null,quickPhone=false,quickMode=null;
 function refreshLiveForge(phone){
   if(typeof phone==='boolean')quickPhone=phone;
   if(s.phase!==0)return;
   const root=$('liveForgeBody');if(!root)return;
   if(!quickPreview)quickPreview=mountLivePreview(root);
-  quickPreview.update(s,{phone:quickPhone});
-  const hasIdea=!!s.idea.trim(),interactive=hasIdea&&quickMode;
+  const concept=quickPreview.update(s,{phone:quickPhone});
+  const hasIdea=!!s.idea.trim(),interactive=hasIdea&&(quickMode??concept.domain!=='generic');
+  if(!hasIdea)quickMode=null;
   $('sketchBox').dataset.liveView=interactive?'prototype':'sketch';
   const toggle=$('liveForgeSwitch');toggle.hidden=!hasIdea;toggle.textContent=interactive?'Skizze anzeigen':'Bedienbaren Entwurf anzeigen';toggle.setAttribute('aria-pressed',String(interactive));
   $('liveForgeHeading').textContent=interactive?'Bedienbarer Entwurf · live und lokal':'Skizze · live aus deiner Idee';
@@ -3047,7 +3048,7 @@ function sketchUI(){
   else{box.classList.remove('streaming');box.querySelector('.sk-stream')?.remove();for(const c of box.children)c.classList.remove('sk-under')}
 }
 $('idea').addEventListener('input',()=>sketchUI());
-$('liveForgeSwitch').onclick=()=>{quickMode=!quickMode;refreshLiveForge()};
+$('liveForgeSwitch').onclick=()=>{quickMode=$('sketchBox').dataset.liveView!=='prototype';refreshLiveForge()};
 $('sketchPlay').onclick=playBuild;
 $('sketchDevice').onclick=()=>{sketchPhone=!sketchPhone;sketchUI()};
 // Auch die Regler formen die Skizze: Zieldauer, Kreativität, Einsatzbereich, Logo
