@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { validatePlan,demoPlan,renderTask,renderBacklog } from '../planner.mjs';
+test('DAG waves and blocked propagation',()=>{const p=demoPlan('Test');assert.deepEqual(p.waves,[['T01'],['T02','T03'],['T04']]);assert.equal(p.blocked.length,4)});
+test('cycle rejected',()=>{const p=demoPlan('Test');p.tasks[0].dependsOn=['T04'];assert.throws(()=>validatePlan(p),/Zyklisch/)});
+test('unknown dependency rejected',()=>{const p=demoPlan('Test');p.tasks[1].dependsOn=['T99'];assert.throws(()=>validatePlan(p),/Unzulässige/)});
+test('duplicate id rejected',()=>{const p=demoPlan('Test');p.tasks[1].id='T01';assert.throws(()=>validatePlan(p),/Doppelte/)});
+test('missing acceptance criteria rejected',()=>{const p=demoPlan('Test');p.tasks[0].acceptance=[];assert.throws(()=>validatePlan(p),/acceptance/)});
+test('unblocked DAG recomputed',()=>{const p=demoPlan('Test');p.tasks[0].blockedBy=[];assert.deepEqual(validatePlan(p).blocked,[])});
+test('handoff includes spec, dependency and safety gate',()=>{const p=demoPlan('Test');const m=renderTask(p.tasks[1],p,'EXAMPLE');for(const s of ['T01','EXAMPLE','BLOCKIERT','Akzeptanzkriterien','Tests'])assert.ok(m.includes(s))});
+test('backlog includes all tasks',()=>{const p=demoPlan('Test');const m=renderBacklog(p,'EXAMPLE');for(const t of p.tasks)assert.ok(m.includes(t.id+' – '+t.title))});
