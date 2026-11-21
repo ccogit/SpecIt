@@ -902,7 +902,7 @@ $('autonomy').oninput=e=>{
   if(next.some((q,i)=>q.state!==s.questions[i].state)){s.questions=next;change=null;s.last=-1;touched();activate(firstOpen(),false)}
   renderAll();
 };
-$('durLevel').oninput=e=>{s.durLevel=Number(e.target.value);touched();ideaUI();featuresUI();statuses();save()};
+$('durLevel').oninput=e=>{goalChanged=true;s.durLevel=Number(e.target.value);touched();ideaUI();featuresUI();statuses();save()};
 async function derive(more){
   if(active)return;
   const idea=s.idea.trim(),status=more?$('busy'):$('ideaStatus');
@@ -1446,7 +1446,7 @@ async function generate(){
     });
     if(!r||typeof r.markdown!=='string')throw Error('Die Antwort ist unvollständig angekommen. Bitte erneut versuchen.');
     if(rev!==revision)message='Eingaben geändert. Erneut starten.';
-    else{s.spec=r.markdown;s.specSource=r.source;s.specDuration=duration();s.dirty=false;change=null;s.features=s.features.map(f=>({...f,inSpec:f.on}));$('spec').value=s.spec;specMode='view';save()}
+    else{s.spec=r.markdown;s.specSource=r.source;s.specDuration=duration();goalChanged=false;s.dirty=false;change=null;s.features=s.features.map(f=>({...f,inSpec:f.on}));$('spec').value=s.spec;specMode='view';save()}
   }catch(e){message=e.message}finally{streamText=null;lock(false)}
   renderAll();if(message){note(message);return}
   // Was Claude in der Spezifikation offen lässt, gleich als Fragen mit Alternativen anbieten
@@ -1508,6 +1508,8 @@ function showWbs(){
   if(!$('wbs').open)$('wbs').showModal();
 }
 let featNote='',fitProposal=null;
+// Wurde die Zielvorgabe geändert, seit zuletzt ein Vorschlag erzeugt wurde? Erst dann ist der Vorschlag-Knopf aktiv.
+let goalChanged=false;
 // Geänderte Zielvorgabe in die Spezifikation bringen: Demo-Entwurf neu zusammenführen, Claude-Entwurf gezielt anpassen
 async function applyDuration(){
   if(active||!s.spec.trim())return;
@@ -1528,7 +1530,7 @@ async function applyDuration(){
 // sucht Claude eine Lösung – verschlanken, herabstufen, vorhandenen Code nutzen, anders schneiden.
 async function proposeFit(){
   const target=targetMinutes(),list=s.features;if(!target||active||!list.length)return;
-  const fd=featDuration(),max=fd.max,opt=list.filter(f=>!f.core).length;fitProposal=null;
+  const fd=featDuration(),max=fd.max,opt=list.filter(f=>!f.core).length;fitProposal=null;goalChanged=false;
   for(let n=fd.agents;n<=max;n++){
     const r=suggestExtensions(list,target,n);
     if(r.base<=target){
@@ -1630,7 +1632,7 @@ function featuresUI(){
   gHead.append(node('b','Zielvorgabe'),gNow);
   gIn.type='range';gIn.min=0;gIn.max=durations.length-1;gIn.step=1;gIn.value=s.durLevel;gIn.disabled=active;gIn.setAttribute('aria-label','Ziel-Entwicklungsdauer');gIn.setAttribute('aria-valuetext',durations[s.durLevel][0]);
   gIn.oninput=()=>{gNow.textContent=durations[Number(gIn.value)][0];gIn.setAttribute('aria-valuetext',gNow.textContent)};
-  gIn.onchange=()=>{s.durLevel=Number(gIn.value);featNote='';fitProposal=null;renderAll();$('featBox').querySelector('.goalpick input')?.focus({preventScroll:true})};
+  gIn.onchange=()=>{goalChanged=Number(gIn.value)!==s.durLevel||goalChanged;s.durLevel=Number(gIn.value);featNote='';fitProposal=null;renderAll();$('featBox').querySelector('.goalpick input')?.focus({preventScroll:true})};
   goal.append(gHead,gIn);sum.append(goal);
   if(s.spec.trim()&&typeof s.specDuration==='string'&&s.specDuration!==duration()){
     const warn=node('div',undefined,'spread goalwarn'),take=button('In die Spezifikation übernehmen','btn small',applyDuration);take.disabled=active;
@@ -1642,7 +1644,8 @@ function featuresUI(){
   allOn.disabled=list.every(f=>f.on);allOff.disabled=list.every(f=>f.core||!f.on);
   // Vorschlag: Basis gesetzt, Erweiterungen der Reihe nach, solange die Zielzeit reicht
   const propose=button('✦ Vorschlag für die Zielzeit','btn small',proposeFit);
-  propose.disabled=!target||active;propose.title=target?'Sucht eine Lösung, die in die Zielvorgabe passt: mehr parallele Agenten, passende Erweiterungen – und wenn die Basis zu groß ist, ein verschlankter Umfang.':'Dafür in Schritt 1 eine Ziel-Entwicklungsdauer wählen.';const show=button('▤ Struktur anzeigen','btn small',showWbs);show.title='Work Breakdown Structure: Arbeitspakete, Stufen und Abhängigkeiten als Schaubild';acts.append(propose,allOn,allOff,show);box.append(sum,par,acts);
+  const canPropose=!!target&&goalChanged&&!active;propose.disabled=!canPropose;propose.classList.toggle('primary',canPropose);
+  propose.title=!target?'Dafür eine Zielvorgabe wählen.':!goalChanged?'Wird aktiv, sobald die Zielvorgabe geändert wurde.':'Sucht eine Lösung, die in die Zielvorgabe passt: mehr parallele Agenten, passende Erweiterungen – und wenn die Basis zu groß ist, ein verschlankter Umfang.';const show=button('▤ Struktur anzeigen','btn small',showWbs);show.title='Work Breakdown Structure: Arbeitspakete, Stufen und Abhängigkeiten als Schaubild';acts.append(propose,allOn,allOff,show);box.append(sum,par,acts);
   if(featNote)box.append(node('p',featNote,'featnote'));
   // Lösungsvorschlag von Claude: Maßnahmen, Ergebnis und die Entscheidung des Nutzers
   if(fitProposal){
