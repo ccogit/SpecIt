@@ -66,12 +66,22 @@ try{
   mobilePage.on('pageerror',e=>mobileErrors.push(e.message));
   await mobilePage.goto(base+'/',{waitUntil:'domcontentloaded'});
   assert.equal(await mobilePage.locator('#phase0').isVisible(),true);
+  assert.equal(await mobilePage.locator('#phases .phase').count(),4);
+  for(const step of await mobilePage.locator('#phases .phase').all()){
+    const bounds=await step.boundingBox();
+    assert.ok(bounds&&bounds.x>=0&&bounds.x+bounds.width<=390,'every mobile stage is visible, not clipped');
+  }
   await mobilePage.screenshot({path:join(directory,'05-mobile-welcome.png'),fullPage:true});
   await mobilePage.locator('#advancedPanel > summary').click();
   assert.equal(await mobilePage.locator('#advancedPanel').evaluate(e=>e.open),true);
   await mobilePage.screenshot({path:join(directory,'06-mobile-settings.png'),fullPage:true});
   const metrics=await mobilePage.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,viewport:window.innerWidth}));
   assert.ok(metrics.scrollWidth<=metrics.viewport+2,'mobile layout should not overflow: '+JSON.stringify(metrics));
+  await mobilePage.locator('#idea').fill('Eine App zum Verwalten von Immobilienbesichtigungen für kleine Teams.');
+  await mobilePage.locator('#autonomy').evaluate(el=>{el.value='0';el.dispatchEvent(new Event('input',{bubbles:true}));});
+  await mobilePage.locator('#guidedStart').click();
+  await mobilePage.waitForFunction(()=>!document.querySelector('#phase1').classList.contains('hidden'),{timeout:30000});
+  await mobilePage.screenshot({path:join(directory,'07-mobile-guided-questions.png'),fullPage:true});
   assert.equal(mobileErrors.length,0,'no mobile runtime errors: '+mobileErrors.join(' | '));
   await mobile.close();
 
