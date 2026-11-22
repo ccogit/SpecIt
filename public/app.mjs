@@ -3229,7 +3229,9 @@ function runFeatureUI(){
   const line=(key,name,ids,state)=>{
     const card=node('div',undefined,'rvcard '+state),top=node('div',undefined,'rvtop'),steps=node('div',undefined,'rvsteps'),sel=runSel===key&&ids.length>0;
     top.append(node('span',undefined,'rvdot'),node('b',name),node('span',label[state],'rvstate'));
-    for(const id of ids){const t=byId.get(id),c=node('span',id,'rvstep '+(st.get(id)||'waiting'));c.title=(t?t.title:'')+' – '+(stateNames[st.get(id)||'waiting']||'');steps.append(c)}
+    const mini=ids.length>6;steps.classList.toggle('mini',mini);
+    for(const id of ids){const t=byId.get(id),c=node('span',mini?'':id,'rvstep '+(st.get(id)||'waiting'));c.title=id+' · '+(t?t.title:'')+' – '+(stateNames[st.get(id)||'waiting']||'');steps.append(c)}
+    if(mini)steps.append(node('span',String(ids.length),'meta'));
     card.append(top,steps);
     if(ids.length){
       card.classList.add('more');card.classList.toggle('sel',sel);card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-pressed',String(sel));card.title='Einzelheiten rechts '+(sel?'ausblenden':'zeigen');
@@ -3250,12 +3252,12 @@ function runFeatureUI(){
   }
   solo('Übergreifend',after);
   // Vorbereitung und Organisation: was vor und neben der eigentlichen Programmierung geschieht
-  const prep=node('div',undefined,'rvprep'),step=(label,text,state)=>{const x=node('div',undefined,'rvpstep '+(state||'done'));x.append(node('span',state==='off'?'–':state==='running'?'…':'✓','rvpmark'),node('b',label),node('span',text));prep.append(x)};
+  const prep=node('div',undefined,'rvprep'),step=(label,text,state)=>{const x=node('div',undefined,'rvpstep '+(state||'done'));x.append(node('span',state==='off'?'–':state==='running'?'…':state==='todo'?'＋':'✓','rvpmark'),node('b',label),node('span',text));prep.append(x)};
   const repo=(repoText()||'').trim(),lay=typeof chosenLayout==='function'?chosenLayout():null,started=r.items.some(x=>x.state!=='waiting');
   step('Spezifikation',words(s.planSpec||s.spec).toLocaleString('de-DE')+' Wörter als SPEC.md übergeben');
   step('Plan',plural(p.tasks.length,'Arbeitsschritt','Arbeitsschritte')+' in '+plural(p.waves.length,'Stufe','Stufen')+(single?' · als ein Gesamtauftrag':' · als einzelne Aufträge'));
   step('Zielordner',r.dir||s.runDir||'–');
-  step('Repository',repo?repo:'keines angegeben – gearbeitet wird nur im Zielordner',repo?'done':'off');
+  step('Repository',repo?repo:s.repoOn===false?'ausgeschaltet – gearbeitet wird nur im Zielordner':repoAuto()?'wird beim Start auf GitHub angelegt: '+($('repoName').value.trim()||repoSlug())+' ('+($('repoVis').value==='public'?'öffentlich':'privat')+')':'keines angegeben – gearbeitet wird nur im Zielordner',repo?'done':repoAuto()?'todo':'off');
   step('Logo',s.logos[s.logoChosen]?'liegt als design/logo.svg im Zielordner':'keines gewählt',s.logos[s.logoChosen]?'done':'off');
   step('Layout-Entwurf',lay?'gewählter Entwurf liegt im Ordner design':'keiner gewählt',lay?'done':'off');
   step('Agenten',(r.agents===1?'1 Agent, nacheinander':r.agents+' Agenten parallel')+(r.shell?' · dürfen Befehle ausführen (Tests, Build, Installation)':' · ohne Befehle'),!real?'off':started?'done':'running');
