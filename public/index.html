@@ -1276,6 +1276,8 @@ body.merged.decqa #decDerive{margin-top:12px}
         <option value="classic">Klassisch · immer alles neu</option>
         <option value="parallel">Parallel · 3 Fachgruppen</option>
         <option value="turbo">Turbo · parallel + schnelles Modell</option>
+        <option value="gpu">GPU lokal · eigener Inferenzserver</option>
+        <option value="diffusion">Diffusion · Mercury API</option>
       </select>
       <span class="meta" id="specStrategyHint" role="status">Strategie für die nächste Erstellung auswählen.</span>
     </div>
@@ -1510,7 +1512,7 @@ try{
     s.last=-1;
     if(!Number.isInteger(s.layoutCount)||s.layoutCount<1||s.layoutCount>5)s.layoutCount=3;
     if(!['DESKTOP','MOBILE','BOTH'].includes(s.layoutDevice))s.layoutDevice='DESKTOP';
-     if(!['classic','incremental','preload','parallel','turbo'].includes(s.specStrategy))s.specStrategy='incremental';
+     if(!['classic','incremental','preload','parallel','turbo','gpu','diffusion'].includes(s.specStrategy))s.specStrategy='incremental';
      if(!s.strategyTimes||typeof s.strategyTimes!=='object'||Array.isArray(s.strategyTimes))s.strategyTimes={};
     if(!['LIGHT','DARK','BOTH'].includes(s.layoutTheme))s.layoutTheme='LIGHT';
     if(s.layout&&!Array.isArray(s.layout.chosen))s.layout.chosen=typeof s.layout.chosen==='string'&&s.layout.chosen?[s.layout.chosen]:[];
@@ -1544,7 +1546,7 @@ try{
   }
 }catch{s=blank()}
 
-let available=false,provider=null,statusLoaded=false,stitch=false,active=false,layoutBusy=false,runBusy=false,revision=0;
+let available=false,provider=null,statusLoaded=false,gpuAvailable=false,diffusionAvailable=false,stitch=false,active=false,layoutBusy=false,runBusy=false,revision=0;
 // Auswahl der gerade aktiven Frage, bis sie bestätigt wird
 let pick=[],custom='',customOpen=false;
 // Darstellung der Spezifikation: gerenderte Ansicht oder Markdown-Editor
@@ -1561,12 +1563,19 @@ const strategyDescription={
  incremental:'Bestehender Weg: Bei Änderungen nur betroffene Kapitel neu schreiben, sonst vollständig sequenziell.',
  preload:'Experimentell: Spezifikation wird nach stabilen Entscheidungen vorbereitet und beim Erstellen sofort übernommen.',
  parallel:'Experimentell: Erstellt die komplette Spezifikation mit drei parallelen API-Aufrufen. Qualität gesondert prüfen.',
- turbo:'Experimentell: Parallele Neuerstellung mit Haiku und niedrigem Denkaufwand. Qualität gesondert prüfen.'
+ turbo:'Experimentell: Parallele Neuerstellung mit Haiku und niedrigem Denkaufwand. Qualität gesondert prüfen.',
+ gpu:'Experimentell: Vollständige Erstellung über einen lokalen OpenAI-kompatiblen GPU-Inferenzserver.',
+ diffusion:'Experimentell: Vollständige Erstellung über ein gehostetes Text-Diffusion-Modell.'
 };
 function strategyUI(){
  const select=$('specStrategy'),hasApi=provider==='api';
- if(statusLoaded&&!hasApi&&['preload','parallel','turbo'].includes(s.specStrategy))s.specStrategy='incremental';
- for(const option of select.options)if(['preload','parallel','turbo'].includes(option.value))option.disabled=statusLoaded&&!hasApi;
+ if(statusLoaded&&((!hasApi&&['preload','parallel','turbo'].includes(s.specStrategy))
+   ||(!gpuAvailable&&s.specStrategy==='gpu')||(!diffusionAvailable&&s.specStrategy==='diffusion')))s.specStrategy='incremental';
+ for(const option of select.options){
+  if(['preload','parallel','turbo'].includes(option.value))option.disabled=statusLoaded&&!hasApi;
+  if(option.value==='gpu')option.disabled=statusLoaded&&!gpuAvailable;
+  if(option.value==='diffusion')option.disabled=statusLoaded&&!diffusionAvailable;
+ }
  select.value=s.specStrategy;
  select.disabled=active;
  const ms=s.strategyTimes?.[s.specStrategy],last=Number.isFinite(ms)&&ms>0?' Letzte gemessene Erstellung: '+(ms/1000).toFixed(1)+' s.':'';
@@ -4081,7 +4090,7 @@ if(MERGED){
 if(inQuestions()&&s.active<0)activate(firstOpen(),false);else if(s.active>=0)activate(s.active,false);
 renderAll();
 fetch('/api/status').then(r=>r.json()).then(r=>{
-  available=!!r.available;provider=r.provider||null;statusLoaded=true;stitch=!!r.stitch;agentsOk=!!r.agents;reviewers=Array.isArray(r.reviewers)?r.reviewers:[];agentModels=Array.isArray(r.models)?r.models:[];runModelUI();projectsDir=typeof r.projectsDir==='string'?r.projectsDir:'';pathSep=r.pathSep==='/'?'/':'\\';suggestRunDir();$('repoNew').disabled=!r.github;$('repoNew').title=r.github?'Legt über die GitHub-CLI ein leeres Repository in deinem Konto an.':'Dafür die GitHub-CLI einrichten: im Terminal „gh auth login“, dann SpecIt neu starten.';reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
+  available=!!r.available;provider=r.provider||null;statusLoaded=true;gpuAvailable=!!r.gpu;diffusionAvailable=!!r.diffusion;stitch=!!r.stitch;agentsOk=!!r.agents;reviewers=Array.isArray(r.reviewers)?r.reviewers:[];agentModels=Array.isArray(r.models)?r.models:[];runModelUI();projectsDir=typeof r.projectsDir==='string'?r.projectsDir:'';pathSep=r.pathSep==='/'?'/':'\\';suggestRunDir();$('repoNew').disabled=!r.github;$('repoNew').title=r.github?'Legt über die GitHub-CLI ein leeres Repository in deinem Konto an.':'Dafür die GitHub-CLI einrichten: im Terminal „gh auth login“, dann SpecIt neu starten.';reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
   let wanted=false;try{wanted=localStorage.getItem('specit-ai')==='1'}catch{}
   $('ai').checked=available&&wanted;aiUI();
   if(!stitch)$('layoutHint').textContent='Kein STITCH_API_KEY konfiguriert. Schlüssel in .env setzen und neu starten, siehe README.';
