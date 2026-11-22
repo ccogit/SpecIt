@@ -165,7 +165,7 @@ sich keine belastbaren Modell-Benchmarks durchführen.
 
 ### Generierungsstrategie auswählen
 
-Auf der Seite **Spezifikation** steht ein Dropdown mit vier Strategien:
+Auf der Seite **Spezifikation** steht ein Dropdown mit mehreren Strategien:
 
 | Strategie | Verhalten | Voraussetzung |
 |---|---|---|
