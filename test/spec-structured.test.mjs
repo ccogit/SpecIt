@@ -14,7 +14,7 @@ test('deterministically renders all eight chapters and traceable requirements',(
  assert.match(md,/FR-001 Notiz erstellen/);
  assert.match(md,/Abnahme:.*Wenn Text gültig/);
  assert.match(md,/Nutzer und Rollen/);
- assert.match(md,/NFR-/i);
+ assert.match(md,/Keine über die Standards hinaus/);
  assert.ok(structuredPrompt.includes('JSON'));
 });
 
