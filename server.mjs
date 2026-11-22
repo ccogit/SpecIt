@@ -308,7 +308,15 @@ function createRepo(b){
 }
 // Vorschlag für den Zielordner der direkten Umsetzung: ein Ordner im Home-Verzeichnis, über SPECIT_PROJECTS_DIR änderbar
 const projectsDir=path.resolve(process.env.SPECIT_PROJECTS_DIR||path.join(homedir(),'SpecIt-Projekte'));
-function parseJson(out){return JSON.parse(out.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''))}
+// Verträgt einen Codeblock um das JSON und Text davor oder danach (dann zählt der Teil von der ersten bis zur letzten Klammer)
+function parseJson(out){
+ const t=out.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+ try{return JSON.parse(t)}catch(e){
+  const a=t.indexOf('{'),b=t.lastIndexOf('}');
+  if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1))}catch{}}
+  console.error('SpecIt: kein gültiges JSON – '+t.slice(0,300).replace(/\s+/g,' '));throw e;
+ }
+}
 async function claude(b){
  if(b.mode==='revise'){
   // Nur Ersetzungen anfordern statt das Dokument neu schreiben zu lassen; passt eine nicht, entscheidet der Browser (null).
@@ -348,7 +356,7 @@ async function claude(b){
  if(b.mode==='extend'){
   // Freie Zeit nutzen: Die KI schätzt in ihrer eigenen Größenordnung; die freie Zeit wird dafür zurückgerechnet, die Antwort wie alle Schätzungen kalibriert
   const f=factor('feat'),data={project:b.project,idea:b.idea,freeMinutes:Math.round(b.free/f*100)/100,features:b.features.filter(x=>x.on).map(x=>({id:x.id,name:x.name,note:x.note,minutes:Math.round(x.minutes/f*100)/100,core:x.core})),...(b.spec.trim()?{spec:b.spec}:{})};
-  let parsed;try{parsed=parseJson(await ask(withSkills('features',extendPrompt)+startJson,data,3000))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
+  let parsed;try{parsed=parseJson(await ask(withSkills('features',extendPrompt)+startJson,data,6000))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
   const known=new Set(b.features.map(x=>x.name.toLowerCase()));
   // Zusammen mit den vorhandenen prüfen: So bekommen die neuen fortlaufende Kennungen, und ihre Abhängigkeiten zeigen auf die richtigen Features
   const all=cleanFeatures([...b.features,...(Array.isArray(parsed.features)?parsed.features:[]).filter(x=>x&&typeof x==='object').map(x=>({...x,id:'',core:false,own:true}))]);
