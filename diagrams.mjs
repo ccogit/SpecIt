@@ -4,6 +4,8 @@
 
 const kinds = ['start', 'step', 'decision', 'end', 'error'];
 const text = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+// Kennungen der Anforderungen, auf die ein Knoten verweist (FR-001, NFR-001 …)
+const refsOf = v => [...new Set((Array.isArray(v) ? v : []).filter(r => typeof r === 'string' && /^(?:FR|NFR)-\d{3}$/.test(r)))].slice(0, 6);
 
 /** Anweisung an die KI: den wichtigsten Kernablauf als Struktur. */
 export const flowPrompt = 'Leite aus der Spezifikation (spec) das Ablaufdiagramm des wichtigsten Kernablaufs der Anwendung ab – so, wie ihn eine Person von Anfang bis Ende erlebt. '
@@ -28,7 +30,7 @@ export function cleanFlow(raw) {
     const from = text(n.id, 24), label = text(n.label, 60);
     if (!from || !label || map.has(from)) continue;
     const id = 'n' + (nodes.length + 1); map.set(from, id);
-    nodes.push({ id, label, kind: kinds.includes(n.kind) ? n.kind : 'step', refs: [...new Set((Array.isArray(n.refs) ? n.refs : []).filter(r => typeof r === 'string' && /^(?:FR|NFR)-\d{3}$/.test(r)))].slice(0, 6) });
+    nodes.push({ id, label, kind: kinds.includes(n.kind) ? n.kind : 'step', refs: refsOf(n.refs) });
   }
   if (nodes.length < 3) return null;
   // Genau ein Einstieg: der erste als start gekennzeichnete, sonst der erste Knoten
@@ -164,13 +166,13 @@ const layerOf = kind => kind === 'external' ? 'store' : kind;
 
 /** Anweisung an die KI: Aufbau und Datenmodell als Struktur. */
 export const archPrompt = 'Leite aus der Spezifikation (spec) zwei Strukturen ab – nur Struktur, keine Zeichnung. '
-  + '1. structure – der Aufbau der Anwendung als 5 bis 10 Bausteine in Ebenen. Knoten: id (n1, n2 …), label (höchstens 28 Zeichen), note (ein Halbsatz, höchstens 60 Zeichen: wofür der Baustein da ist), '
+  + '1. structure – der Aufbau der Anwendung als 5 bis 10 Bausteine in Ebenen. Knoten: id (n1, n2 …), label (höchstens 28 Zeichen), note (ein Halbsatz, höchstens 60 Zeichen: wofür der Baustein da ist), refs = Kennungen der Anforderungen, die der Baustein vor allem umsetzt (z. B. ["FR-003"]; höchstens 4, leer bei Nutzerrollen), '
   + 'kind = actor (Nutzerrolle, höchstens 3), ui (Bereich oder Ansicht der Oberfläche), logic (fachlicher Baustein, z. B. „Auslosung“), store (Datenhaltung, z. B. „Lokaler Speicher“) oder external (Fremdsystem oder Schnittstelle nach außen). '
   + 'Verbindungen (edges): from, to in Richtung der Nutzung, label ein bis zwei Wörter (z. B. „nutzt“, „speichert“, „liest“); höchstens 14, nur die wesentlichen. '
   + '2. data – die fachlichen Objekte, die die Anwendung hält. entities: name (Einzahl, höchstens 24 Zeichen), attributes (höchstens 6 kurze Feldnamen). '
   + 'relations: from, to (Namen der Objekte), kind = "1:1", "1:n" oder "n:m" (from steht links), label ein bis zwei Wörter (z. B. „besitzt“). Höchstens 8 Objekte; leere Listen, wenn die Anwendung keine eigenen Objekte hält. '
   + 'Erfinde nichts, was die Spezifikation nicht hergibt; nenne keine Technik, die sie nicht festlegt. '
-  + 'Ausschließlich JSON ohne Markdown-Codeblock: {"structure":{"nodes":[{"id":"n1","label":"...","note":"...","kind":"ui"}],"edges":[{"from":"n1","to":"n2","label":"nutzt"}]},"data":{"entities":[{"name":"...","attributes":["..."]}],"relations":[{"from":"...","to":"...","kind":"1:n","label":"..."}]}}';
+  + 'Ausschließlich JSON ohne Markdown-Codeblock: {"structure":{"nodes":[{"id":"n1","label":"...","note":"...","kind":"ui","refs":[]}],"edges":[{"from":"n1","to":"n2","label":"nutzt"}]},"data":{"entities":[{"name":"...","attributes":["..."]}],"relations":[{"from":"...","to":"...","kind":"1:n","label":"..."}]}}';
 
 function cleanStructure(raw) {
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.nodes) || !Array.isArray(raw.edges)) return null;
@@ -180,7 +182,7 @@ function cleanStructure(raw) {
     const from = text(n.id, 24), label = text(n.label, 40);
     if (!from || !label || map.has(from)) continue;
     const id = 'n' + (nodes.length + 1); map.set(from, id);
-    nodes.push({ id, label, note: text(n.note, 80), kind: archKinds.includes(n.kind) ? n.kind : 'logic' });
+    nodes.push({ id, label, note: text(n.note, 80), kind: archKinds.includes(n.kind) ? n.kind : 'logic', refs: refsOf(n.refs) });
   }
   const seen = new Set(), edges = [];
   for (const e of raw.edges) {
@@ -242,12 +244,13 @@ export function layoutStructure(st, { w = 168, h = 46, gapX = 26, gapY = 62, pad
   const rowY = r => pad + top + r * (h + gapY), at = new Map();
   const nodes = st.nodes.map(n => { const p = { ...n, w, h, x: pad + half + col.get(n.id) - w / 2, y: rowY(rowOf.get(n.id)), lines: wrapLabel(n.label, 22) }; at.set(n.id, p); return p; });
   const mids = groups.map((g, r) => ({ top: rowY(r), bottom: rowY(r) + h, gaps: gapsOf(g.list.map(n => at.get(n.id).x), w, gapX), used: new Map() }));
-  // Ansatzpunkte: je Baustein und Kante (oben/unten) die Verbindungen nach der Lage ihres anderen Endes über 70 % der Breite verteilen
+  // Ansatzpunkte: je Baustein und Kante (oben/unten) die Verbindungen nach der Lage ihres anderen Endes über die rechte Hälfte verteilen
+  // (links oben sitzt die Kennung der Anforderung, zu der ein Klick führt)
   const port = new Map(), side = (id, other) => rowOf.get(other) < rowOf.get(id) ? 'top' : 'bottom';
   for (const n of st.nodes) for (const where of ['top', 'bottom']) {
     const list = st.edges.filter(e => (e.from === n.id || e.to === n.id) && rowOf.get(e.from) !== rowOf.get(e.to) && side(n.id, e.from === n.id ? e.to : e.from) === where)
       .sort((a, b) => at.get(a.from === n.id ? a.to : a.from).x - at.get(b.from === n.id ? b.to : b.from).x);
-    list.forEach((e, k) => port.set(n.id + '|' + e.from + '>' + e.to, at.get(n.id).x + w * 0.15 + w * 0.7 * (k + 0.5) / list.length));
+    list.forEach((e, k) => port.set(n.id + '|' + e.from + '>' + e.to, at.get(n.id).x + w * 0.42 + w * 0.5 * (k + 0.5) / list.length));
   }
   const taken = [];
   const edges = st.edges.map(e => {
