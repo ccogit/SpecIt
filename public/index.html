@@ -195,6 +195,10 @@ main{flex:1;width:100%;max-width:var(--page);margin:0 auto;padding:16px 24px;dis
 .flowrule{stroke:var(--outline-soft);stroke-width:1.5;fill:none}
 .flowrow{font:600 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;fill:var(--outline)}
 .flowcard{font:700 11px var(--mono);fill:var(--secondary);text-anchor:middle}
+.protoframe{display:block;width:100%;height:560px;border:1px solid var(--outline-soft);border-radius:10px;background:#f4f1ea}
+.protoframe.tall{height:calc(92vh - 54px);border:0;border-radius:0}
+.lightbox.protobox{width:min(96vw,1280px);height:92vh}.protobody{flex:1;min-height:0;height:calc(92vh - 52px)}
+@media print{.protoframe{display:none}}
 .diagpanel{margin:10px 0 18px}.diagpanel .flowfig{margin:6px 0 0}.diagtabs{display:inline-flex}
 .flowlabel{font:600 11px var(--mono);fill:var(--ink-soft);text-anchor:middle;paint-order:stroke;stroke:var(--surface-low);stroke-width:5px;stroke-linejoin:round}
 @media print{.flowtools{display:none}.flowfig{break-inside:avoid}}
@@ -485,6 +489,14 @@ summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;co
 /* Deutlicher Abstand und eine Trennlinie zwischen den Reglern, damit Überschrift und Regler als Einheit lesbar sind */
 .scales{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:12px}
 .scales>div{background:var(--card);border-radius:8px;box-shadow:var(--shadow);padding:16px 20px}
+/* Gruppen der Regler: je Gruppe eine Karte – Titelzeile oben, die Regler darunter durch feine Linien getrennt */
+.scales{grid-template-columns:1fr!important;gap:0!important}
+.scalegroup{grid-column:1/-1;margin:14px 0 0;padding:12px 16px 4px;border-radius:10px 10px 0 0;background:var(--card);font:700 14px/1.3 var(--sans);letter-spacing:-.005em;color:var(--heading)}
+.scalegroup:first-child{margin-top:0}
+.scales>div{border-radius:0!important;box-shadow:none!important;border-top:1px solid var(--outline-soft)}
+.scalegroup+div{border-top:0}
+.scales>div.glast{border-radius:0 0 10px 10px!important}
+.scales>div.confirmable:hover{box-shadow:inset 3px 0 0 #e2a336!important}
 .scales>.spread{grid-column:1/-1}
 /* gewählter Wert als Marke; Achsenenden bleiben klein und grau */
 .picked{font-size:11px}
@@ -1192,7 +1204,7 @@ body.merged.decqa #decDerive{margin-top:12px}
 <main>
   <!-- Schritt 1 · Idee -->
   <div id="phase0" class="hero hidden">
-    <div class="spread ideahead"><label class="field-label" for="idea" style="margin:0">Deine Idee in einem Satz</label><span class="meta" id="ideaCount"></span></div>
+    <div class="spread ideahead"><label class="field-label" for="idea" style="margin:0">Deine Idee in einem Satz</label></div>
     <div class="card ideacard">
       <textarea id="idea" rows="7" maxlength="2000" aria-label="Was willst du bauen?" placeholder="Was willst du bauen? Ein Satz genügt – z. B. „Eine App, die Teammitglieder wöchentlich zu 20-minütigen Kennenlerngesprächen auslost“. Mehr Details sind willkommen (Umschalt+Enter für eine neue Zeile)."></textarea>
       <!-- Live-Konzept: entsteht beim Tippen als Strom; offene Stellen sind im Text anklickbar -->
@@ -1471,6 +1483,10 @@ body.merged.decqa #decDerive{margin-top:12px}
   <div class="lightbar"><span class="meta">Bilanz · vom eigenen Input über das Zwischenergebnis der KI zum Output</span><div class="actions"><button id="balanceClose" class="btn small" type="button">Schließen</button></div></div>
   <div class="lightscroll balbody" id="balanceBody"></div>
 </dialog>
+<dialog id="protoBox" class="lightbox protobox" aria-label="Prototyp der Anwendung">
+  <div class="lightbar"><span class="meta">Prototyp · klickbar, aus der Spezifikation gebaut</span><div class="actions"><button id="protoClose" class="btn small" type="button">Schließen</button></div></div>
+  <div id="protoBody" class="protobody"></div>
+</dialog>
 <dialog id="wbs" class="lightbox" aria-label="Work Breakdown Structure">
   <div class="lightbar"><span id="wbsCap" class="meta"></span><div class="actions"><button id="wbsClose" class="btn small" type="button">Schließen</button></div></div>
   <div class="lightscroll wbsbody" id="wbsBody"></div>
@@ -1494,6 +1510,7 @@ import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estim
 import { modulators, cleanSvg, cleanLogos,topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
 import {balance} from '/balance.mjs';
+import {cleanProto,protoDocument} from '/prototype.mjs';
 import {cleanFlow,flowMermaid,layoutFlow,cleanArch,layoutStructure,structureMermaid,layoutData,dataMermaid} from '/diagrams.mjs';
 
 const $=id=>document.getElementById(id),pageTitle=document.title;
@@ -1545,7 +1562,7 @@ const toneNames=[
   ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung. Beschreibender Name, kein Humor.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,runOutput:null,own:{},sketch:null,logoCount:0,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,proto:null,runOutput:null,own:{},sketch:null,logoCount:1,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:1,names:[],nameAuto:'',featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -1582,6 +1599,7 @@ try{
     s.names=cleanNames(saved.names);
     {const f=s.flow&&typeof s.flow.key==='string'?cleanFlow(s.flow):null;s.flow=f?{key:s.flow.key,...f}:null}
     {const a=s.arch&&typeof s.arch.key==='string'?cleanArch(s.arch):null;s.arch=a?{key:s.arch.key,...a}:null}
+    {const p=s.proto&&typeof s.proto.key==='string'?cleanProto(s.proto):null;s.proto=p?{key:s.proto.key,...p}:null}
     s.logoCount=Number.isInteger(s.logoCount)?Math.min(5,Math.max(0,s.logoCount)):0;s.logos=cleanLogos(s.logos);s.logoChosen=Number.isInteger(s.logoChosen)&&s.logos[s.logoChosen]?s.logoChosen:-1;
     if(!s.own||typeof s.own!=='object'||Array.isArray(s.own))s.own={};
     if(!s.sketch||typeof s.sketch.svg!=='string'||!cleanSvg(s.sketch.svg))s.sketch=null;else s.sketch.pass=Number.isInteger(s.sketch.pass)?Math.min(2,Math.max(1,s.sketch.pass)):2;
@@ -1753,6 +1771,7 @@ function balanceUI(){
   const sum=node('p',undefined,'balsum');sum.append(node('b',compact(b.user.words)),' getippte Wörter und ',node('b',compact(b.user.clicks)),' Klicks → ',node('b',compact(b.outWords)),' Wörter Spezifikation und Aufträge'+(s.runOutput&&s.nextStep==='run'?', ':''),...(s.runOutput&&s.nextStep==='run'?[node('b',compact(s.runOutput.lines||0)),' Zeilen im Zielordner']:[]),'.');
   box.replaceChildren(input,node('span','→','balarrow'),middle,node('span','→','balarrow'),output,sum);
 }
+$('protoClose').onclick=()=>{$('protoBox').close();$('protoBody').replaceChildren()};
 $('navHint').onclick=()=>{balanceUI();if(!$('balance').open)$('balance').showModal()};
 $('navHint').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('navHint').click()}};
 $('balanceClose').onclick=()=>$('balance').close();$('balance').onclick=e=>{if(e.target===$('balance'))$('balance').close()};
@@ -1843,7 +1862,6 @@ $('navBack').onclick=()=>{if(s.phase)setPhase(MERGED&&s.phase===2?0:s.phase-1)};
 
 /* ---------- Schritt 1: Idee ---------- */
 function ideaUI(){
-  $('ideaCount').textContent=plural(words(s.idea),'Wort','Wörter');
   const same=s.questions.length>0&&s.idea.trim()===s.askedIdea;
   $('deriveLabel').textContent=same?(MERGED?'Weiter zur Spezifikation →':'Weiter zu den Fragen →'):s.autonomy===100?'✦ Weiter zur Spezifikation →':s.questions.length?'✦ Fragen neu ableiten →':conceptLive()?'✦ Ausarbeiten →':'✦ Fragen ableiten →';
   // Modus als Stufe mit Bedeutung statt als Prozentwert
@@ -1879,8 +1897,8 @@ for(const id of ['creativity','tone'])$(id).oninput=e=>{s[id]=Number(e.target.va
 const presets=[
   {name:'Schnellste Umsetzung',why:'Claude entscheidet alles selbst, bringt nichts Eigenes ein, 15 Minuten Zielzeit, keine Layout-Entwürfe.',autonomy:100,creativity:0,durLevel:1,layouts:0},
   {name:'Ausgewogen',why:'Rückfragen bei allen wichtigen Entscheidungen, naheliegende Ergänzungen, keine Zeitvorgabe, keine Layout-Entwürfe.',autonomy:40,creativity:2,durLevel:0,layouts:0},
-  {name:'Bestes Ergebnis',why:'Rückfragen bei allen wichtigen Entscheidungen, eigene Ideen der KI, keine Zeitvorgabe, zwei Layout-Entwürfe zur Auswahl, Review der Spezifikation durch Claude Opus 5.5.',autonomy:40,creativity:3,durLevel:0,layouts:2,review:'claude-opus-5-5'},
-  {name:'Überraschendes Ergebnis',why:'Claude entscheidet alles selbst und denkt das Konzept kreativ weiter, keine Zeitvorgabe, zwei Layout-Entwürfe.',autonomy:100,creativity:4,durLevel:0,layouts:2},
+  {name:'Bestes Ergebnis',why:'Rückfragen bei allen wichtigen Entscheidungen, eigene Ideen der KI, keine Zeitvorgabe, keine Layout-Entwürfe, Review der Spezifikation durch Claude Opus 5.5.',autonomy:40,creativity:3,durLevel:0,layouts:0,review:'claude-opus-5-5'},
+  {name:'Überraschendes Ergebnis',why:'Claude entscheidet alles selbst und denkt das Konzept kreativ weiter, keine Zeitvorgabe, keine Layout-Entwürfe.',autonomy:100,creativity:4,durLevel:0,layouts:0},
   {name:'Volle Kontrolle',why:'Du entscheidest alles selbst: Rückfrage bei jeder Entscheidung, nur das Vorgegebene, keine Zeitvorgabe, keine Layout-Entwürfe.',autonomy:0,creativity:0,durLevel:0,layouts:0}
 ];
 // Ohne Stitch-Zugang lässt sich die Layout-Zahl nicht setzen; dann zählt sie für die Übereinstimmung nicht mit
@@ -2287,26 +2305,54 @@ function specFile(){
 function chapterText(md,res){const lines=String(md||'').split('\n'),out=[];for(const re of res){const at=lines.findIndex(l=>re.test(l));if(at<0)continue;let end=at+1;while(end<lines.length&&!/^## /.test(lines[end]))end++;out.push(lines.slice(at,end).join('\n').trim())}return out.join('\n\n')}
 const diagSrc={
   flow:{chapters:[/^## Kernabläufe/],clean:cleanFlow,field:'flow',fail:'Das Schaubild konnte nicht abgeleitet werden.'},
-  arch:{chapters:[/^## UX und Gestaltung/,/^## Daten und Schnittstellen/],clean:cleanArch,field:'arch',fail:'Aufbau und Datenmodell konnten nicht abgeleitet werden.'}
+  arch:{chapters:[/^## UX und Gestaltung/,/^## Daten und Schnittstellen/],clean:cleanArch,field:'arch',fail:'Aufbau und Datenmodell konnten nicht abgeleitet werden.'},
+  proto:{chapters:[/^## Ziel und Nicht-Ziele/,/^## Kernabläufe/,/^## UX und Gestaltung/,/^## Umfang/],clean:cleanProto,field:'proto',fail:'Der Prototyp konnte nicht gebaut werden.',extra:()=>s.project.trim()}
 };
-const diagKey=src=>{const t=chapterText(s.spec,diagSrc[src].chapters);return t?digest(t):''};
+const diagKey=src=>{const d=diagSrc[src],t=chapterText(s.spec,d.chapters);return t?digest(t+(d.extra?'\n'+d.extra():'')):''};
 const diagNow=src=>s[src]&&s[src].key===diagKey(src)?s[src]:null;
-const diagBusy={flow:false,arch:false},diagTried={flow:'',arch:''},diagNote={flow:'',arch:''};
+const diagBusy={flow:false,arch:false,proto:false},diagTried={flow:'',arch:'',proto:''},diagNote={flow:'',arch:'',proto:''};
+async function bgCall(body,tries=10){
+  for(let i=0;;i++){
+    const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...body,bg:true})}),r=await res.json().catch(()=>({}));
+    if(res.status===429&&i<tries){await new Promise(x=>setTimeout(x,2000));continue}
+    if(!res.ok)throw Error(r.error||'Die Anfrage ist fehlgeschlagen.');
+    if(r.usage)addUsage(body.mode,r.usage);return r;
+  }
+}
+// Name und Logo entstehen von selbst, sobald man die Idee verlassen hat – im Hintergrund, neben Features und Spezifikation.
+// Ein einzelner Vorschlag gilt ohne weiteren Klick als gewählt und steht überall, wo Name und Logo gebraucht werden.
+const brandBusy={names:false,logos:false},brandTried={names:'',logos:''};
+function ensureBrand(){
+  if(!statusLoaded||s.phase<2||(!s.idea.trim()&&!s.spec.trim()))return;
+  const base=[s.idea.trim(),s.tone,$('ai').checked].join('|');
+  if(s.nameCount>0&&!s.project.trim()&&!s.names.length&&!brandBusy.names&&brandTried.names!==base+'|'+s.nameCount){
+    const key=brandTried.names=base+'|'+s.nameCount;brandBusy.names=true;namesUI();
+    bgCall({mode:'names',idea:s.idea,spec:s.spec,count:s.nameCount,tone:s.tone,avoid:[],ai:$('ai').checked})
+      .then(r=>{if(key===brandTried.names&&!s.project.trim()&&!s.names.length){s.names=cleanNames(r.names);save()}},()=>{})
+      .finally(()=>{brandBusy.names=false;renderAll()});
+  }
+  if(s.logoCount>0&&!s.logos.length&&!brandBusy.logos&&brandTried.logos!==base+'|'+s.logoCount){
+    const key=brandTried.logos=base+'|'+s.logoCount;brandBusy.logos=true;logoUI();
+    bgCall({mode:'logos',idea:s.idea,spec:s.spec,project:s.project,count:s.logoCount,tone:s.tone,ai:$('ai').checked})
+      .then(r=>{if(key===brandTried.logos&&!s.logos.length){s.logos=cleanLogos(r.logos);s.logoChosen=s.logos.length===1?0:-1;save()}},()=>{})
+      .finally(()=>{brandBusy.logos=false;renderAll()});
+  }
+  // Genau ein Namensvorschlag gewünscht und gekommen: übernehmen – einmal je Vorschlag, damit ein bewusst geleerter Name leer bleibt
+  if(s.nameCount===1&&s.names.length===1&&!s.project.trim()&&!active&&s.nameAuto!==s.names[0].name){s.nameAuto=s.names[0].name;save();setTimeout(()=>applyName(s.names[0].name),0)}
+}
 async function deriveDiagram(src,force){
   const key=diagKey(src),def=diagSrc[src];
   if(diagBusy[src]||!key||!$('ai').checked||(!force&&(diagTried[src]===key||diagNow(src))))return;
   diagTried[src]=key;diagBusy[src]=true;diagNote[src]='';if(force)specUI();
   try{
-    const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:src,spec:s.spec,ai:true})}),r=await res.json();
-    if(!res.ok)throw Error(r.error||def.fail);
-    const m=def.clean(r[def.field]);
+    const r=await bgCall({mode:src,spec:s.spec,project:s.project,ai:true}),m=def.clean(r[def.field]);
     if(m&&key===diagKey(src)){s[src]={key,...m};save()}
-    if(r.usage)addUsage(src,r.usage);
   }catch(e){diagNote[src]=e.message}
   diagBusy[src]=false;if(s.phase===2&&specMode==='view'&&!active)specUI();
 }
 // Die drei Schaubilder: Titel, Quelle, wie aus dem Stand das Modell wird, wie es gezeichnet und als Mermaid-Text ausgegeben wird
 const diagKinds={
+  proto:{title:'Prototyp',src:'proto',of:m=>m.body,svg:body=>protoFrame(body),busy:'wird aus der Spezifikation gebaut …',ready:'klickbar · aus der Spezifikation gebaut, kein Ersatz für die Umsetzung'},
   flow:{title:'Ablauf',src:'flow',of:m=>m,svg:m=>flowSvg(m),mermaid:flowMermaid},
   structure:{title:'Aufbau',src:'arch',of:m=>m.structure,svg:m=>structureSvg(m),mermaid:structureMermaid},
   data:{title:'Datenmodell',src:'arch',of:m=>m.data,svg:m=>dataSvg(m),mermaid:dataMermaid}
@@ -2394,26 +2440,34 @@ function diagramFigure(kind){
   if(!model&&!stale&&kind==='data')return null;
   const box=node('div',undefined,'flowfig'),head=node('div',undefined,'flowhead'),tools=node('span',undefined,'flowtools'),info=node('span',undefined,'meta'),shown=model||stale;
   head.append(node('span',k.title+(kind==='flow'&&shown&&shown.title?' · '+shown.title:''),'eyebrow'));
-  info.textContent=busy?'wird aus der Spezifikation abgeleitet …':note?note:model?'aus der Spezifikation abgeleitet · maßgeblich bleibt der Text':'Stand vor der letzten Änderung';
-  if(!busy&&$('ai').checked)tools.append(button('↻ neu ableiten','link',()=>deriveDiagram(src,true)));
-  if(model){const copy=button('⧉ Mermaid','link',()=>copyText(k.mermaid(model),info));copy.title='Das Schaubild als Mermaid-Text kopieren (steht auch im heruntergeladenen Markdown)';tools.append(copy)}
+  info.textContent=busy?(k.busy||'wird aus der Spezifikation abgeleitet …'):note?note:model?(k.ready||'aus der Spezifikation abgeleitet · maßgeblich bleibt der Text'):'Stand vor der letzten Änderung';
+  if(!busy&&$('ai').checked)tools.append(button(kind==='proto'?'↻ neu bauen':'↻ neu ableiten','link',()=>deriveDiagram(src,true)));
+  if(kind==='proto'&&model){tools.append(button('⤢ groß','link',()=>protoOpen(model)),button('↓ HTML','link',()=>download((repoSlug()||'prototyp')+'-prototyp.html',protoHtml(model))))}
+  if(model&&k.mermaid){const copy=button('⧉ Mermaid','link',()=>copyText(k.mermaid(model),info));copy.title='Das Schaubild als Mermaid-Text kopieren (steht auch im heruntergeladenen Markdown)';tools.append(copy)}
   head.append(info,tools);box.append(head);
   if(shown){const wrap=node('div',undefined,'flowwrap'+(stale&&!model?' old':''));wrap.append(k.svg(shown));box.append(wrap)}
   return box;
 }
+// Prototyp: das vollständige Dokument mit Gerüst, Name und gewähltem Logo – angezeigt in einem abgeschotteten Rahmen
+// (sandbox ohne same-origin: kein Zugriff auf SpecIt, seinen Speicher oder das Netz).
+const protoHtml=body=>protoDocument(body,{name:s.project.trim(),logoSvg:s.logos[s.logoChosen]?cleanSvg(s.logos[s.logoChosen].svg):'',tone:s.tone});
+function protoFrame(body,tall){const f=node('iframe',undefined,'protoframe'+(tall?' tall':''));f.setAttribute('sandbox','allow-scripts');f.setAttribute('title','Klickbarer Prototyp der Anwendung');f.setAttribute('loading','lazy');f.srcdoc=protoHtml(body);return f}
+function protoOpen(body){$('protoBody').replaceChildren(protoFrame(body,true));if(!$('protoBox').open)$('protoBox').showModal()}
 // Im Überblick: ein Schaubild auf einmal, mit Umschalter
-let diagTab='flow';
+let diagTab='proto';
 function diagramPanel(){
   const kinds=Object.keys(diagKinds).filter(k=>diagramFigure(k));if(!kinds.length)return null;
-  if(!kinds.includes(diagTab))diagTab=kinds[0];
+  // Gewünscht bleibt, was zuletzt gewählt wurde (Standard: der Prototyp); ist es noch nicht da, zeigt die Ansicht vorläufig das erste Vorhandene
+  const shownTab=kinds.includes(diagTab)?diagTab:kinds[0];
   const box=node('div',undefined,'diagpanel'),tabs=node('div',undefined,'seg diagtabs');tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Schaubilder');
-  for(const k of kinds){const b=button(diagKinds[k].title,k===diagTab?'on':'',()=>{diagTab=k;specUI()});b.setAttribute('aria-pressed',String(k===diagTab));tabs.append(b)}
-  if(kinds.length>1)box.append(tabs);box.append(diagramFigure(diagTab));return box;
+  for(const k of kinds){const b=button(diagKinds[k].title,k===shownTab?'on':'',()=>{diagTab=k;specUI()});b.setAttribute('aria-pressed',String(k===shownTab));tabs.append(b)}
+  if(kinds.length>1)box.append(tabs);box.append(diagramFigure(shownTab));return box;
 }
 // In den Kapiteln: der Ablauf unter „Kernabläufe“, Aufbau und Datenmodell unter „Daten und Schnittstellen“
 function specDiagrams(view){
   const head=re=>[...view.querySelectorAll('h3')].find(e=>re.test(e.textContent.trim()));
   const a=head(/^Kernabläufe/),fig=a&&diagramFigure('flow');if(fig)a.after(fig);
+  const u=head(/^UX und Gestaltung/),pf=u&&diagramFigure('proto');if(pf)u.after(pf);
   const b=head(/^Daten und Schnittstellen/);if(b)for(const kind of ['data','structure']){const f=diagramFigure(kind);if(f)b.after(f)}
 }
 // Markdown zum Herunterladen: dieselben Schaubilder als Mermaid-Blöcke in ihren Kapiteln
@@ -2702,7 +2756,7 @@ function specUI(){
   $('specRail').classList.add('hidden');
   if(s.spec.trim()){view.replaceChildren(renderMarkdown(specOut(s.spec),document));specLogo(view);keepIds(view);specDiagrams(view);chaptersUI(view);
     // Fehlt das Schaubild zum aktuellen Stand, wird es im Hintergrund abgeleitet (einmal je Stand)
-    if(!s.dirty&&!active)setTimeout(()=>{deriveDiagram('flow',false);deriveDiagram('arch',false)},0)}
+    if(!s.dirty&&!active)setTimeout(()=>{deriveDiagram('proto',false);deriveDiagram('flow',false);deriveDiagram('arch',false)},0)}
   else view.replaceChildren(node('p',s.features.length?'Der Umfang steht rechts unter „Features“. Auswahl und Zielzeit prüfen, dann „Spezifikation erstellen“ – geschrieben wird erst für den festgelegten Umfang.':'Noch keine Spezifikation. „Spezifikation erstellen“ wählen oder über „Bearbeiten“ eine vorhandene Spezifikation einfügen.','placeholder'));
   changeUI(view);
 }
@@ -3156,7 +3210,7 @@ async function applyScope(){
 async function extendFeatures(){
   if(active)return;
   const target=targetMinutes(),fd=featDuration(),free=target-fd.total;if(!(free>0))return;
-  const rev=revision;lock(true,'Weitere Features werden gesucht');featNote='';let work=false;
+  const rev=revision;lock(true,'Weitere Features werden gesucht');featNote='';
   try{
     const r=await call({mode:'extend',project:s.project,idea:s.idea,spec:s.spec,features:s.features,target,free,maxAgents:fd.agents,ai:$('ai').checked});
     if(rev!==revision){featNote='Eingaben geändert. Erneut starten.';return}
@@ -3168,11 +3222,10 @@ async function extendFeatures(){
       if(featureDuration(trial,fd.agents)>target)continue;
       list=trial;added.push(f.name);known.add(f.name.toLowerCase());
     }
-    if(added.length){s.features=list;revision++;if(s.spec.trim())s.dirty=true;featNote=plural(added.length,'Feature','Features')+' ergänzt (als Erweiterung, abwählbar): '+added.join(', ')+'.'+(s.spec.trim()?' Sie werden jetzt in die Spezifikation eingearbeitet.':'');work=!!s.spec.trim();save()}
+    if(added.length){s.features=list;revision++;if(s.spec.trim())s.dirty=true;featNote=plural(added.length,'Feature','Features')+' ergänzt (als Erweiterung, abwählbar): '+added.join(', ')+'.'+(s.spec.trim()?' Ist die Feature-Liste fertig, arbeitet „Spezifikation aktualisieren“ sie ein.':'');save()}
     else featNote=r.source==='demo'?'Weitere Features schlägt nur Claude vor (Schalter oben rechts).':'Kein weiteres Feature gefunden, das sinnvoll ist und noch in die Zielzeit passt.';
   }catch(e){featNote=e.message}finally{lock(false);renderAll()}
-  // Der Klick auf „Features ergänzen“ gilt auch für das Einarbeiten: Gibt es schon eine Spezifikation, wird sie gleich aktualisiert
-  if(work)generate();
+  // Eingearbeitet wird nicht von selbst: Meist wird mehrfach ergänzt, bis die Zielzeit ausgeschöpft ist – erst dann lohnt das Schreiben.
 }
 function featuresUI(){
   // Solange es keine Spezifikation gibt, ist die Auswahl selbst der Umfang – es gibt nichts einzuarbeiten
@@ -3421,7 +3474,7 @@ function logoUI(){
   $('logoCountText').replaceChildren(node('b',n?plural(n,'Logo-Entwurf','Logo-Entwürfe'):'Keine Logo-Entwürfe'));
   const box=$('logoBox'),off=!(n>0||s.logos.length),pick=s.logos[s.logoChosen];box.replaceChildren();box.classList.toggle('hidden',off);
   if(document.activeElement!==$('logoCountSpec'))$('logoCountSpec').value=n;
-  $('logoMeta').textContent=off?'aus · Anzahl erhöhen':pick?pick.name:s.logos.length?plural(s.logos.length,'Entwurf','Entwürfe')+' · keiner gewählt':'noch keine Entwürfe';
+  $('logoMeta').textContent=off?'aus · Anzahl erhöhen':brandBusy.logos?'wird gezeichnet …':pick?pick.name:s.logos.length?plural(s.logos.length,'Entwurf','Entwürfe')+' · keiner gewählt':'noch keine Entwürfe';
   // Das gewählte Logo steht klein in der Kopfzeile des Bereichs, neben seinem Namen
   if(pick&&!off){const m=$('logoMeta'),mini=logoNode(pick.svg,22);mini.style.cssText='vertical-align:middle;margin-left:8px;border-radius:5px';m.append(mini)}
   const acts=$('logoActs');acts.replaceChildren();
@@ -3900,6 +3953,11 @@ $('sketchRefine').onclick=()=>{
 // auto = aus Grundeinstellung oder Voreinstellung (gelb), own = selbst eingestellt (grün), missing = Wert fehlt (rot)
 const scaleRows=[['autonomy','autonomy','Entscheidungsmodus'],['creativity','creativity','Kreativität der KI'],['tone','tone','Einsatzbereich'],['durLevel','durLevel','Ziel-Entwicklungsdauer'],['layoutIdea','layout','UI-Layouts'],['logoCount','logoCount','Logo-Entwürfe'],['nameCount','nameCount','Name der Anwendung'],['reviewBy','review','Review der Spezifikation']];
 const scaleState=key=>key==='durLevel'&&!s.durLevel?'missing':(s.own&&s.own[key])?'own':'auto';
+// Die Regler stehen in drei Gruppen; jede Gruppe ist optisch eine Karte mit Titelzeile (erste und letzte Zeile sind dafür markiert)
+{const box=document.querySelector('.scales'),rowOf=id=>{let e=$(id);while(e&&e.parentElement!==box)e=e.parentElement;return e};
+  for(const [title,ids] of [['KI-Verhalten',['autonomy','creativity','reviewBy']],['Projekt-Kontext',['tone','durLevel']],['Layout & Design',['nameCount','logoCount','layoutIdea']]]){
+    box.append(node('p',title,'scalegroup'));const rows=ids.map(rowOf).filter(Boolean);rows.forEach((r,i)=>{r.classList.toggle('glast',i===rows.length-1);box.append(r)})
+  }}
 const scaleMissing=()=>scaleRows.filter(([,key])=>scaleState(key)==='missing').map(([,,name])=>name);
 function scaleDots(){
   // Das Zeichen sagt, wer den Wert gesetzt hat – nicht, wie stark er ist: ? = voreingestellt und noch nicht bestätigt, ✓ = von dir bestätigt oder eingestellt, ! = fehlt
@@ -3933,7 +3991,7 @@ $('logoCount').oninput=e=>{s.logoCount=Number(e.target.value);save();logoUI();pa
 // Dieselbe Anzahl bei der Spezifikation: 0 schaltet das Logo aus, jede Zahl darüber wieder ein
 $('logoCountSpec').oninput=e=>{const n=Number(e.target.value);if(e.target.value===''||!Number.isInteger(n)||n<0||n>5)return;s.logoCount=n;save();logoUI();panelsUI()};
 async function deriveLogos(force){
-  if(active||!s.logoCount||(!force&&s.logos.length))return;
+  if(active||!s.logoCount||(!force&&(s.logos.length||brandBusy.logos)))return;
   if(!s.idea.trim()&&!s.spec.trim())return;
   const rev=revision;lock(true,'Logo-Entwürfe werden gezeichnet');let message='';
   try{
@@ -3972,7 +4030,7 @@ function namesUI(){
   const claim=s.names.find(n=>n.name===s.project.trim())?.claim;if(claim)box.append(node('p','„'+claim+'“','meta'));
 }
 async function deriveNames(force){
-  if(active||!s.nameCount||(!force&&(s.project.trim()||s.names.length)))return;
+  if(active||!s.nameCount||(!force&&(s.project.trim()||s.names.length||brandBusy.names)))return;
   if(!s.idea.trim()&&!s.spec.trim())return;
   const rev=revision;lock(true,'Namensvorschläge werden erzeugt');let message='';
   try{
@@ -4313,7 +4371,7 @@ $('runZip').onclick=async()=>{
 $('runOpen').onclick=async()=>{try{await post('/api/run',{action:'open',dir:(run&&run.dir)||s.runDir.trim()})}catch(e){$('runWhere').textContent=e.message}};
 $('runStop').onclick=async()=>{try{run=await post('/api/run',{action:'stop'})}catch(e){$('runStatus').textContent=e.message}pollRun()};
 
-function replaceState(next){revision++;next.autonomy=s.autonomy;next.specStrategy=s.specStrategy;next.layoutOn=s.layoutOn;next.layoutCount=s.layoutCount;next.layoutDevice=s.layoutDevice;next.layoutTheme=s.layoutTheme;s=next;pick=[];custom='';customOpen=false;change=null;catOpen=-1;renderAll()}
+function replaceState(next){revision++;next.autonomy=s.autonomy;next.specStrategy=s.specStrategy;next.layoutDevice=s.layoutDevice;next.layoutTheme=s.layoutTheme;s=next;pick=[];custom='';customOpen=false;change=null;catOpen=-1;renderAll()}
 // Zurücksetzen mit einem Klick: alle Angaben und Antworten leeren, ohne Rückfrage – dafür kurz widerrufbar.
 let undoTimer=0;
 $('reset').onclick=()=>{
@@ -4332,7 +4390,7 @@ if($('idea').value!==s.idea)$('idea').value=s.idea;
   $('creativity').value=s.creativity;$('tone').value=s.tone;
   $('autonomy').value=s.autonomy/20;$('durLevel').value=s.durLevel;
   $('repo').value=s.repo;$('agent').value=s.agent;$('layoutCount').value=s.layoutCount;$('layoutDevice').value=s.layoutDevice;$('layoutTheme').value=s.layoutTheme;
-  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();strategyUI();save();scheduleSpecPreload();
+  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();strategyUI();save();scheduleSpecPreload();ensureBrand();
 }
 if(MERGED){
   // Die Fragenliste zieht in die linke Spalte der Spezifikations-Ansicht um; die Ansicht „Fragen“ selbst wird nicht mehr gezeigt
