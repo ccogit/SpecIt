@@ -6,11 +6,13 @@ import { spawnSync } from 'node:child_process';
 const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
 
 test('all generation strategies are visible in the SpecIt UI and forwarded with the request', () => {
-  for(const name of ['classic','incremental','parallel','turbo'])
+  for(const name of ['classic','incremental','preload','parallel','turbo'])
     assert.match(html,new RegExp('<option value="'+name+'">'));
   assert.match(html,/strategy:s\.specStrategy/);
   assert.match(html,/specStrategy:'incremental'/);
   assert.match(html,/s\.specStrategy==='incremental'&&s\.spec\.trim\(\)/);
+  assert.match(html,/spec\/preload/);
+  assert.match(html,/preloadToken:preloadSession/);
 });
 
 test('browser module stays JavaScript-syntax-valid after UI changes', () => {
