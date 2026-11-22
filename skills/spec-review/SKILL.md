@@ -19,7 +19,7 @@ Gilt ausschließlich für den read-only Review vor der Umsetzung. Unabhängigkei
 
 ## Ergebnis
 
-Ausschließlich das vorgegebene JSON `{"summary":"...","findings":[{"severity":"hoch|mittel|niedrig","section":"...","issue":"...","suggestion":"..."}]}`. Bei keinen belastbaren Befunden leere Liste liefern. Kein Code, keine ergänzenden Felder und keine Änderungen am Originaldokument.
+Ausschließlich das vorgegebene JSON `{"summary":"...","findings":[{"severity":"hoch","section":"...","issue":"...","suggestion":"..."}]}`. `severity` darf ausschließlich `hoch`, `mittel` oder `niedrig` sein. Bei keinen belastbaren Befunden leere Liste liefern. Kein Code, keine ergänzenden Felder und keine Änderungen am Originaldokument.
 
 ## Qualitätsprüfung
 
