@@ -2,7 +2,7 @@
 let theme=null;try{theme=localStorage.getItem('specit-theme')}catch{}
 if(theme!=='dark'&&theme!=='light')theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
 function applyTheme(){document.documentElement.dataset.theme=theme;const b=document.getElementById('theme');b.textContent=theme==='dark'?'☼':'☾';b.title=theme==='dark'?'Helles Thema':'Dunkles Thema';b.setAttribute('aria-pressed',String(theme==='dark'));b.setAttribute('aria-label','Zum '+(theme==='dark'?'hellen':'dunklen')+' Thema wechseln')}
-{let on=false;try{on=localStorage.getItem('specit-settings')==='1'}catch{}const b=document.getElementById('setToggle'),put=()=>{document.body.classList.toggle('showset',on);b.setAttribute('aria-pressed',String(on))};put();b.onclick=()=>{on=!on;try{localStorage.setItem('specit-settings',on?'1':'0')}catch{}put();window.dispatchEvent(new Event('resize'))}}
+document.getElementById('setToggle').onclick=()=>settingsOpen();
 applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('specit-theme',theme)}catch{}applyTheme()};
 
 import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate,setAgentSkill} from '/planner.mjs';
@@ -1496,10 +1496,10 @@ function planUI(){
 let workTimer=0,showTimer=0,workSince=0;
 function working(text,since){
   const bar=$('working');clearInterval(workTimer);clearTimeout(showTimer);
-  if(!text){bar.classList.add('hidden');document.title=pageTitle;return}
+  if(!text){bar.classList.add('hidden');$('workingText').textContent='Bereit';$('workingTime').textContent='';bar.title='Gerade läuft nichts.';bar.setAttribute('aria-label','Bereit');document.title=pageTitle;return}
   // since: Beginn eines länger laufenden Vorgangs (Umsetzung durch Agenten); die Uhr läuft dann von dort weiter.
   const who=since||($('ai').checked&&!text.startsWith('Stitch'))?'Claude arbeitet':'SpecIt arbeitet';workSince=since||Date.now();
-  $('workingText').textContent=who+' · '+text+' …';
+  $('workingText').textContent=who+' · '+text+' …';bar.title=who+' · '+text;bar.setAttribute('aria-label',who+' · '+text);
   const tick=()=>{
     const sec=Math.round((Date.now()-workSince)/1000),hint=since?'Kann je nach Umfang lange dauern · Fenster geöffnet lassen':sec>=8?'Kann eine Minute oder länger dauern · Fenster geöffnet lassen':'Fenster geöffnet lassen';
     $('workingTime').textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
@@ -1521,7 +1521,7 @@ function lock(v,text,releaseId){
 }
 // Schließen oder Neuladen während einer laufenden Anfrage nur nach Rückfrage des Browsers
 $('workingStop').onclick=()=>{
-  if(aborter)aborter.abort();else if(layoutAbort)layoutAbort.abort();else if(runBusy)$('runStop').click();
+  if(aborter)aborter.abort();else if(conceptJob){const j=conceptJob;j.ac.abort();conceptJob=null;working('');conceptUI();mainUI();stageUI()}else if(layoutAbort)layoutAbort.abort();else if(runBusy)$('runStop').click();
 };
 addEventListener('beforeunload',e=>{if(active||layoutBusy||runBusy)e.preventDefault()});
 // Laufende Anfrage (aborter) bzw. laufende Layout-Erstellung (layoutAbort); „Abbrechen“ beendet sie.
@@ -2568,7 +2568,7 @@ async function scopeAfterDraft(){
 }
 async function runConcept(key,wish=''){
   if(conceptJob||active||!atIdea()||key!==conceptKey())return;
-  const only=wish?null:conceptOnly(),ac=new AbortController(),epoch=workSession.generation,job={key,ac,text:'',timer:0,only,wish,prev:only||wish?s.concept.text:''};conceptJob=job;conceptAsk='';conceptUI();mainUI();
+  const only=wish?null:conceptOnly(),ac=new AbortController(),epoch=workSession.generation,job={key,ac,text:'',timer:0,only,wish,prev:only||wish?s.concept.text:''};conceptJob=job;conceptAsk='';conceptUI();mainUI();if(!active)working(wish?'Änderungswunsch wird in den Entwurf eingearbeitet':'Entwurf wird geschrieben');
   try{
     const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'concept',idea:s.idea.trim(),project:s.project,ai:true,...frame(),minutes:targetMinutes(),answers:Object.entries(s.conceptAnswers).map(([q,a])=>({q,a})),wishes:s.conceptWishes,...(only?{only,prev:job.prev}:{}),...(wish?{wish,prev:job.prev}:{})}),signal:workSession.combine(ac.signal)});
     if(!res.ok||!res.body)throw Error('Entwurf nicht möglich.');
@@ -2582,7 +2582,7 @@ async function runConcept(key,wish=''){
     if(workSession.isCurrent(epoch)&&fin&&fin.usage)addUsage('concept',fin.usage);
     if(workSession.isCurrent(epoch)&&conceptJob===job&&fin&&fin.text&&key===conceptKey()){const text=only||wish?conceptMerge(job.prev,fin.text):fin.text;conceptAdopt(text);s.concept={key,text,parts:conceptNow()};if(wish){s.conceptWishes=[...s.conceptWishes,wish].slice(-12);$('conceptWish').value=''}save();if(conceptPush())renderAll()}
   }catch(e){if(workSession.isCurrent(epoch)&&!ac.signal.aborted)conceptPauseUntil=Date.now()+6000}
-  finally{clearTimeout(job.timer);if(workSession.isCurrent(epoch)){const fin=conceptJob===job&&!ac.signal.aborted;if(conceptJob===job)conceptJob=null;conceptUI();mainUI();stageUI();if(fin&&conceptLive())setTimeout(()=>{if(workSession.isCurrent(epoch))conceptAttention()},120);if(fin&&conceptLive()&&!only&&!wish&&!s.questions.length&&!s.features.length)setTimeout(()=>{if(workSession.isCurrent(epoch))scopeAfterDraft()},200)}}
+  finally{clearTimeout(job.timer);if(workSession.isCurrent(epoch)){const fin=conceptJob===job&&!ac.signal.aborted;if(conceptJob===job){conceptJob=null;if(!active)working('')}conceptUI();mainUI();stageUI();if(fin&&conceptLive())setTimeout(()=>{if(workSession.isCurrent(epoch))conceptAttention()},120);if(fin&&conceptLive()&&!only&&!wish&&!s.questions.length&&!s.features.length)setTimeout(()=>{if(workSession.isCurrent(epoch))scopeAfterDraft()},200)}}
 }
 // Änderungswunsch in eigenen Worten: nur bei aktuellem Konzept, sonst wird ohnehin gleich neu geschrieben
 const sendWish=()=>{const w=$('conceptWish').value.trim();if(!w||conceptJob||!s.concept)return;clearTimeout(conceptIdle);if(s.concept.key!==conceptKey()){s.conceptWishes=[...s.conceptWishes,w].slice(-12);$('conceptWish').value='';save();conceptUI();return}runConcept(conceptKey(),w)};
@@ -2683,8 +2683,53 @@ function paramUI(){
     d.querySelector('summary').title=row.querySelector('label').textContent+': '+(text?text.textContent.trim():val)+(st==='missing'?' – fehlt noch, bitte einstellen':st==='auto'?' – voreingestellt':'');
   }
   {const dp=$('durPick'),v=String($('durLevel').value);if(dp.value!==v)dp.value=v;dp.classList.toggle('missing',v==='0')}
+  settingsSync();
   const on=document.querySelector('#presets .btn[aria-pressed=true]');$('paramPresetVal').textContent=on?on.textContent:'eigene';
 }
+/* ---------- Einstellungen als Overlay mit Reglern ---------- */
+// Das Overlay spiegelt die eigentlichen Regler (#autonomy, #creativity, #tone), die Voreinstellungen und die Strategie; die Logik bleibt bei den Originalen.
+const setDefs=[['autonomy','Modus','Wie viel entscheidest du selbst, wie viel die KI?'],['creativity','Kreativität','Wie viele eigene Ideen bringt die KI ein?'],['tone','Einsatz','Wofür ist die Anwendung gedacht?']];
+function settingsSync(){
+  const body=$('setBody');if(!body||!body.firstChild)return;
+  for(const [id] of setDefs){
+    const card=body.querySelector('.setcard[data-id="'+id+'"]');if(!card)continue;
+    const v=Number($(id).value),opts=paramOptions[id](),r=card.querySelector('input'),key=(scaleRows.find(x=>x[0]===id)||[])[1],own=scaleState(key)==='own';
+    if(Number(r.value)!==v)r.value=v;r.style.setProperty('--p',(opts.length>1?v/(opts.length-1)*100:0)+'%');
+    card.querySelector('.setval').textContent=opts[v]?opts[v][0]:'–';card.querySelector('.setwhy').textContent=opts[v]?opts[v][1]:'';
+    const st=card.querySelector('.setstate');st.textContent=own?'von dir eingestellt':'voreingestellt';st.classList.toggle('own',own);
+    card.querySelectorAll('.setticks button').forEach((b,k)=>b.setAttribute('aria-current',String(k===v)));
+  }
+  const strat=$('specStrategy');body.querySelectorAll('#setStrategy button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===strat.value)));
+  const model=$('setModel');if(model)model.textContent=[...$('specModel').childNodes].map(n=>n.textContent.trim()).filter(Boolean).join(' ');
+  const pr=[...document.querySelectorAll('#presets .btn')];body.querySelectorAll('#setPresets button').forEach((b,k)=>b.setAttribute('aria-pressed',String(!!pr[k]&&pr[k].getAttribute('aria-pressed')==='true')));
+}
+function settingsBuild(){
+  const body=$('setBody');body.replaceChildren();
+  const pr=[...document.querySelectorAll('#presets .btn')];
+  if(pr.length){
+    const sec=node('section',undefined,'setsec'),row=node('div',undefined,'setchips');row.id='setPresets';
+    sec.append(node('h3','Voreinstellung'),node('p','Stellt alle Regler mit einem Klick passend ein.','meta'));
+    pr.forEach(p=>{const b=button(p.textContent.trim(),'setchip',()=>{p.click();settingsSync()});if(p.title)b.title=p.title;row.append(b)});
+    sec.append(row);body.append(sec);
+  }
+  for(const [id,name,ask] of setDefs){
+    const opts=paramOptions[id](),card=node('section',undefined,'setsec setcard');card.dataset.id=id;card.style.setProperty('--n',opts.length);
+    const head=node('div',undefined,'sethead'),ttl=node('div'),val=node('div',undefined,'setvalbox');
+    ttl.append(node('h3',name),node('p',ask,'meta'));val.append(node('b',undefined,'setval'),node('span',undefined,'setstate'));head.append(ttl,val);
+    const r=node('input');r.type='range';r.min=0;r.max=opts.length-1;r.step=1;r.className='setrange';r.setAttribute('aria-label',name);
+    const push=()=>{const inp=$(id);inp.value=r.value;inp.dispatchEvent(new Event('input',{bubbles:true}));settingsSync()};
+    r.oninput=push;
+    const ticks=node('div',undefined,'setticks');opts.forEach(([n],k)=>ticks.append(button(n,'',()=>{r.value=k;push()})));
+    card.append(head,r,ticks,node('p',undefined,'setwhy'));body.append(card);
+  }
+  const strat=$('specStrategy'),sec=node('section',undefined,'setsec'),seg=node('div',undefined,'setchips'),model=node('p',undefined,'meta setmodel');seg.id='setStrategy';model.id='setModel';
+  sec.append(node('h3','Strategie'),node('p','Wie die Spezifikation geschrieben wird – und mit welchem Modell.','meta'));
+  for(const o of strat.options){if(o.disabled||o.hidden)continue;const b=button(o.textContent.trim(),'setchip',()=>{strat.value=o.value;strat.dispatchEvent(new Event('change',{bubbles:true}));settingsSync();setTimeout(settingsSync,400)});b.dataset.v=o.value;seg.append(b)}
+  sec.append(seg,model);body.append(sec);
+  settingsSync();
+}
+function settingsOpen(){settingsBuild();const d=$('setDlg');if(!d.open)d.showModal()}
+$('setClose').onclick=()=>$('setDlg').close();$('setDlg').onclick=e=>{if(e.target===$('setDlg'))$('setDlg').close()};
 const scaleMissing=()=>scaleRows.filter(([,key])=>scaleState(key)==='missing').map(([,,name])=>name);
 function scaleDots(){
   paramUI();
