@@ -17,6 +17,7 @@ import { resolveStrategy } from './spec-strategies.mjs';
 import { SpecPreloadCache } from './spec-preload.mjs';
 import { anthropicMessageBody, enabledPromptCache, promptCacheTtl } from './anthropic-cache.mjs';
 import { generationBackends, streamChatCompletion, validateExternalCore } from './chat-backends.mjs';
+import { structuredPrompt, renderStructuredCore } from './spec-structured.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
 import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, extendPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, cleanLogos, demoLogos, logoPrompt, brandLevels, cleanSvg, sketchPrompt, conceptPrompt, conceptSections, sketchRefinePrompt, modulators, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
@@ -580,6 +581,15 @@ http.createServer(async(req,res)=>{
     return;
    }
    if(strategy.id!=='preload')row({t:frame.head});
+   // Compact JSON contract: Claude emits only domain data; SpecIt renders all Markdown.
+   if(strategy.id==='structured'){
+    const json=await ask(withSkills('final',structuredPrompt+'\n'+finalPrompt(data)+conceptNote(data))+startJson,
+      {...brief(data),fixedSections:frame.tail},12000);
+    const core=renderStructuredCore(parseJson(json),data.scope);
+    row({t:core});row({t:frame.tail});
+    row({done:true,source:'claude',strategy:'structured',markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
+    return;
+   }
    // Experimental alternatives: local GPU model or hosted text-diffusion provider.
    if(strategy.id==='gpu'||strategy.id==='diffusion'){
     const backend=externalBackends[strategy.id];
