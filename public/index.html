@@ -2476,10 +2476,12 @@ import { modulators, cleanSvg, cleanLogos,conceptSections,conceptTopic,topics,cl
 import {renderMarkdown} from '/markdown.mjs';
 import {balance} from '/balance.mjs';
 import {readNdjson} from '/ndjson.mjs';
+import {createWorkSession,abortableDelay} from '/work-session.mjs';
 import {cleanProto,protoDocument} from '/prototype.mjs';
 import {cleanFlow,flowMermaid,layoutFlow,cleanArch,layoutStructure,structureMermaid,layoutData,dataMermaid} from '/diagrams.mjs';
 
 const $=id=>document.getElementById(id),pageTitle=document.title;
+const workSession=createWorkSession();
 // Höhe der Kopfzeile (bricht bei schmalem Fenster um) für alles, was darunter haften bleibt
 new ResizeObserver(([e])=>document.documentElement.style.setProperty('--top-h',Math.round(e.target.offsetHeight)+'px')).observe(document.querySelector('.top'));
 // Es gibt nur noch eine Ansicht. Was darin zu sehen ist, folgt aus dem Stand der Arbeit – nicht aus einem gewählten Schritt.
@@ -3361,13 +3363,19 @@ const diagKey=src=>{const d=diagSrc[src],t=chapterText(s.spec,d.chapters);return
 const diagNow=src=>s[src]&&s[src].key===diagKey(src)?s[src]:null;
 const diagBusy={flow:false,arch:false,proto:false},diagTried={flow:'',arch:'',proto:''},diagNote={flow:'',arch:'',proto:''};
 async function bgCall(body,tries=10){
+  const epoch=workSession.generation,signal=workSession.signal;
   for(let i=0;;i++){
-    const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...body,bg:true})}),r=await res.json().catch(()=>({}));
-    if(res.status===429&&i<tries){await new Promise(x=>setTimeout(x,2000));continue}
+    if(!workSession.isCurrent(epoch))throw Error('Abgebrochen.');
+    const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...body,bg:true}),signal});
+    const r=await res.json().catch(()=>({}));
+    if(!workSession.isCurrent(epoch))throw Error('Abgebrochen.');
+    if(res.status===429&&i<tries){await abortableDelay(2000,signal);continue}
     if(!res.ok)throw Error(r.error||'Die Anfrage ist fehlgeschlagen.');
-    if(r.usage)addUsage(body.mode,r.usage);return r;
+    if(r.usage)addUsage(body.mode,r.usage);
+    return r;
   }
 }
+
 // Name und Logo entstehen von selbst, sobald man die Idee verlassen hat – im Hintergrund, neben Features und Spezifikation.
 // Ein einzelner Vorschlag gilt ohne weiteren Klick als gewählt und steht überall, wo Name und Logo gebraucht werden.
 const brandBusy={names:false,logos:false},brandTried={names:'',logos:''};
@@ -3981,21 +3989,29 @@ addEventListener('beforeunload',e=>{if(active||layoutBusy||runBusy)e.preventDefa
 let aborter=null,layoutAbort=null;
 const aborted=e=>e&&e.name==='AbortError'?Error('Abgebrochen.'):e;
 async function post(url,data,signal){
-  let r;try{r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data),signal:signal||aborter?.signal})}catch(e){throw aborted(e)}
-  const x=await r.json();if(!r.ok)throw Error(x.error||'Anfrage fehlgeschlagen.');if(x&&x.usage)addUsage(data&&data.mode,x.usage);return x;
+  const requestSignal=workSession.combine(signal||aborter?.signal);
+  let r;try{r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data),signal:requestSignal})}catch(e){throw aborted(e)}
+  const x=await r.json();
+  if(requestSignal.aborted)throw Error('Abgebrochen.');
+  if(!r.ok)throw Error(x.error||'Anfrage fehlgeschlagen.');
+  if(x&&x.usage)addUsage(data&&data.mode,x.usage);
+  return x;
 }
 const call=data=>post('/api/spec',data).finally(refreshModels);
 // Antwort zeilenweise lesen (je Zeile ein JSON-Objekt) und jede Zeile sofort weiterreichen
 async function stream(url,data,onRow){
+  const requestSignal=workSession.combine(aborter?.signal);
   let r;
-  try { r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data),signal:aborter?.signal}); }
+  try { r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data),signal:requestSignal}); }
   catch(e) { throw aborted(e); }
   if(!r.ok){const x=await r.json().catch(()=>({}));throw Error(x.error||'Anfrage fehlgeschlagen.');}
   try {
     await readNdjson(r.body,m=>{
+      if(requestSignal.aborted)return;
       if(m.done&&m.usage)addUsage(data&&data.mode,m.usage);
       onRow(m);
     });
+    if(requestSignal.aborted)throw Error('Abgebrochen.');
   } catch(e) { throw aborted(e); }
 }
 
