@@ -4,7 +4,7 @@ import { splitChapters } from './blocks.mjs';
 import { chapterGroups } from './spec-parallel.mjs';
 
 /** Structural gate for experimental non-Claude output, not a semantic guarantee. */
-export function validateExternalCore(content) {
+export function validateExternalCore(content, features = []) {
  const sections=splitChapters(content),wanted=chapterGroups.flat();
  if(sections.intro.trim()||sections.chapters.length!==wanted.length
     ||sections.chapters.some((c,i)=>c.title!==wanted[i]||!c.body.trim()))
@@ -14,6 +14,11 @@ export function validateExternalCore(content) {
    throw Error('Der Inferenzdienst hat keine prüfbaren funktionalen Anforderungen geliefert.');
  const ids=[...frBody.matchAll(/\bFR-\d{3}\b/g)].map(m=>m[0]);
  if(new Set(ids).size<1)throw Error('Die Anforderungskennungen fehlen.');
+ for(const item of features){
+   const name=typeof item==='string'?item:item?.name;
+   if(typeof name==='string'&&name.trim()&&!frBody.toLocaleLowerCase('de-DE').includes(name.trim().toLocaleLowerCase('de-DE')))
+     throw Error('Der Inferenzdienst hat das Feature nicht spezifiziert: '+name.trim().slice(0,80));
+ }
  return sections.chapters.map(c=>'## '+c.title+'\n\n'+c.body).join('\n\n')+'\n';
 }
 
