@@ -558,7 +558,7 @@ async function derive(more){
     // Je nach Modus entscheidet SpecIt einen Teil der Fragen selbst; im Auto-Modus alle, dann geht es direkt zur Spezifikation.
     s.questions=applyAutonomy(s.questions,s.autonomy);auto=!more&&firstOpen()<0;
     s.qSource=r.source;s.phase=2;activate(firstOpen(),false);renderAll();if(!quietScope){if(firstOpen()>=0)$('decPanel').open=true;if(!more)focusPart(2)}
-  }catch(e){status.textContent=e.message;flashNote(e.message)}finally{lock(false,undefined,lockId)}
+  }catch(e){if(lockId===currentLockId){status.textContent=e.message;flashNote(e.message)}}finally{lock(false,undefined,lockId)}
   if(lockId!==currentLockId)return;
   // Auch im Auto-Modus wird nur der Umfang ermittelt; geschrieben wird erst auf „Spezifikation erstellen“
   if(auto)startSpec(false);
@@ -830,8 +830,9 @@ async function decideOpen(onlyMinor){
   if(onlyMinor){
     const lockId=lock(true,'Spezifikation wird ausgearbeitet');catalogUI();
     try{const relevant=new Set((await call({mode:'triage',idea:s.idea,project:s.project,questions:s.questions,ai:$('ai').checked,...frame()})).relevant);ids=ids.filter(i=>!relevant.has(i))}
-    catch(e){lock(false,undefined,lockId);catalogUI();specNote(e.message,true);return}
+    catch(e){lock(false,undefined,lockId);if(lockId===currentLockId){catalogUI();specNote(e.message,true)}return}
     lock(false,undefined,lockId);
+    if(lockId!==currentLockId)return;
     if(!ids.length){catalogUI();specNote('Alle offenen Entscheidungen sind als relevant eingestuft – sie bleiben bei dir.');return}
   }
   const set=new Set(ids),left=s.questions.filter(q=>q.state==='open').length-ids.length;catOpen=-1;
@@ -934,7 +935,7 @@ function ensureBrand(){
       .finally(()=>{if(workSession.isCurrent(epoch)){brandBusy.logos=false;renderAll()}});
   }
   // Genau ein Namensvorschlag gewünscht und gekommen: übernehmen – einmal je Vorschlag, damit ein bewusst geleerter Name leer bleibt
-  if(s.nameCount===1&&s.names.length===1&&!s.project.trim()&&!active&&s.nameAuto!==s.names[0].name){s.nameAuto=s.names[0].name;save();setTimeout(()=>applyName(s.names[0].name),0)}
+  if(s.nameCount===1&&s.names.length===1&&!s.project.trim()&&!active&&s.nameAuto!==s.names[0].name){const name=s.names[0].name,epoch=workSession.generation;s.nameAuto=name;save();setTimeout(()=>{if(workSession.isCurrent(epoch))applyName(name)},0)}
 }
 async function deriveDiagram(src,force){
   const key=diagKey(src),def=diagSrc[src],epoch=workSession.generation;
@@ -1733,7 +1734,7 @@ async function proposeFit(){
     if(!feats.length)throw Error('Claude hat keinen Vorschlag geliefert. Bitte erneut versuchen.');
     const agents=Math.min(6,workPackages(feats).width),fit=suggestExtensions(feats,target,agents);
     fitProposal={summary:r.summary||'',measures:Array.isArray(r.measures)?r.measures:[],features:fit.features,agents,base:fit.base,total:fit.total,chosen:fit.chosen.length,target};
-  }catch(e){message=e.message;fitProposal=localFit(list,target)}finally{lock(false,undefined,lockId)}
+  }catch(e){if(lockId===currentLockId){message=e.message;fitProposal=localFit(list,target)}}finally{lock(false,undefined,lockId)}
   if(lockId!==currentLockId)return;
   renderAll();if(message)specNote(message+' Stattdessen steht ein rechnerischer Vorschlag bereit.',true);
 }
@@ -1881,7 +1882,7 @@ async function extendFeatures(){
     }
     if(added.length)done(added,list);
     else{featNote=r.source==='demo'?'Weitere Features schlägt nur Claude vor (Schalter oben rechts).':'Kein weiteres Feature gefunden, das sinnvoll ist und noch in die Zielzeit passt – '+hm(free)+' bleiben frei.';poolDry=poolBase();flashNote(featNote)}
-  }catch(e){featNote=e.message}finally{lock(false,undefined,lockId);if(lockId===currentLockId)renderAll()}
+  }catch(e){if(lockId===currentLockId)featNote=e.message}finally{lock(false,undefined,lockId);if(lockId===currentLockId)renderAll()}
   // Eingearbeitet wird nicht von selbst: Meist wird mehrfach ergänzt, bis die Zielzeit ausgeschöpft ist – erst dann lohnt das Schreiben.
 }
 function featuresUI(){
@@ -2811,7 +2812,7 @@ $('plan').onclick=async()=>{
     const r=await call({mode:'plan',spec:s.spec,...context,ai:$('ai').checked});
     if(rev!==revision){$('planStatus').textContent='Eingaben geändert. Erneut starten.';return}
     s.plan=validatePlan(r.plan);s.planSource=r.source;s.planSpec=s.spec;s.planContext=context;s.planTrace=r.trace||null;statuses();save();
-  }catch(e){$('planStatus').textContent=e.message}finally{lock(false,undefined,lockId)}
+  }catch(e){if(lockId===currentLockId)$('planStatus').textContent=e.message}finally{lock(false,undefined,lockId)}
   if(lockId!==currentLockId)return;
 };
 
@@ -3115,7 +3116,7 @@ function cancelSessionWork(){
   runPollId++;run=null;runBusy=false;
   conceptJob=null;sketchAuto=null;preloadTask=null;preloadStatus={key:'',state:''};
   active=false;aborter=null;layoutBusy=false;layoutAbort=null;streamText=null;paintAt=0;
-  tidyBusy='';featTried='';poolBusy=false;poolDry='';poolTries=0;poolFor='';
+  tidyBusy='';featTried='';featNote='';fitProposal=null;goalChanged=false;poolBusy=false;poolDry='';poolTries=0;poolFor='';
   brandBusy.names=brandBusy.logos=false;brandTried.names=brandTried.logos='';
   for(const kind of Object.keys(diagBusy)){diagBusy[kind]=false;diagTried[kind]='';diagNote[kind]=''}
   working('');
