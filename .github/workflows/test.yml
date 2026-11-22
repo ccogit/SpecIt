@@ -16,4 +16,3 @@ jobs:
           node-version: '22'
       - run: npm test
       - run: node --check server.mjs
-      - run: node --check public/index.html || true # HTML contains inline script; tested through npm test
