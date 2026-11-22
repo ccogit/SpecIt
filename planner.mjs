@@ -14,7 +14,7 @@ export function validatePlan(plan) {
     // Geschätzte Laufzeit eines Coding-Agenten in Minuten; fehlt sie (ältere Pläne), gelten zehn Minuten.
     const mins=(x,d)=>Number.isFinite(x)&&x>0?Math.min(2880,Math.max(.05,Math.round(x*100)/100)):d,minutes=mins(t.minutes,10);
     // raw = Schätzung der KI vor der Kalibrierung an gemessenen Läufen (calibration.mjs)
-    return {id,minutes,...(Number.isFinite(t.raw)&&t.raw>0?{raw:t.raw}:{}),title:str(t.title,'title',160),goal:str(t.goal,'goal'),requirements:arr(t.requirements,'requirements',1),dependsOn,scope:arr(t.scope,'scope',1),outOfScope:arr(t.outOfScope,'outOfScope'),interfaces:arr(t.interfaces,'interfaces'),deliverables:arr(t.deliverables,'deliverables',1),acceptance:arr(t.acceptance,'acceptance',1),tests:arr(t.tests,'tests',1),blockedBy:arr(t.blockedBy,'blockedBy')};
+    return {id,minutes,...(Number.isFinite(t.raw)&&t.raw>0?{raw:t.raw}:{}),title:str(t.title,'title',160),goal:str(t.goal,'goal'),requirements:arr(t.requirements,'requirements',1),features:(Array.isArray(t.features)?t.features:[]).filter(x=>typeof x==='string'&&/^F\d{2,3}$/.test(x)).slice(0,30),dependsOn,scope:arr(t.scope,'scope',1),outOfScope:arr(t.outOfScope,'outOfScope'),interfaces:arr(t.interfaces,'interfaces'),deliverables:arr(t.deliverables,'deliverables',1),acceptance:arr(t.acceptance,'acceptance',1),tests:arr(t.tests,'tests',1),blockedBy:arr(t.blockedBy,'blockedBy')};
   });
   const byId=new Map(tasks.map(t=>[t.id,t]));
   for(const t of tasks)for(const d of t.dependsOn)if(!byId.has(d)||d===t.id)fail('Unzulässige Abhängigkeit '+t.id+' → '+d);
