@@ -76,5 +76,7 @@ test('gaps in traceability are reported instead of discarding the plan', () => {
 });
 test('the planning skills ask nothing back: the concept is complete before planning', () => {
   const text = withSkills('plan', 'x');
-  assert.ok(text.includes('Do not block tasks and do not ask back') && !text.includes('Flag any affected task blocked'));
+  assert.ok(text.includes('Keine Rückfragen') && text.includes('blockedBy: []'));
+  assert.ok(!text.includes('Flag any affected task blocked'));
+  assert.ok(skillStages.plan.includes('execution'));
 });
