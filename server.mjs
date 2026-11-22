@@ -14,6 +14,7 @@ import { withSkills } from './skills.mjs';
 import { aiProfile, inferenceTimer } from './ai-performance.mjs';
 import { chapterGroups, partPrompt, joinParts, orderedChunks } from './spec-parallel.mjs';
 import { resolveStrategy } from './spec-strategies.mjs';
+import { SpecPreloadCache } from './spec-preload.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
 import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, extendPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, cleanLogos, demoLogos, logoPrompt, brandLevels, cleanSvg, sketchPrompt, conceptPrompt, conceptSections, sketchRefinePrompt, modulators, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
@@ -48,6 +49,7 @@ const cliModel=process.env.CLAUDE_CODE_MODEL||'sonnet';
 // Claude Code wird auch mit API-Schlüssel gebraucht: Die direkte Umsetzung läuft immer über seine Agenten.
 const cliOk=process.env.SPECIT_NO_CLAUDE_CODE!=='1'&&await cli(['--version'],'',15000).then(()=>true,()=>false);
 const hasCli=!key&&cliOk;
+const preloads=new SpecPreloadCache();
 const startNow="\n\nSchreibe sofort los, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „#“ der Hauptüberschrift; die Gedankenarbeit geschieht beim Schreiben, Abschnitt für Abschnitt.",startJson="\n\nAntworte sofort, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „{“.";
 const meter=new AsyncLocalStorage(),wordsOf=t=>(String(t).match(/\S+/g)||[]).length;
 const profileFor=(use='')=>{
@@ -168,6 +170,7 @@ function validate(b){
   }
   if(b.mode==='final')data.minutes=Number.isFinite(b.minutes)?Math.min(100000,Math.max(0,b.minutes)):0;
    if(b.mode==='final')data.strategy=b.strategy;
+   if(b.mode==='final')data.preloadToken=typeof b.preloadToken==='string'?b.preloadToken:'';
   if(b.mode==='final')data.scope=cleanFeatures(b.features||[]).map(f=>({name:f.name,note:f.note,basis:!!f.core}));
  if(b.mode!=='revise')return data;
  // Eine Antwort wurde geändert: Spezifikation, Stand davor und Index der geänderten Frage.
@@ -496,7 +499,7 @@ http.createServer(async(req,res)=>{
    return res.end(file.body);
   }catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}
  }
- if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/layout','/api/run','/api/run/download','/api/reuse','/api/repo'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
+ if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/reuse','/api/repo'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
  if(!['http://'+host+':'+port,'http://localhost:'+port].includes(req.headers.origin)||!String(req.headers['content-type']).startsWith('application/json'))return send(res,403,{error:'Nur lokale Anfragen erlaubt.'});
  let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>500000)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
  if(req.url==='/api/repo'){
@@ -519,6 +522,29 @@ http.createServer(async(req,res)=>{
   if(!cliOk)return send(res,503,{error:'Claude Code ist nicht verfügbar. Installieren, mit „claude“ anmelden und SpecIt neu starten.'});
   try{return send(res,200,await startRun(validateRun(body)))}catch(e){return send(res,400,{error:e.message||'Umsetzung konnte nicht gestartet werden.'})}
  }
+ if(req.url==='/api/spec/preload'){
+  // Low-priority speculative run. Its result is tied to a random browser token
+  // AND every validated project input; no request can reuse a stale draft.
+  let data;try{data=validate(JSON.parse(raw))}catch(e){return send(res,400,{error:e.message})}
+  if(data.mode!=='final'||data.strategy!=='preload')return send(res,400,{error:'Preloading ist nur für die Strategie „Vorbereitet“ verfügbar.'});
+  if(!key)return send(res,503,{error:'Preloading benötigt einen Anthropic-API-Schlüssel.'});
+  if(busy)return send(res,409,{error:'Eine andere KI-Anfrage läuft. Vorbereitung später erneut starten.'});
+  try{preloads.key(data.preloadToken,data)}catch(e){return send(res,400,{error:e.message})}
+  meter.getStore().mode='final';meter.getStore().strategy='preload';
+  const ac=new AbortController();
+  res.on('close',()=>{if(!res.writableEnded)ac.abort()});
+  const started=performance.now();
+  try{
+   await preloads.start(data.preloadToken,data,async signal=>{
+    const frame=specFrame(data);
+    const text=await askStream(withSkills('final',finalPrompt(data)+conceptNote(data))+corePrompt(frame),{...brief(data),fixedSections:frame.tail},16000,()=>{},'',signal);
+    const core=text.trim().replace(/^#\\s+.*\\n+/,'');
+    return withToc(frame.head+core+frame.tail);
+   },ac.signal);
+   if(!res.destroyed)return send(res,200,{ready:true,elapsedMs:Math.round(performance.now()-started),usage:meter.getStore()});
+  }catch(e){if(!res.destroyed)return send(res,502,{error:e.message||'Vorbereitung fehlgeschlagen.'})}
+  return;
+ }
  if(req.url==='/api/spec/stream'){
   // Spezifikation als Strom: je Zeile ein JSON-Objekt – {t} für ein Textstück, am Ende {done,…} oder {error}.
   let data;try{data=validate(JSON.parse(raw))}catch(e){return send(res,400,{error:e.message})}
@@ -530,6 +556,7 @@ http.createServer(async(req,res)=>{
   let strategy;try{strategy=resolveStrategy(data.strategy,{hasApi:!!key,legacyParallel:process.env.SPECIT_PARALLEL_SPEC==='1'})}
   catch(e){return send(res,400,{error:e.message})}
   meter.getStore().strategy=strategy.id;
+  if(strategy.id==='preload'){try{preloads.key(data.preloadToken,data)}catch(e){return send(res,400,{error:e.message})}}
   if(!key&&!hasCli)return send(res,503,{error:'Kein Claude-Zugang: ANTHROPIC_API_KEY setzen oder Claude Code installieren und anmelden.'});
   if(busy||Date.now()-lastAI<1500)return send(res,429,{error:'Analyse läuft oder wurde gerade begonnen. Bitte erneut versuchen.'});
   sketchAbort?.abort();busy=true;lastAI=Date.now();watch(res);head();
@@ -537,6 +564,11 @@ http.createServer(async(req,res)=>{
   // Der Anfang erscheint dadurch sofort, und es ist deutlich weniger Text zu erzeugen.
   try{
    const frame=specFrame(data);
+   if(strategy.id==='preload'){
+    row({t:frame.head});
+    const cached=await preloads.take(data.preloadToken,data);
+    if(cached){row({done:true,source:'claude',strategy:'preload',preloaded:true,markdown:cached,usage:meter.getStore()});return}
+   }
    // Kapitelweise: Nur was sich durch die Änderungen ändern muss, wird neu geschrieben; Rahmen und Bausteine kommen frisch, der Rest bleibt wörtlich
    if(!strategy.full&&data.update&&coreChapters(data.previous,frame).length>=3){
     const text=data.changes.length?await askStream(withSkills('final',finalPrompt(data)+conceptNote(data))+updatePrompt(frame,data.changes),{...brief(data),fixedSections:frame.tail,previous:data.previous},16000,t=>row({t})):'';
@@ -544,7 +576,7 @@ http.createServer(async(req,res)=>{
     row({done:true,source:'claude',strategy:strategy.id,update:true,changed:merged.changed,entries:merged.entries,skipped:merged.skipped,markdown:withToc(merged.markdown),usage:meter.getStore()});
     return;
    }
-   row({t:frame.head});
+   if(strategy.id!=='preload')row({t:frame.head});
    // Optional experiment: independent chapters are generated concurrently. API only; legacy flow stays default.
    if(strategy.parallel){
     const shared=withSkills('final',finalPrompt(data)+conceptNote(data));
