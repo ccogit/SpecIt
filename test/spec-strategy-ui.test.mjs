@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const html = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
 const app = readFileSync(new URL('../public/app.mjs', import.meta.url), 'utf8');
+const baseCss = readFileSync(new URL('../public/base.css', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../public/responsive.css', import.meta.url), 'utf8');
 const server = readFileSync(new URL('../server.mjs', import.meta.url), 'utf8');
 
@@ -29,6 +30,11 @@ test('the browser app is a separately served syntax-valid ES module', () => {
 });
 
 test('responsive stylesheet is served and the mobile cancel action stays visible', () => {
+  assert.match(html, /href="\/base\.css"/);
+  assert.match(server, /'\/base\.css':await readFile/);
+  assert.match(baseCss, /:root\s*\{/);
+  assert.match(baseCss, /@media print/);
+  assert.doesNotMatch(html, /<style>/);
   assert.match(html, /href="\/responsive\.css"/);
   assert.match(server, /'\/responsive\.css':await readFile/);
   assert.match(css, /\.top \.working \.workstop\s*\{[\s\S]*display:inline-flex!important/);
