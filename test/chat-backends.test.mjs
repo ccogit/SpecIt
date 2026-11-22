@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generationBackends, streamChatCompletion } from '../chat-backends.mjs';
+import { generationBackends, streamChatCompletion, validateExternalCore } from '../chat-backends.mjs';
+import { chapterGroups } from '../spec-parallel.mjs';
 
 test('GPU inference accepts only local loopback /v1 and explicit model IDs',()=>{
  const env={SPECIT_GPU_MODEL:'Qwen/Qwen3-8B',SPECIT_GPU_BASE_URL:'http://127.0.0.1:8000/v1'};
@@ -43,4 +44,13 @@ test('truncated, HTTP-error and empty output fail closed',async()=>{
  await assert.rejects(streamChatCompletion({backend,system:'',instruction:'',data:{},request:bad}),/HTTP 401/);
  const truncated=async()=>new Response('data: {"choices":[{"delta":{"content":"partial"},"finish_reason":"length"}]}\n\n');
  await assert.rejects(streamChatCompletion({backend,system:'',instruction:'',data:{},request:truncated}),/unvollständige/);
+});
+
+test('experimental provider output passes only with eight complete chapters and functional acceptance',()=>{
+ const expected=chapterGroups.flat();
+ const sections=expected.map(title=>'## '+title+'\n\n'+(title==='Funktionale Anforderungen'?'FR-001: Eingabe prüfen. Abnahme: ungültige Eingabe wird abgelehnt.':'Erforderlicher Inhalt.'));
+ assert.equal((validateExternalCore(sections.join('\n\n')).match(/## /g)||[]).length,8);
+ assert.throws(()=>validateExternalCore(sections.slice(1).join('\n\n')),/Kapitelstruktur/);
+ const missing=sections.map(x=>x.replace('FR-001: Eingabe prüfen. Abnahme:','Keine Funktion.')).join('\n\n');
+ assert.throws(()=>validateExternalCore(missing),/funktionalen Anforderungen/);
 });
