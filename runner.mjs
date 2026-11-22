@@ -7,6 +7,7 @@ import { mkdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validatePlan, renderTask, renderSingle } from './planner.mjs';
+import { MAX_SPEC_CHARS } from './limits.mjs';
 import './agentskill.mjs';
 import { cleanSelections } from './reuse.mjs';
 import { isFileName, downloadFile } from './stitch.mjs';
@@ -45,7 +46,7 @@ export async function openDir(value) {
 
 export function validateRun(b) {
   const dir = targetDir(b && b.dir);
-  if (typeof b.spec !== 'string' || !b.spec.trim() || b.spec.length > 50000) throw Error('Spezifikation fehlt oder zu lang.');
+  if (typeof b.spec !== 'string' || !b.spec.trim() || b.spec.length > MAX_SPEC_CHARS) throw Error('Spezifikation fehlt oder zu lang.');
   const agents = Number.isInteger(b.agents) ? Math.min(maxAgents, Math.max(1, b.agents)) : 1;
   return { dir, agents, featRaw: Number.isFinite(b.featRaw) && b.featRaw > 0 ? Math.min(100000, b.featRaw) : 0, logo: typeof b.logo === 'string' && b.logo.length <= 40000 ? cleanSvg(b.logo) : '', layoutHtmls: (Array.isArray(b.layoutHtmls) ? b.layoutHtmls : []).filter(isFileName).slice(0, 4), shell: b.shell === true, model: /^claude-[a-z0-9-]{3,40}$/.test(b.model || '') ? b.model : '', spec: b.spec, plan: validatePlan(b.plan), context: { repo: String(b.repo || '').slice(0, 500), agent: 'Claude Code', reuse: cleanSelections(b.reuse), ...(typeof b.layoutChoice === 'string' && b.layoutChoice.trim() ? { layoutChoice: b.layoutChoice.trim().slice(0, 200) } : {}), ...(typeof b.layoutUrl === 'string' && b.layoutUrl.startsWith('https://stitch.withgoogle.com/projects/') ? { layoutUrl: b.layoutUrl } : {}) } };
 }
