@@ -2091,6 +2091,37 @@ body:not(.showset) .specwrap .doccol>.specbar{display:none!important}
 .top .bar>#navHint,.top #navHint .ph{height:34px}
 .top #navHint .pnum{font-size:11px}
 .link,.md h3 .meta,.concept h3,.concept h4{font-size:12px}
+/* Responsive Ausarbeitung: bei schmalen Fenstern nur eine Dokumentenspalte.
+   Verhindert, dass die Desktop-Grid-Positionierung Gliederung und Dokument überlagert. */
+@media (max-width:1180px) {
+  .split>*{min-width:0}
+  .specwrap{display:flex!important;flex-direction:column;gap:12px;min-width:0}
+  .specwrap>.doccol,.specwrap>.railcol{display:flex!important;position:static;align-self:stretch;width:100%;min-width:0;gap:10px}
+  .specwrap>.doccol{order:1}
+  .specwrap>.railcol{order:2}
+  .specwrap>.doccol>*{grid-column:auto!important;grid-row:auto!important;min-width:0}
+  .specwrap>.railcol>#railBrand{display:none!important}
+  .specwrap>.railcol>.specrail{position:static;display:flex;flex-direction:row;flex-wrap:nowrap;flex:0 0 auto;gap:4px;max-height:none;overflow-x:auto;overflow-y:hidden;padding:7px;scrollbar-width:thin}
+  .specwrap>.railcol>.specrail>button{flex:0 0 auto;width:auto;max-width:240px}
+  .specwrap .doccol>.specbar{height:auto;min-height:38px}
+  .split>.side{min-width:0}
+}
+@media (max-width:760px) {
+  .top .bar{grid-template-columns:minmax(0,1fr) auto!important;gap:8px}
+  .top .bar>.brand{grid-column:1}
+  .top .bar>.tools{grid-column:2!important;gap:4px;justify-content:flex-end;min-width:0}
+  .top .bar>.working{grid-column:1/-1;grid-row:2}
+  .toolrow{grid-template-columns:minmax(0,1fr)}
+  .toolrow #reviewGo,.toolrow #reuseBox>.btn{grid-column:1;grid-row:auto}
+  .md details.req>summary,.md .reqhead{padding-right:12px}
+  .md details.req>summary::after,.md .reqhead::after{display:none}
+  .specwrap>.railcol>.specrail>button{max-width:175px}
+}
+@media (max-width:480px) {
+  #setToggle{font-size:0!important;min-width:38px;justify-content:center}
+  #setToggle::before{content:"⚙";font-size:17px;line-height:1}
+  .top .bar>.tools{gap:2px}
+}
 </style>
 </head>
 <body>
@@ -2444,6 +2475,7 @@ import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estim
 import { modulators, cleanSvg, cleanLogos,conceptSections,conceptTopic,topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
 import {balance} from '/balance.mjs';
+import {readNdjson} from '/ndjson.mjs';
 import {cleanProto,protoDocument} from '/prototype.mjs';
 import {cleanFlow,flowMermaid,layoutFlow,cleanArch,layoutStructure,structureMermaid,layoutData,dataMermaid} from '/diagrams.mjs';
 
@@ -3947,16 +3979,18 @@ async function post(url,data,signal){
 const call=data=>post('/api/spec',data).finally(refreshModels);
 // Antwort zeilenweise lesen (je Zeile ein JSON-Objekt) und jede Zeile sofort weiterreichen
 async function stream(url,data,onRow){
-  let r;try{r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data),signal:aborter?.signal})}catch(e){throw aborted(e)}
-  if(!r.ok){const x=await r.json().catch(()=>({}));throw Error(x.error||'Anfrage fehlgeschlagen.')}
-  const reader=r.body.getReader(),decoder=new TextDecoder();let buffer='';
-  for(;;){
-    let part;try{part=await reader.read()}catch(e){throw aborted(e)}
-    const {value,done}=part;if(done)break;
-    buffer+=decoder.decode(value,{stream:true});
-    for(let i;(i=buffer.indexOf('\n'))>=0;){const row=buffer.slice(0,i);buffer=buffer.slice(i+1);if(row.trim()){const m=JSON.parse(row);if(m.done&&m.usage)addUsage(data&&data.mode,m.usage);onRow(m)}}
-  }
+  let r;
+  try { r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data),signal:aborter?.signal}); }
+  catch(e) { throw aborted(e); }
+  if(!r.ok){const x=await r.json().catch(()=>({}));throw Error(x.error||'Anfrage fehlgeschlagen.');}
+  try {
+    await readNdjson(r.body,m=>{
+      if(m.done&&m.usage)addUsage(data&&data.mode,m.usage);
+      onRow(m);
+    });
+  } catch(e) { throw aborted(e); }
 }
+
 // Same complete payload is used for speculative preparation and the foreground run.
 // This ensures that the server's request fingerprint never accepts stale input.
 const preloadSession=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
@@ -4748,17 +4782,13 @@ async function runAuto(key,pass){
   try{
     const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'sketch',bg:true,pass,prev:pass>1&&s.sketch?s.sketch.svg:'',idea:s.idea.trim(),project:s.project,ai:true,...frame(),minutes:targetMinutes(),...modInput()}),signal:ac.signal});
     if(!res.ok||!res.body)throw Error('Skizze nicht möglich.');
-    const reader=res.body.getReader(),decoder=new TextDecoder();let buffer='',fin=null;
-    for(;;){
-      const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});
-      for(let i;(i=buffer.indexOf('\n'))>=0;){
-        const line=buffer.slice(0,i);buffer=buffer.slice(i+1);if(!line.trim())continue;
-        const m=JSON.parse(line);if(m.error)throw Error(m.error);
-        if(m.done)fin=m;
-        // Stücke gebündelt zeichnen: höchstens alle 80 ms
-        else if(m.t&&sketchAuto===job){job.text+=m.t;if(!job.timer)job.timer=setTimeout(()=>{job.timer=0;if(sketchAuto===job)drawStream()},80)}
-      }
-    }
+    let fin=null;
+    await readNdjson(res.body,m=>{
+      if(m.error)throw Error(m.error);
+      if(m.done)fin=m;
+      else if(m.t&&sketchAuto===job){job.text+=m.t;if(!job.timer)job.timer=setTimeout(()=>{job.timer=0;if(sketchAuto===job)drawStream()},80);}
+    });
+
     if(sketchAuto===job&&fin&&fin.svg&&key===sketchKey()){s.sketch={idea:key,svg:fin.svg,pass:fin.pass||pass};save()}
   }catch(e){if(!ac.signal.aborted)sketchPauseUntil=Date.now()+6000}
   finally{clearTimeout(job.timer);if(sketchAuto===job)sketchAuto=null;sketchUI()}
@@ -4972,17 +5002,13 @@ async function runConcept(key,wish=''){
   try{
     const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'concept',idea:s.idea.trim(),project:s.project,ai:true,...frame(),minutes:targetMinutes(),answers:Object.entries(s.conceptAnswers).map(([q,a])=>({q,a})),wishes:s.conceptWishes,...(only?{only,prev:job.prev}:{}),...(wish?{wish,prev:job.prev}:{})}),signal:ac.signal});
     if(!res.ok||!res.body)throw Error('Entwurf nicht möglich.');
-    const reader=res.body.getReader(),decoder=new TextDecoder();let buffer='',fin=null;
-    for(;;){
-      const {done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});
-      for(let i;(i=buffer.indexOf('\n'))>=0;){
-        const line=buffer.slice(0,i);buffer=buffer.slice(i+1);if(!line.trim())continue;
-        const m=JSON.parse(line);if(m.error)throw Error(m.error);
-        if(m.done)fin=m;
-        // Stücke gebündelt anzeigen: höchstens alle 80 ms
-        else if(m.t&&conceptJob===job){job.text+=m.t;if(!job.timer)job.timer=setTimeout(()=>{job.timer=0;if(conceptJob===job)conceptUI()},80)}
-      }
-    }
+    let fin=null;
+    await readNdjson(res.body,m=>{
+      if(m.error)throw Error(m.error);
+      if(m.done)fin=m;
+      else if(m.t&&conceptJob===job){job.text+=m.t;if(!job.timer)job.timer=setTimeout(()=>{job.timer=0;if(conceptJob===job)conceptUI()},80);}
+    });
+
     if(fin&&fin.usage)addUsage('concept',fin.usage);
     if(conceptJob===job&&fin&&fin.text&&key===conceptKey()){const text=only||wish?conceptMerge(job.prev,fin.text):fin.text;conceptAdopt(text);s.concept={key,text,parts:conceptNow()};if(wish){s.conceptWishes=[...s.conceptWishes,wish].slice(-12);$('conceptWish').value=''}save();if(conceptPush())renderAll()}
   }catch(e){if(!ac.signal.aborted)conceptPauseUntil=Date.now()+6000}
@@ -5505,7 +5531,7 @@ $('reset').onclick=()=>{
   replaceState(fresh);s.autonomy=blank().autonomy;s.phase=0;catGroups.clear();renderAll();window.scrollTo({top:0});$('idea').focus();
   const undo=button('↶ Rückgängig','btn small',()=>{clearTimeout(undoTimer);toast.classList.add('hidden');revision++;s=before;change=null;catOpen=-1;if(s.active>=0)activate(s.active,false);renderAll()});
   toast.replaceChildren(node('span','Alles zurückgesetzt.'),undo);toast.classList.remove('hidden');
-  clearTimeout(undoTimer);undoTimer=setTimeout(()=>toast.classList.add('hidden'),5000);
+  clearTimeout(undoTimer);undoTimer=setTimeout(()=>toast.classList.add('hidden'),20000);
 };
 
 function renderAll(){
