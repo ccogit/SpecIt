@@ -11,6 +11,7 @@ import { zip, collect } from './zip.mjs';
 const calibPlan=plan=>({...plan,tasks:scale(plan.tasks,factor('plan'))}),calibFeatures=list=>scale(list,factor('feat'));
 import { validateRun, startRun, stopRun, runStatus, killAgents, targetDir, openDir } from './runner.mjs';
 import { withSkills } from './skills.mjs';
+import { aiProfile, inferenceTimer } from './ai-performance.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
 import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, extendPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, cleanLogos, demoLogos, logoPrompt, brandLevels, cleanSvg, sketchPrompt, conceptPrompt, conceptSections, sketchRefinePrompt, modulators, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
@@ -47,21 +48,28 @@ const cliOk=process.env.SPECIT_NO_CLAUDE_CODE!=='1'&&await cli(['--version'],'',
 const hasCli=!key&&cliOk;
 const startNow="\n\nSchreibe sofort los, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „#“ der Hauptüberschrift; die Gedankenarbeit geschieht beim Schreiben, Abschnitt für Abschnitt.",startJson="\n\nAntworte sofort, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „{“.";
 const meter=new AsyncLocalStorage(),wordsOf=t=>(String(t).match(/\S+/g)||[]).length;
+const profileFor=(use='')=>{
+ const p=aiProfile(meter.getStore()?.mode||'',process.env,key?model:cliModel);
+ return {model:use||p.model,effort:p.effort};
+};
 function metered(instruction,out){const u=meter.getStore();if(u){u.context+=wordsOf(system)+wordsOf(instruction);u.out+=wordsOf(out);u.calls++}return out}
 async function ask(instruction,...rest){return metered(instruction,await askRaw(instruction,...rest))}
 async function askStream(instruction,...rest){return metered(instruction,await askStreamRaw(instruction,...rest))}
 async function askRaw(instruction,data,maxTokens,use='',signal){
  const content=instruction+'\n\nProjektdaten (JSON):\n'+JSON.stringify(data);
+ const profile=profileFor(use),metric=inferenceTimer(meter.getStore(),{model:profile.model,transport:key?'api':'cli'});
+ let ok=false;try{
  if(!key){
-  let r;try{r=JSON.parse(await cli(['-p','--output-format','json','--system-prompt',system,'--tools','','--strict-mcp-config','--no-session-persistence','--disable-slash-commands','--model',use||cliModel],content,240000,signal))}catch(e){throw e instanceof SyntaxError?Error('Claude Code hat eine unlesbare Antwort geliefert.'):e}
+  let r;try{r=JSON.parse(await cli(['-p','--output-format','json','--system-prompt',system,'--tools','','--strict-mcp-config','--no-session-persistence','--disable-slash-commands','--model',profile.model],content,240000,signal))}catch(e){throw e instanceof SyntaxError?Error('Claude Code hat eine unlesbare Antwort geliefert.'):e}
   if(r.is_error||typeof r.result!=='string'||!r.result.trim())throw Error('Claude Code hat keine Antwort geliefert. Anmeldung und Kontingent prüfen.');
-  return r.result;
+  metric.tokens(r.usage);ok=true;return r.result;
  }
- const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model,max_tokens:maxTokens,system,messages:[{role:'user',content}]}),signal:signal?AbortSignal.any([AbortSignal.timeout(120000),signal]):within(90000)});
+ const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:profile.model,max_tokens:maxTokens,...(profile.effort?{output_config:{effort:profile.effort}}:{}),system,messages:[{role:'user',content}]}),signal:signal?AbortSignal.any([AbortSignal.timeout(120000),signal]):within(90000)});
  if(!response.ok)throw Error('Claude API: HTTP '+response.status+'. Schlüssel, Modell und Kontingent prüfen.');
  const r=await response.json(),out=r.content.filter(x=>x.type==='text').map(x=>x.text).join('\n');
  if(!out.trim()||r.stop_reason==='max_tokens')throw Error('Claude-Ausgabe fehlt oder wurde abgeschnitten. Bitte erneut versuchen oder Eingabe kürzen.');
- return out;
+ metric.tokens(r.usage);ok=true;return out;
+ }finally{metric.finish(ok)}
 }
 // Rahmen jeder Anfrage: Autonomiegrad 0–100, Ziel-Entwicklungsdauer als kurzer Text (z. B. „3 Tage“), eigene Ideen der KI
 // und Einsatzbereich (je 0–4) sowie abgewählte Features. frame ist die Sicht für den Demo-Entwurf.
@@ -193,10 +201,11 @@ const finalPrompt=b=>'Erstelle eine verständliche Markdown-Spezifikation mit Zi
 // Wie ask(), aber als Strom: onText erhält jedes Textstück, sobald es entsteht; geliefert wird der vollständige Text.
 function askStreamRaw(instruction,data,maxTokens,onText,use='',signal){
  const content=instruction+'\n\nProjektdaten (JSON):\n'+JSON.stringify(data);
+ const profile=profileFor(use),metric=inferenceTimer(meter.getStore(),{model:profile.model,transport:key?'api':'cli',streaming:true});
  if(!key)return new Promise((resolve,reject)=>{
   let buffer='',text='',result=null,failed=false,done=false;
-  const finish=(fn,v)=>{if(done)return;done=true;clearTimeout(timer);fn(v)};
-  const child=spawn('claude',['-p','--output-format','stream-json','--verbose','--include-partial-messages','--system-prompt',system,'--tools','','--strict-mcp-config','--no-session-persistence','--disable-slash-commands','--model',use||cliModel],{cwd:tmpdir(),windowsHide:true,stdio:['pipe','pipe','ignore'],...(use?{env:{...process.env,MAX_THINKING_TOKENS:'0'}}:{})});
+  const finish=(fn,v)=>{if(done)return;done=true;clearTimeout(timer);metric.finish(fn===resolve);fn(v)};
+  const child=spawn('claude',['-p','--output-format','stream-json','--verbose','--include-partial-messages','--system-prompt',system,'--tools','','--strict-mcp-config','--no-session-persistence','--disable-slash-commands','--model',profile.model],{cwd:tmpdir(),windowsHide:true,stdio:['pipe','pipe','ignore'],...(use?{env:{...process.env,MAX_THINKING_TOKENS:'0'}}:{})});
   // Mit eigenem Modell (Skizze) zählt die Zeit bis zum ersten Zeichen: kein vorgeschaltetes Nachdenken
   const timer=setTimeout(()=>{child.kill();finish(reject,Error('Claude Code hat nicht rechtzeitig geantwortet.'))},360000);
   child.stdout.setEncoding('utf8');(signal||currentAbort?.signal)?.addEventListener('abort',()=>{child.kill();finish(reject,Error('Abgebrochen.'))},{once:true});
@@ -206,7 +215,7 @@ function askStreamRaw(instruction,data,maxTokens,onText,use='',signal){
     const row=buffer.slice(0,i);buffer=buffer.slice(i+1);
     let m;try{m=JSON.parse(row)}catch{continue}
     const d=m.type==='stream_event'&&m.event?.type==='content_block_delta'&&m.event.delta?.type==='text_delta'?m.event.delta.text:'';
-    if(d){text+=d;onText(d)}
+    if(d){metric.firstToken();text+=d;onText(d)}
     if(m.type==='result'){failed=m.is_error===true;if(typeof m.result==='string')result=m.result}
    }
   });
@@ -219,7 +228,8 @@ function askStreamRaw(instruction,data,maxTokens,onText,use='',signal){
   child.stdin.on('error',()=>{});child.stdin.end(content);
  });
  return (async()=>{
-  const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model,max_tokens:maxTokens,system,stream:true,messages:[{role:'user',content}]}),signal:signal?AbortSignal.any([AbortSignal.timeout(360000),signal]):within(360000)});
+  let ok=false;try{
+  const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:profile.model,max_tokens:maxTokens,...(profile.effort?{output_config:{effort:profile.effort}}:{}),system,stream:true,messages:[{role:'user',content}]}),signal:signal?AbortSignal.any([AbortSignal.timeout(360000),signal]):within(360000)});
   if(!response.ok)throw Error('Claude API: HTTP '+response.status+'. Schlüssel, Modell und Kontingent prüfen.');
   let buffer='',text='',stop='';const decoder=new TextDecoder();
   for await(const chunk of response.body){
@@ -228,13 +238,16 @@ function askStreamRaw(instruction,data,maxTokens,onText,use='',signal){
     const row=buffer.slice(0,i).trim();buffer=buffer.slice(i+1);
     if(!row.startsWith('data:'))continue;
     let m;try{m=JSON.parse(row.slice(5))}catch{continue}
-    if(m.type==='content_block_delta'&&m.delta?.type==='text_delta'){text+=m.delta.text;onText(m.delta.text)}
+    if(m.type==='message_start')metric.tokens(m.message?.usage);
+    if(m.type==='message_delta')metric.tokens(m.usage);
+    if(m.type==='content_block_delta'&&m.delta?.type==='text_delta'){metric.firstToken();text+=m.delta.text;onText(m.delta.text)}
     if(m.type==='message_delta'&&m.delta?.stop_reason)stop=m.delta.stop_reason;
     if(m.type==='error')throw Error('Claude API: '+String(m.error?.message||'Fehler im Antwortstrom').slice(0,200));
    }
   }
   if(!text.trim()||stop==='max_tokens')throw Error('Claude-Ausgabe fehlt oder wurde abgeschnitten. Bitte erneut versuchen oder Eingabe kürzen.');
-  return text;
+  ok=true;return text;
+  }finally{metric.finish(ok)}
  })();
 }
 // Getroffene Entscheidungen in der Sicht für die KI: Nummer, Frage, Optionen, Antwort
@@ -461,7 +474,7 @@ function alive(req,res){
  });
 }
 http.createServer(async(req,res)=>{
- meter.enterWith({context:0,out:0,calls:0});
+ meter.enterWith({context:0,out:0,calls:0,timings:[],mode:''});
  if(![host+':'+port,'localhost:'+port].includes(req.headers.host))return send(res,403,{error:'Host nicht erlaubt.'});
  if(req.method==='GET'&&(req.url==='/'||modules[req.url])){
   res.writeHead(200,{'Content-Type':req.url==='/'?'text/html; charset=utf-8':'text/javascript; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'"});
@@ -507,6 +520,7 @@ http.createServer(async(req,res)=>{
   // Spezifikation als Strom: je Zeile ein JSON-Objekt – {t} für ein Textstück, am Ende {done,…} oder {error}.
   let data;try{data=validate(JSON.parse(raw))}catch(e){return send(res,400,{error:e.message})}
   if(data.mode!=='final')return send(res,400,{error:'Der Strom steht nur für die Spezifikation bereit.'});
+   meter.getStore().mode='final';
   const head=()=>res.writeHead(200,{'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
   const row=o=>res.write(JSON.stringify(o)+'\n');
   if(!data.ai){head();row({done:true,...demo(data)});return res.end()}
@@ -546,6 +560,7 @@ http.createServer(async(req,res)=>{
   designing=true;res.on('close',()=>{if(!res.writableEnded)designing=false});try{return send(res,200,await layout(job))}catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}finally{designing=false}
  }
  let data;try{data=validate(JSON.parse(raw))}catch(e){return send(res,400,{error:e.message})}
+ meter.getStore().mode=data.mode;
  if(data.mode==='revise'){
   // Erst der sofortige Weg ohne KI; nur wenn er nicht greift und Claude aktiv ist, die KI fragen.
   const quick=reviseDemo(data.spec,data.project,data.idea,data.previous,data.questions,data.extras,data.index,data.frame);
