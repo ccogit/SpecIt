@@ -1,5 +1,21 @@
 /** OpenAI-compatible streaming backend for local GPU inference and text diffusion. */
 import { inferenceTimer } from './ai-performance.mjs';
+import { splitChapters } from './blocks.mjs';
+import { chapterGroups } from './spec-parallel.mjs';
+
+/** Structural gate for experimental non-Claude output, not a semantic guarantee. */
+export function validateExternalCore(content) {
+ const sections=splitChapters(content),wanted=chapterGroups.flat();
+ if(sections.intro.trim()||sections.chapters.length!==wanted.length
+    ||sections.chapters.some((c,i)=>c.title!==wanted[i]||!c.body.trim()))
+   throw Error('Der Inferenzdienst hat keine vollständige Kapitelstruktur geliefert.');
+ const frBody=sections.chapters.find(c=>c.title==='Funktionale Anforderungen')?.body||'';
+ if(!/\\bFR-\\d{3}\\b/.test(frBody) || !/Abnahme|Akzeptanz/i.test(frBody))
+   throw Error('Der Inferenzdienst hat keine prüfbaren funktionalen Anforderungen geliefert.');
+ const ids=[...frBody.matchAll(/\\bFR-\\d{3}\\b/g)].map(m=>m[0]);
+ if(new Set(ids).size<1)throw Error('Die Anforderungskennungen fehlen.');
+ return sections.chapters.map(c=>'## '+c.title+'\\n\\n'+c.body).join('\\n\\n')+'\\n';
+}
 
 const modelId = v => typeof v === 'string' && /^[a-zA-Z0-9._:/-]{1,120}$/.test(v) ? v : '';
 
