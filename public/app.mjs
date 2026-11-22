@@ -376,7 +376,8 @@ function stageUI(){
    // Steht ein Dokument – als Entwurf oder ausgearbeitet –, nimmt das Feld den Änderungswunsch; die Idee selbst lässt sich hervorholen
    // Feld 2 ist von Anfang an da, aber gesperrt, bis es ein Dokument gibt – als Entwurf oder ausgearbeitet
    {const wish=has||($('ai').checked&&conceptLive()&&!needConcept()&&!conceptJob);b.classList.toggle('haswish',wish);$('wish').disabled=!wish;$('wishOpen').disabled=!wish;$('wishTitle').textContent=has?'Was soll an der Spezifikation anders werden?':'Was soll am Entwurf anders werden?';$('wishRun').disabled=!wish||active;
-    $('wish').placeholder=!wish?'Sobald der Entwurf steht, sagst du hier in eigenen Worten, was an der Spezifikation anders werden soll.':has?'Was soll an der Spezifikation anders werden? z. B. „Zusätzlich ein CSV-Export der Notizen“':'Was soll am Entwurf anders werden? z. B. „Auch für Gruppen zu dritt“';$('wishRun').textContent=has||!wish?'✦ Einarbeiten':'✦ In den Entwurf einarbeiten';$('wishRun').classList.toggle('has',wish&&!!$('wish').value.trim())}
+    $('wish').placeholder=!wish?'Sobald der Entwurf steht, sagst du hier in eigenen Worten, was an der Spezifikation anders werden soll.':has?'Was soll an der Spezifikation anders werden? z. B. „Zusätzlich ein CSV-Export der Notizen“':'Was soll am Entwurf anders werden? z. B. „Auch für Gruppen zu dritt“';$('wishRun').textContent=has||!wish?'✦ Einarbeiten':'✦ In den Entwurf einarbeiten';$('wishRun').classList.toggle('has',wish&&!!$('wish').value.trim());
+   {const l=$('wishLine');l.disabled=!wish;l.placeholder=has?'Änderungswunsch: Was soll an der Spezifikation anders werden?':wish?'Änderungswunsch: Was soll am Entwurf anders werden?':'Änderungswünsche sind möglich, sobald der Entwurf steht'}}
    $('implPanel').classList.toggle('hidden',!has);$('reviewPanel').classList.toggle('hidden',!has);$('reusePanel').classList.toggle('hidden',!has);$('implOut').classList.toggle('hidden',!has);
    $('implMeta').textContent=s.plan?(stale()?'Plan veraltet':plural(s.plan.tasks.length,'Auftrag','Aufträge')+(s.finished?' · abgeschlossen':'')):has?'noch kein Plan':'';
   }
@@ -664,7 +665,7 @@ function confirmAnswer(){
 function skip(){const n=s.questions.length;let next=-1;for(let k=1;k<n;k++){const i=(s.active+k)%n;if(s.questions[i].state==='open'){next=i;break}}if(next>=0)activate(next)}
 function acceptAll(){
   if(firstOpen()<0)return;
-  s.questions=s.questions.map(q=>q.state==='open'?acceptDefault(q):q);s.last=-1;touched();activate(-1,false);renderAll();$('generate').focus();
+  s.acceptAll=true;s.questions=s.questions.map(q=>q.state==='open'?acceptDefault(q):q);s.last=-1;touched();activate(-1,false);renderAll();$('generate').focus();
 }
 function optionButton(q,i){
   const on=pick.includes(i),b=button(undefined,'opt'+(q.multi?' multi':''),()=>choose(i)),body=node('span',undefined,'body'),head=node('span');
@@ -695,7 +696,7 @@ function questionsUI(){
     }else if(q.state!=='open'){
       const row=node('div',undefined,'row'+(i===s.last?' fresh':''));
       const qa=node('span',undefined,'qa');qa.append(node('span',q.question,'q'),node('span',answerOf(q),'a'));
-      {const done=q.state==='decided',mark=node('span',done?'✓':'?','chip sym'+(done?' ok':''));mark.title=done?'Von dir entschieden':'Annahme: der vorgeschlagene Standard, noch nicht von dir bestätigt';mark.setAttribute('aria-label',mark.title);row.append(mark,qa)}
+      {const done=q.state==='decided',mark=node('span',done?'✓':'?','chip sym'+(done?' ok':''));mark.title=done?'Von dir entschieden':'Annahme: der vorgeschlagene Standard, noch nicht von dir bestätigt';mark.setAttribute('aria-label',mark.title);row.append(mark,qa);if(q.fromSpec&&!done){const neu=node('span','neu aus der Spezifikation','chip');neu.title='Diese Entscheidung ließ die fertige Spezifikation offen; übernommen ist der vorgeschlagene Standard.';row.append(neu)}}
       const edit=button('ändern','link',()=>activate(i));edit.setAttribute('aria-label',q.question+' ändern');row.append(edit);out.append(row);
     }else{
       const next=button(undefined,'upcoming'+(needMark?' need':''),()=>activate(i)),chips=node('span',undefined,'actions');
@@ -836,19 +837,24 @@ async function deriveDecisions(keepChange){
   if(active||!$('ai').checked||!s.spec.trim())return;
   if(s.questions.length>=40){specNote('Der Fragen-Katalog ist voll (40 Fragen).');return}
   const rev=revision;const lockId=lock(true,'Spezifikation wird ausgearbeitet');catalogUI();specNote('');
-  let message='';
+  let message='',taken=0;
   try{
     const r=await call({mode:'decisions',spec:s.spec,project:s.project,questions:s.questions,ai:true});
     if(rev!==revision)message='Eingaben geändert. Erneut starten.';
     else{
-      const known=new Set(s.questions.map(q=>q.question.toLowerCase())),added=cleanQuestions(r.questions).filter(q=>!known.has(q.question.toLowerCase())).map(q=>({...q,state:'open',choice:[],custom:''}));
-      const before=s.questions.length;s.questions=[...s.questions,...added].slice(0,40);const n=s.questions.length-before;
+      const known=new Set(s.questions.map(q=>q.question.toLowerCase())),added=cleanQuestions(r.questions).filter(q=>!known.has(q.question.toLowerCase())).map(q=>({...q,state:'open',choice:[],custom:'',fromSpec:true}));
+      const before=s.questions.length;s.questions=[...s.questions,...added].slice(0,40);const n=s.questions.length-before;taken=n;
       if(n&&keepChange!==true)change=null;
       message=n?plural(n,'offene Entscheidung','offene Entscheidungen')+' mit Alternativen in den Fragen-Katalog übernommen.':'Keine weiteren offenen Entscheidungen in der Spezifikation gefunden.';
     }
   }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   if(lockId!==currentLockId)return;
   renderAll();specNote(message);
+  // Wurden zuvor alle Standards übernommen, gilt das auch für die neu abgeleiteten: mit dem Standard als Annahme übernehmen und die Spezifikation nachziehen
+  if(taken&&s.acceptAll&&keepChange!==true&&!active){
+    const ids=s.questions.map((q,i)=>i).filter(i=>s.questions[i].state==='open'&&s.questions[i].fromSpec);
+    if(ids.length)await commitAnswers(s.questions.map((q,i)=>ids.includes(i)?{...acceptDefault(q),auto:true}:q),ids,()=>({title:plural(ids.length,'neue Entscheidung','neue Entscheidungen')+' aus der Spezifikation mit dem Standard übernommen',detail:'als Annahme gekennzeichnet – unter „Entscheidungen“ änderbar'}));
+  }
 }
 // Antwort aus dem Katalog übernehmen und die Spezifikation nachziehen
 async function applyAnswer(i,choice,text){
@@ -870,6 +876,7 @@ async function decideOpen(onlyMinor){
     if(lockId!==currentLockId)return;
     if(!ids.length){catalogUI();specNote('Alle offenen Entscheidungen sind als relevant eingestuft – sie bleiben bei dir.');return}
   }
+  if(!onlyMinor)s.acceptAll=true;
   const set=new Set(ids),left=s.questions.filter(q=>q.state==='open').length-ids.length;catOpen=-1;
   await commitAnswers(s.questions.map((q,i)=>set.has(i)?{...acceptDefault(q),auto:true}:q),ids,()=>({title:plural(ids.length,'Entscheidung','Entscheidungen')+' von SpecIt getroffen',detail:'als Annahme gekennzeichnet'+(left?' · '+plural(left,'relevante bleibt','relevante bleiben')+' bei dir':'')}));
 }
@@ -1216,7 +1223,7 @@ function ensureDecided(next){
 $('askYes').onclick=()=>{
   if(askKind==='fit'){askKind='';$('askBox').close();const go=askNext;askNext=null;if(go)go();return}
   $('askBox').close();needMark=false;
-  s.questions=s.questions.map(q=>q.state==='open'?{...acceptDefault(q),auto:true}:q);s.last=-1;touched();activate(-1,false);
+  s.acceptAll=true;s.questions=s.questions.map(q=>q.state==='open'?{...acceptDefault(q),auto:true}:q);s.last=-1;touched();activate(-1,false);
   const next=askNext;askNext=null;renderAll();if(next)next();
 };
 function declineAsk(){
@@ -3084,8 +3091,15 @@ function reviewUI(p,agents){
 }
 // Eine Aktion statt Festlegung plus Knopf: Der Plan entsteht bei Bedarf, danach geht es je nach Aktion sofort weiter.
 // download = Plan und Dateien bereitstellen · approve = Plan, dann Freigabe durch den Nutzer · direct = Plan, dann Start der Agenten
+let flowKind='';
+const flowIds={download:'goDownload',approve:'goApprove',direct:'goDirect'},flowNames={download:'↓ Nur herunterladen',approve:'✓ Prüfen, dann umsetzen',direct:'▸ Direkt umsetzen'};
+function flowMark(){for(const k in flowIds){const b=$(flowIds[k]),on=flowKind===k;b.classList.toggle('going',on);b.setAttribute('aria-busy',String(on));b.querySelector('b').textContent=on?'… läuft':flowNames[k]}}
 async function goFlow(kind){
-  if(active||runBusy||runStarting)return;
+  if(active||runBusy||runStarting||flowKind)return;
+  flowKind=kind;flowMark();
+  try{await goFlowRun(kind)}finally{flowKind='';flowMark()}
+}
+async function goFlowRun(kind){
   const note=$('flowNote'),run=kind!=='download';note.textContent='';
   if(!s.spec.trim()||s.dirty){note.textContent='Bitte zuerst die Spezifikation aktualisieren.';return}
   if(run&&!agentsOk){note.textContent='Claude Code wurde auf diesem Rechner nicht gefunden; die Umsetzung hier ist nicht möglich.';return}
@@ -3096,7 +3110,7 @@ async function goFlow(kind){
     try{await createRepoNow();note.textContent=''}catch(e){note.textContent=e.message+' Unter „Weitere Optionen“ einen anderen Namen wählen, ein vorhandenes Repository eintragen oder das Repository ausschalten.';return}
   }
   s.nextStep=run?'run':'download';save();renderAll();if(run)pollRun();
-  if(!(s.plan&&!stale()))await $('plan').onclick();
+  if(!(s.plan&&!stale())){note.textContent='Der Plan wird erstellt …';await $('plan').onclick();note.textContent=''}
   if(!(s.plan&&!stale())){note.textContent=$('planStatus').textContent||'Der Plan konnte nicht erstellt werden.';return}
   await new Promise(r=>setTimeout(r,60));
   if(kind==='approve'){$('reviewCard').scrollIntoView({block:'nearest'});$('finish').focus({preventScroll:true});return}
@@ -3141,7 +3155,9 @@ async function adjustSpec(){
 // Mit Spezifikation wird sie angepasst; davor geht der Wunsch in den Entwurf
 const wishGo=()=>{if(s.spec.trim())return adjustSpec();const w=$('wish').value.trim();if(!w){$('wish').focus();return}$('conceptWish').value=w;$('wish').value='';sendWish();mainUI();stageUI()};
 $('wishRun').onclick=()=>{const had=!!$('wish').value.trim();wishGo();if(had&&$('wishDlg').open)$('wishDlg').close()};
-$('wishOpen').onclick=()=>{if(!$('wishDlg').open)$('wishDlg').showModal();$('wish').focus()};
+// Änderungswunsch direkt in der Leiste über dem Dokument: Enter oder der Stern arbeitet ihn ein; der Text bleibt stehen, solange er nicht übernommen ist
+const lineGo=async()=>{const l=$('wishLine'),w=l.value.trim();if(!w){l.focus();return}$('wish').value=w;await wishGo();if(!$('wish').value.trim())l.value=''};
+$('wishOpen').onclick=lineGo;$('wishLine').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();lineGo()}};
 $('wishClose').onclick=()=>$('wishDlg').close();$('wishDlg').onclick=e=>{if(e.target===$('wishDlg'))$('wishDlg').close()};
 // Grün wird der Knopf erst, wenn im Feld etwas steht, das noch nicht eingearbeitet ist
 $('wish').addEventListener('input',()=>$('wishRun').classList.toggle('has',!$('wish').disabled&&!!$('wish').value.trim()));

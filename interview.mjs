@@ -34,6 +34,8 @@ export function cleanQuestion(q) {
     auto: q.auto === true && state === 'default' && (choice.length > 0 || !!custom),
     // Stammt aus dem Live-Konzept der Idee-Seite: Dort steht dieselbe Entscheidung als Stelle im Text.
     ...(q.concept === true ? { concept: true } : {}),
+    // Erst nach dem Schreiben aus der Spezifikation abgeleitet (offene Entscheidung dort).
+    ...(q.fromSpec === true ? { fromSpec: true } : {}),
   };
 }
 
