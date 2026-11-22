@@ -13,6 +13,7 @@ import { validateRun, startRun, stopRun, runStatus, killAgents, targetDir, openD
 import { withSkills } from './skills.mjs';
 import { aiProfile, inferenceTimer } from './ai-performance.mjs';
 import { chapterGroups, partPrompt, joinParts, orderedChunks } from './spec-parallel.mjs';
+import { resolveStrategy } from './spec-strategies.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
 import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, extendPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, cleanLogos, demoLogos, logoPrompt, brandLevels, cleanSvg, sketchPrompt, conceptPrompt, conceptSections, sketchRefinePrompt, modulators, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
@@ -50,7 +51,7 @@ const hasCli=!key&&cliOk;
 const startNow="\n\nSchreibe sofort los, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „#“ der Hauptüberschrift; die Gedankenarbeit geschieht beim Schreiben, Abschnitt für Abschnitt.",startJson="\n\nAntworte sofort, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „{“.";
 const meter=new AsyncLocalStorage(),wordsOf=t=>(String(t).match(/\S+/g)||[]).length;
 const profileFor=(use='')=>{
- const p=aiProfile(meter.getStore()?.mode||'',process.env,key?model:cliModel);
+ const p=aiProfile(meter.getStore()?.mode||'',process.env,key?model:cliModel,meter.getStore()?.strategy||'');
  return {model:use||p.model,effort:p.effort};
 };
 function metered(instruction,out){const u=meter.getStore();if(u){u.context+=wordsOf(system)+wordsOf(instruction);u.out+=wordsOf(out);u.calls++}return out}
@@ -166,6 +167,7 @@ function validate(b){
    data.update=true;data.previous=b.spec;data.changes=(Array.isArray(b.changes)?b.changes:[]).filter(x=>typeof x==='string'&&x.trim()).slice(0,40).map(x=>x.trim().replace(/\s+/g,' ').slice(0,400));
   }
   if(b.mode==='final')data.minutes=Number.isFinite(b.minutes)?Math.min(100000,Math.max(0,b.minutes)):0;
+   if(b.mode==='final')data.strategy=b.strategy;
   if(b.mode==='final')data.scope=cleanFeatures(b.features||[]).map(f=>({name:f.name,note:f.note,basis:!!f.core}));
  if(b.mode!=='revise')return data;
  // Eine Antwort wurde geändert: Spezifikation, Stand davor und Index der geänderten Frage.
@@ -525,6 +527,9 @@ http.createServer(async(req,res)=>{
   const head=()=>res.writeHead(200,{'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
   const row=o=>res.write(JSON.stringify(o)+'\n');
   if(!data.ai){head();row({done:true,...demo(data)});return res.end()}
+  let strategy;try{strategy=resolveStrategy(data.strategy,{hasApi:!!key,legacyParallel:process.env.SPECIT_PARALLEL_SPEC==='1'})}
+  catch(e){return send(res,400,{error:e.message})}
+  meter.getStore().strategy=strategy.id;
   if(!key&&!hasCli)return send(res,503,{error:'Kein Claude-Zugang: ANTHROPIC_API_KEY setzen oder Claude Code installieren und anmelden.'});
   if(busy||Date.now()-lastAI<1500)return send(res,429,{error:'Analyse läuft oder wurde gerade begonnen. Bitte erneut versuchen.'});
   sketchAbort?.abort();busy=true;lastAI=Date.now();watch(res);head();
@@ -533,15 +538,15 @@ http.createServer(async(req,res)=>{
   try{
    const frame=specFrame(data);
    // Kapitelweise: Nur was sich durch die Änderungen ändern muss, wird neu geschrieben; Rahmen und Bausteine kommen frisch, der Rest bleibt wörtlich
-   if(data.update&&coreChapters(data.previous,frame).length>=3){
+   if(!strategy.full&&data.update&&coreChapters(data.previous,frame).length>=3){
     const text=data.changes.length?await askStream(withSkills('final',finalPrompt(data)+conceptNote(data))+updatePrompt(frame,data.changes),{...brief(data),fixedSections:frame.tail,previous:data.previous},16000,t=>row({t})):'';
     const merged=mergeSpec(data.previous,frame,text);
-    row({done:true,source:'claude',update:true,changed:merged.changed,entries:merged.entries,skipped:merged.skipped,markdown:withToc(merged.markdown),usage:meter.getStore()});
+    row({done:true,source:'claude',strategy:strategy.id,update:true,changed:merged.changed,entries:merged.entries,skipped:merged.skipped,markdown:withToc(merged.markdown),usage:meter.getStore()});
     return;
    }
    row({t:frame.head});
    // Optional experiment: independent chapters are generated concurrently. API only; legacy flow stays default.
-   if(key&&process.env.SPECIT_PARALLEL_SPEC==='1'){
+   if(strategy.parallel){
     const shared=withSkills('final',finalPrompt(data)+conceptNote(data));
     const payload={...brief(data),fixedSections:frame.tail};
     const cancel=new AbortController();
@@ -557,12 +562,12 @@ http.createServer(async(req,res)=>{
     }catch(e){cancel.abort();throw e}
     const core=joinParts(parts);
     row({t:frame.tail});
-    row({done:true,source:'claude',parallel:true,markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
+    row({done:true,source:'claude',strategy:strategy.id,parallel:true,markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
     return;
    }
    const text=await askStream(withSkills('final',finalPrompt(data)+conceptNote(data))+corePrompt(frame),{...brief(data),fixedSections:frame.tail},16000,t=>row({t}));
    const core=text.trim().replace(/^#\s+.*\n+/,'');row({t:frame.tail});
-   row({done:true,source:'claude',markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
+   row({done:true,source:'claude',strategy:strategy.id,markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
   }
   catch(e){row({error:e.message||'Claude nicht erreichbar.'})}
   finally{busy=false;currentAbort=null;res.end()}
