@@ -289,6 +289,29 @@ export function cleanFeatures(list) {
     used.add(f.id);
   }
   for (const f of out) f.dependsOn = [...new Set(f.dependsOn)].filter(d => d !== f.id && used.has(d)).slice(0, 12);
+  // Eine vom Modell gelieferte zyklische Abhängigkeit darf nicht in der Feature-Liste stehen bleiben:
+  // spätere Aufwandsschätzungen würden sie sonst stillschweigend in anderer Reihenfolge auflösen.
+  const byId = new Map(out.map(f => [f.id, f]));
+  const edges = new Map(out.map(f => [f.id, []]));
+  const reaches = (from, to) => {
+    const seen = new Set(), pending = [from];
+    while (pending.length) {
+      const id = pending.pop();
+      if (id === to) return true;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      pending.push(...edges.get(id));
+    }
+    return false;
+  };
+  for (const f of out) {
+    const accepted = edges.get(f.id);
+    for (const dep of f.dependsOn) {
+      if (f.core && !byId.get(dep).core) continue; // Basis darf nicht von Extras abhängen.
+      if (!reaches(dep, f.id)) accepted.push(dep); // Zyklus über mehrere Features verhindern.
+    }
+    f.dependsOn = accepted;
+  }
   return out;
 }
 
