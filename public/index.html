@@ -1272,6 +1272,7 @@ body.merged.decqa #decDerive{margin-top:12px}
       <label class="field-label" for="specStrategy" style="margin:0">Generierungsstrategie</label>
       <select id="specStrategy" aria-describedby="specStrategyHint" style="max-width:270px">
         <option value="incremental">Intelligent · Änderungen gezielt</option>
+        <option value="preload">Vorbereitet · Entwurf im Voraus</option>
         <option value="classic">Klassisch · immer alles neu</option>
         <option value="parallel">Parallel · 3 Fachgruppen</option>
         <option value="turbo">Turbo · parallel + schnelles Modell</option>
@@ -1509,7 +1510,7 @@ try{
     s.last=-1;
     if(!Number.isInteger(s.layoutCount)||s.layoutCount<1||s.layoutCount>5)s.layoutCount=3;
     if(!['DESKTOP','MOBILE','BOTH'].includes(s.layoutDevice))s.layoutDevice='DESKTOP';
-     if(!['classic','incremental','parallel','turbo'].includes(s.specStrategy))s.specStrategy='incremental';
+     if(!['classic','incremental','preload','parallel','turbo'].includes(s.specStrategy))s.specStrategy='incremental';
      if(!s.strategyTimes||typeof s.strategyTimes!=='object'||Array.isArray(s.strategyTimes))s.strategyTimes={};
     if(!['LIGHT','DARK','BOTH'].includes(s.layoutTheme))s.layoutTheme='LIGHT';
     if(s.layout&&!Array.isArray(s.layout.chosen))s.layout.chosen=typeof s.layout.chosen==='string'&&s.layout.chosen?[s.layout.chosen]:[];
@@ -1558,22 +1559,24 @@ const catGroups=new Set();
 const strategyDescription={
  classic:'Erstellt die komplette Spezifikation jedes Mal neu, sequenziell mit dem konfigurierten Standardmodell.',
  incremental:'Bestehender Weg: Bei Änderungen nur betroffene Kapitel neu schreiben, sonst vollständig sequenziell.',
+ preload:'Experimentell: Spezifikation wird nach stabilen Entscheidungen vorbereitet und beim Erstellen sofort übernommen.',
  parallel:'Experimentell: Erstellt die komplette Spezifikation mit drei parallelen API-Aufrufen. Qualität gesondert prüfen.',
  turbo:'Experimentell: Parallele Neuerstellung mit Haiku und niedrigem Denkaufwand. Qualität gesondert prüfen.'
 };
 function strategyUI(){
  const select=$('specStrategy'),hasApi=provider==='api';
- if(statusLoaded&&!hasApi&&['parallel','turbo'].includes(s.specStrategy))s.specStrategy='incremental';
- for(const option of select.options)if(['parallel','turbo'].includes(option.value))option.disabled=statusLoaded&&!hasApi;
+ if(statusLoaded&&!hasApi&&['preload','parallel','turbo'].includes(s.specStrategy))s.specStrategy='incremental';
+ for(const option of select.options)if(['preload','parallel','turbo'].includes(option.value))option.disabled=statusLoaded&&!hasApi;
  select.value=s.specStrategy;
  select.disabled=active;
  const ms=s.strategyTimes?.[s.specStrategy],last=Number.isFinite(ms)&&ms>0?' Letzte gemessene Erstellung: '+(ms/1000).toFixed(1)+' s.':'';
- $('specStrategyHint').textContent=strategyDescription[s.specStrategy]+last+(statusLoaded&&!hasApi?' Parallel und Turbo benötigen einen Anthropic-API-Schlüssel.':'');
+ const prep=s.specStrategy==='preload'&&preloadStatus.state==='ready'?' Vorbereitet – der nächste Klick kann den Entwurf übernehmen.':s.specStrategy==='preload'&&preloadStatus.state==='loading'?' Entwurf wird im Hintergrund vorbereitet …':s.specStrategy==='preload'&&preloadStatus.state==='error'?' Vorbereitung nicht verfügbar; Klick erstellt wie gewohnt.':'';
+ $('specStrategyHint').textContent=strategyDescription[s.specStrategy]+last+prep+(statusLoaded&&!hasApi?' Vorbereitet, Parallel und Turbo benötigen einen Anthropic-API-Schlüssel.':'');
 }
 $('specStrategy').onchange=e=>{
  if(active)return;
  s.specStrategy=e.target.value;
- save();strategyUI();phasesUI();
+ save();strategyUI();phasesUI();scheduleSpecPreload();
 };
 function save(){try{localStorage.setItem('specit-v3',JSON.stringify(s))}catch{$('busy').textContent='Lokales Speichern nicht möglich.'}}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
@@ -2626,6 +2629,46 @@ async function stream(url,data,onRow){
     for(let i;(i=buffer.indexOf('\n'))>=0;){const row=buffer.slice(0,i);buffer=buffer.slice(i+1);if(row.trim()){const m=JSON.parse(row);if(m.done&&m.usage)addUsage(data&&data.mode,m.usage);onRow(m)}}
   }
 }
+// Same complete payload is used for speculative preparation and the foreground run.
+// This ensures that the server's request fingerprint never accepts stale input.
+const preloadSession=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
+let preloadIdle=0,preloadTask=null,preloadStatus={key:'',state:''};
+function finalPayload(extra={}){
+ return {mode:'final',strategy:s.specStrategy,...extra,minutes:targetMinutes(),
+  ...(conceptPlain()?{concept:conceptPlain()}:{}),
+  idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,
+  features:s.features.filter(f=>f.on),ai:$('ai').checked,...frame(),
+  ...(s.specStrategy==='preload'?{preloadToken:preloadSession}:{})};
+}
+function scheduleSpecPreload(){
+ clearTimeout(preloadIdle);
+ const eligible=s.specStrategy==='preload'&&provider==='api'&&$('ai').checked&&!active&&s.phase===2
+   &&s.idea.trim()&&s.features.length&&firstOpen()<0&&(!s.spec.trim()||s.dirty);
+ if(!eligible){
+  if(preloadTask&&!active){preloadTask.ac.abort();preloadTask=null}
+  return;
+ }
+ const payload=finalPayload(),key=JSON.stringify(payload);
+ if(preloadTask?.key===key)return;
+ if(preloadTask){preloadTask.ac.abort();preloadTask=null}
+ if(preloadStatus.key===key&&preloadStatus.state==='error')return;
+ if(preloadStatus.key===key&&preloadStatus.state==='ready'&&Date.now()-preloadStatus.when<120000)return;
+ preloadIdle=setTimeout(()=>runSpecPreload(payload,key),1400);
+}
+async function runSpecPreload(payload,key){
+ if(active||s.specStrategy!=='preload'||key!==JSON.stringify(finalPayload()))return;
+ const ac=new AbortController(),task={ac,key};preloadTask=task;
+ preloadStatus={key,state:'loading',when:Date.now()};strategyUI();
+ try{
+  const response=await fetch('/api/spec/preload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),signal:ac.signal});
+  if(!response.ok)throw Error('Vorbereitung: HTTP '+response.status);
+  const result=await response.json();
+  if(!result.ready)throw Error('Vorbereitung nicht vollständig.');
+  if(preloadTask===task){preloadStatus={key,state:'ready',when:Date.now()};strategyUI()}
+ }catch(e){
+  if(preloadTask===task&&!ac.signal.aborted){preloadStatus={key,state:'error',when:Date.now()};strategyUI()}
+ }finally{if(preloadTask===task)preloadTask=null}
+}
 async function generate(){
   if(active)return;
   const note=t=>{$('specStatus').className='status';$('specStatus').textContent=t};
@@ -2638,7 +2681,7 @@ async function generate(){
   try{
     // Die Antwort kommt als Strom und wird beim Entstehen angezeigt
     let r=null;streamText='';specMode='view';specUI();statuses();
-    await stream('/api/spec/stream',{mode:'final',strategy:s.specStrategy,...(partial?{update:true,spec:s.spec,changes}:{}),minutes:targetMinutes(),...(conceptPlain()?{concept:conceptPlain()}:{}),idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,features:s.features.filter(f=>f.on),ai:$('ai').checked,...frame()},m=>{
+    await stream('/api/spec/stream',finalPayload(partial?{update:true,spec:s.spec,changes}:{}),m=>{
       if(typeof m.t==='string'){streamText+=m.t;const now=performance.now();if(now-paintAt>180){paintAt=now;specUI();$('specCount').textContent=streamText.length.toLocaleString('de-DE')+' Zeichen …'}}
       else if(m.error)throw Error(m.error);else if(m.done)r=m;
     });
@@ -4027,7 +4070,7 @@ if($('idea').value!==s.idea)$('idea').value=s.idea;
   $('creativity').value=s.creativity;$('tone').value=s.tone;
   $('autonomy').value=s.autonomy/20;$('durLevel').value=s.durLevel;
   $('repo').value=s.repo;$('agent').value=s.agent;$('layoutCount').value=s.layoutCount;$('layoutDevice').value=s.layoutDevice;$('layoutTheme').value=s.layoutTheme;
-  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();strategyUI();save();
+  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();strategyUI();save();scheduleSpecPreload();
 }
 if(MERGED){
   // Die Fragenliste zieht in die linke Spalte der Spezifikations-Ansicht um; die Ansicht „Fragen“ selbst wird nicht mehr gezeigt
