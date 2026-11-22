@@ -13,6 +13,13 @@ import { flowPrompt, cleanFlow, archPrompt, cleanArch } from './diagrams.mjs';
 const calibPlan=plan=>({...plan,tasks:scale(plan.tasks,factor('plan'))}),calibFeatures=list=>scale(list,factor('feat'));
 import { validateRun, startRun, stopRun, runStatus, killAgents, targetDir, openDir } from './runner.mjs';
 import { withSkills } from './skills.mjs';
+import { aiProfile, inferenceTimer } from './ai-performance.mjs';
+import { chapterGroups, partPrompt, joinParts, orderedChunks } from './spec-parallel.mjs';
+import { resolveStrategy } from './spec-strategies.mjs';
+import { SpecPreloadCache } from './spec-preload.mjs';
+import { anthropicMessageBody, enabledPromptCache, promptCacheTtl } from './anthropic-cache.mjs';
+import { generationBackends, streamChatCompletion, validateExternalCore } from './chat-backends.mjs';
+import { structuredPrompt, renderStructuredCore } from './spec-structured.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
 import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, extendPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, cleanLogos, demoLogos, logoPrompt, brandLevels, cleanSvg, sketchPrompt, conceptPrompt, conceptSections, sketchRefinePrompt, modulators, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
@@ -47,23 +54,32 @@ const cliModel=process.env.CLAUDE_CODE_MODEL||'sonnet';
 // Claude Code wird auch mit API-Schlüssel gebraucht: Die direkte Umsetzung läuft immer über seine Agenten.
 const cliOk=process.env.SPECIT_NO_CLAUDE_CODE!=='1'&&await cli(['--version'],'',15000).then(()=>true,()=>false);
 const hasCli=!key&&cliOk;
+const preloads=new SpecPreloadCache();
+const externalBackends=generationBackends(process.env);
 const startNow="\n\nSchreibe sofort los, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „#“ der Hauptüberschrift; die Gedankenarbeit geschieht beim Schreiben, Abschnitt für Abschnitt.",startJson="\n\nAntworte sofort, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „{“.";
 const meter=new AsyncLocalStorage(),wordsOf=t=>(String(t).match(/\S+/g)||[]).length;
+const profileFor=(use='')=>{
+ const p=aiProfile(meter.getStore()?.mode||'',process.env,key?model:cliModel,meter.getStore()?.strategy||'');
+ return {model:use||p.model,effort:p.effort};
+};
 function metered(instruction,out){const u=meter.getStore();if(u){u.context+=wordsOf(system)+wordsOf(instruction);u.out+=wordsOf(out);u.calls++}return out}
 async function ask(instruction,...rest){return metered(instruction,await askRaw(instruction,...rest))}
 async function askStream(instruction,...rest){return metered(instruction,await askStreamRaw(instruction,...rest))}
 async function askRaw(instruction,data,maxTokens,use='',signal){
  const content=instruction+'\n\nProjektdaten (JSON):\n'+JSON.stringify(data);
+ const profile=profileFor(use),metric=inferenceTimer(meter.getStore(),{model:profile.model,transport:key?'api':'cli'});
+ let ok=false;try{
  if(!key){
-  let r;try{r=JSON.parse(await cli(['-p','--output-format','json','--system-prompt',system,'--tools','','--strict-mcp-config','--no-session-persistence','--disable-slash-commands','--model',use||cliModel],content,240000,signal))}catch(e){throw e instanceof SyntaxError?Error('Claude Code hat eine unlesbare Antwort geliefert.'):e}
+  let r;try{r=JSON.parse(await cli(['-p','--output-format','json','--system-prompt',system,'--tools','','--strict-mcp-config','--no-session-persistence','--disable-slash-commands','--model',profile.model],content,240000,signal))}catch(e){throw e instanceof SyntaxError?Error('Claude Code hat eine unlesbare Antwort geliefert.'):e}
   if(r.is_error||typeof r.result!=='string'||!r.result.trim())throw Error('Claude Code hat keine Antwort geliefert. Anmeldung und Kontingent prüfen.');
-  return r.result;
+  metric.tokens(r.usage);ok=true;return r.result;
  }
- const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model,max_tokens:maxTokens,system,messages:[{role:'user',content}]}),signal:signal?AbortSignal.any([AbortSignal.timeout(120000),signal]):within(90000)});
+ const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify(anthropicMessageBody({model:profile.model,maxTokens,effort:profile.effort,system,instruction,data,cache:enabledPromptCache(process.env),ttl:promptCacheTtl(process.env)})),signal:signal?AbortSignal.any([AbortSignal.timeout(120000),signal]):within(90000)});
  if(!response.ok)throw Error('Claude API: HTTP '+response.status+'. Schlüssel, Modell und Kontingent prüfen.');
  const r=await response.json(),out=r.content.filter(x=>x.type==='text').map(x=>x.text).join('\n');
  if(!out.trim()||r.stop_reason==='max_tokens')throw Error('Claude-Ausgabe fehlt oder wurde abgeschnitten. Bitte erneut versuchen oder Eingabe kürzen.');
- return out;
+ metric.tokens(r.usage);ok=true;return out;
+ }finally{metric.finish(ok)}
 }
 // Rahmen jeder Anfrage: Autonomiegrad 0–100, Ziel-Entwicklungsdauer als kurzer Text (z. B. „3 Tage“), eigene Ideen der KI
 // und Einsatzbereich (je 0–4) sowie abgewählte Features. frame ist die Sicht für den Demo-Entwurf.
@@ -164,6 +180,8 @@ function validate(b){
    data.update=true;data.previous=b.spec;data.changes=(Array.isArray(b.changes)?b.changes:[]).filter(x=>typeof x==='string'&&x.trim()).slice(0,40).map(x=>x.trim().replace(/\s+/g,' ').slice(0,400));
   }
   if(b.mode==='final')data.minutes=Number.isFinite(b.minutes)?Math.min(100000,Math.max(0,b.minutes)):0;
+   if(b.mode==='final')data.strategy=b.strategy;
+   if(b.mode==='final')data.preloadToken=typeof b.preloadToken==='string'?b.preloadToken:'';
   if(b.mode==='final')data.scope=cleanFeatures(b.features||[]).map(f=>({name:f.name,note:f.note,basis:!!f.core}));
  if(b.mode!=='revise')return data;
  // Eine Antwort wurde geändert: Spezifikation, Stand davor und Index der geänderten Frage.
@@ -202,10 +220,11 @@ const finalPrompt=b=>'Erstelle eine verständliche Markdown-Spezifikation mit Zi
 // Wie ask(), aber als Strom: onText erhält jedes Textstück, sobald es entsteht; geliefert wird der vollständige Text.
 function askStreamRaw(instruction,data,maxTokens,onText,use='',signal){
  const content=instruction+'\n\nProjektdaten (JSON):\n'+JSON.stringify(data);
+ const profile=profileFor(use),metric=inferenceTimer(meter.getStore(),{model:profile.model,transport:key?'api':'cli',streaming:true});
  if(!key)return new Promise((resolve,reject)=>{
   let buffer='',text='',result=null,failed=false,done=false;
-  const finish=(fn,v)=>{if(done)return;done=true;clearTimeout(timer);fn(v)};
-  const child=spawn('claude',['-p','--output-format','stream-json','--verbose','--include-partial-messages','--system-prompt',system,'--tools','','--strict-mcp-config','--no-session-persistence','--disable-slash-commands','--model',use||cliModel],{cwd:tmpdir(),windowsHide:true,stdio:['pipe','pipe','ignore'],...(use?{env:{...process.env,MAX_THINKING_TOKENS:'0'}}:{})});
+  const finish=(fn,v)=>{if(done)return;done=true;clearTimeout(timer);metric.finish(fn===resolve);fn(v)};
+  const child=spawn('claude',['-p','--output-format','stream-json','--verbose','--include-partial-messages','--system-prompt',system,'--tools','','--strict-mcp-config','--no-session-persistence','--disable-slash-commands','--model',profile.model],{cwd:tmpdir(),windowsHide:true,stdio:['pipe','pipe','ignore'],...(use?{env:{...process.env,MAX_THINKING_TOKENS:'0'}}:{})});
   // Mit eigenem Modell (Skizze) zählt die Zeit bis zum ersten Zeichen: kein vorgeschaltetes Nachdenken
   const timer=setTimeout(()=>{child.kill();finish(reject,Error('Claude Code hat nicht rechtzeitig geantwortet.'))},360000);
   child.stdout.setEncoding('utf8');(signal||currentAbort?.signal)?.addEventListener('abort',()=>{child.kill();finish(reject,Error('Abgebrochen.'))},{once:true});
@@ -215,7 +234,7 @@ function askStreamRaw(instruction,data,maxTokens,onText,use='',signal){
     const row=buffer.slice(0,i);buffer=buffer.slice(i+1);
     let m;try{m=JSON.parse(row)}catch{continue}
     const d=m.type==='stream_event'&&m.event?.type==='content_block_delta'&&m.event.delta?.type==='text_delta'?m.event.delta.text:'';
-    if(d){text+=d;onText(d)}
+    if(d){metric.firstToken();text+=d;onText(d)}
     if(m.type==='result'){failed=m.is_error===true;if(typeof m.result==='string')result=m.result}
    }
   });
@@ -228,7 +247,8 @@ function askStreamRaw(instruction,data,maxTokens,onText,use='',signal){
   child.stdin.on('error',()=>{});child.stdin.end(content);
  });
  return (async()=>{
-  const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model,max_tokens:maxTokens,system,stream:true,messages:[{role:'user',content}]}),signal:signal?AbortSignal.any([AbortSignal.timeout(360000),signal]):within(360000)});
+  let ok=false;try{
+  const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify(anthropicMessageBody({model:profile.model,maxTokens,effort:profile.effort,system,instruction,data,stream:true,cache:enabledPromptCache(process.env),ttl:promptCacheTtl(process.env)})),signal:signal?AbortSignal.any([AbortSignal.timeout(360000),signal]):within(360000)});
   if(!response.ok)throw Error('Claude API: HTTP '+response.status+'. Schlüssel, Modell und Kontingent prüfen.');
   let buffer='',text='',stop='';const decoder=new TextDecoder();
   for await(const chunk of response.body){
@@ -237,13 +257,16 @@ function askStreamRaw(instruction,data,maxTokens,onText,use='',signal){
     const row=buffer.slice(0,i).trim();buffer=buffer.slice(i+1);
     if(!row.startsWith('data:'))continue;
     let m;try{m=JSON.parse(row.slice(5))}catch{continue}
-    if(m.type==='content_block_delta'&&m.delta?.type==='text_delta'){text+=m.delta.text;onText(m.delta.text)}
+    if(m.type==='message_start')metric.tokens(m.message?.usage);
+    if(m.type==='message_delta')metric.tokens(m.usage);
+    if(m.type==='content_block_delta'&&m.delta?.type==='text_delta'){metric.firstToken();text+=m.delta.text;onText(m.delta.text)}
     if(m.type==='message_delta'&&m.delta?.stop_reason)stop=m.delta.stop_reason;
     if(m.type==='error')throw Error('Claude API: '+String(m.error?.message||'Fehler im Antwortstrom').slice(0,200));
    }
   }
   if(!text.trim()||stop==='max_tokens')throw Error('Claude-Ausgabe fehlt oder wurde abgeschnitten. Bitte erneut versuchen oder Eingabe kürzen.');
-  return text;
+  ok=true;return text;
+  }finally{metric.finish(ok)}
  })();
 }
 // Getroffene Entscheidungen in der Sicht für die KI: Nummer, Frage, Optionen, Antwort
@@ -490,14 +513,14 @@ function alive(req,res){
  });
 }
 http.createServer(async(req,res)=>{
- meter.enterWith({context:0,out:0,calls:0});
+ meter.enterWith({context:0,out:0,calls:0,timings:[],mode:''});
  if(![host+':'+port,'localhost:'+port].includes(req.headers.host))return send(res,403,{error:'Host nicht erlaubt.'});
  if(req.method==='GET'&&(req.url==='/'||modules[req.url])){
   res.writeHead(200,{'Content-Type':req.url==='/'?'text/html; charset=utf-8':'text/javascript; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'"});
   return res.end(req.url==='/'?html:modules[req.url]);
  }
  if(req.method==='GET'&&req.url==='/api/alive')return alive(req,res);
- if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,stitch:!!stitchKey(),agents:cliOk,agentSkill,reviewers,models:cliOk?claudeModels:[],github:ghOk,projectsDir,pathSep:path.sep});
+ if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,gpu:!!externalBackends.gpu,diffusion:!!externalBackends.diffusion,stitch:!!stitchKey(),agents:cliOk,agentSkill,reviewers,models:cliOk?claudeModels:[],github:ghOk,projectsDir,pathSep:path.sep});
  if(req.method==='GET'&&req.url==='/api/run')return send(res,200,{...runStatus(),calib:calibInfo()});
  if(req.method==='GET'&&req.url.startsWith('/api/layout/file?')){
   const query=new URL(req.url,'http://'+host).searchParams,name=query.get('name');
@@ -509,7 +532,7 @@ http.createServer(async(req,res)=>{
    return res.end(file.body);
   }catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}
  }
- if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/layout','/api/run','/api/run/download','/api/reuse','/api/repo'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
+ if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/reuse','/api/repo'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
  if(!['http://'+host+':'+port,'http://localhost:'+port].includes(req.headers.origin)||!String(req.headers['content-type']).startsWith('application/json'))return send(res,403,{error:'Nur lokale Anfragen erlaubt.'});
  let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>500000)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
  if(req.url==='/api/repo'){
@@ -532,31 +555,107 @@ http.createServer(async(req,res)=>{
   if(!cliOk)return send(res,503,{error:'Claude Code ist nicht verfügbar. Installieren, mit „claude“ anmelden und SpecIt neu starten.'});
   try{return send(res,200,await startRun(validateRun(body)))}catch(e){return send(res,400,{error:e.message||'Umsetzung konnte nicht gestartet werden.'})}
  }
+ if(req.url==='/api/spec/preload'){
+  // Low-priority speculative run. Its result is tied to a random browser token
+  // AND every validated project input; no request can reuse a stale draft.
+  let data;try{data=validate(JSON.parse(raw))}catch(e){return send(res,400,{error:e.message})}
+  if(data.mode!=='final'||data.strategy!=='preload')return send(res,400,{error:'Preloading ist nur für die Strategie „Vorbereitet“ verfügbar.'});
+  if(!key&&!hasCli)return send(res,503,{error:'Preloading benötigt Claude: einen Anthropic-API-Schlüssel oder ein angemeldetes Claude Code.'});
+  if(busy)return send(res,409,{error:'Eine andere KI-Anfrage läuft. Vorbereitung später erneut starten.'});
+  try{preloads.key(data.preloadToken,data)}catch(e){return send(res,400,{error:e.message})}
+  meter.getStore().mode='final';meter.getStore().strategy='preload';
+  const ac=new AbortController();
+  res.on('close',()=>{if(!res.writableEnded)ac.abort()});
+  const started=performance.now();
+  try{
+   await preloads.start(data.preloadToken,data,async signal=>{
+    const frame=specFrame(data);
+    const text=await askStream(withSkills('final',finalPrompt(data)+conceptNote(data))+corePrompt(frame),{...brief(data),fixedSections:frame.tail},16000,()=>{},'',signal);
+    const core=text.trim().replace(/^#\s+.*\n+/,'');
+    return withToc(frame.head+core+frame.tail);
+   },ac.signal);
+   if(!res.destroyed)return send(res,200,{ready:true,elapsedMs:Math.round(performance.now()-started),usage:meter.getStore()});
+  }catch(e){if(!res.destroyed)return send(res,502,{error:e.message||'Vorbereitung fehlgeschlagen.'})}
+  return;
+ }
  if(req.url==='/api/spec/stream'){
   // Spezifikation als Strom: je Zeile ein JSON-Objekt – {t} für ein Textstück, am Ende {done,…} oder {error}.
   let data;try{data=validate(JSON.parse(raw))}catch(e){return send(res,400,{error:e.message})}
   if(data.mode!=='final')return send(res,400,{error:'Der Strom steht nur für die Spezifikation bereit.'});
+   meter.getStore().mode='final';
   const head=()=>res.writeHead(200,{'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
   const row=o=>res.write(JSON.stringify(o)+'\n');
   if(!data.ai){head();row({done:true,...demo(data)});return res.end()}
-  if(!key&&!hasCli)return send(res,503,{error:'Kein Claude-Zugang: ANTHROPIC_API_KEY setzen oder Claude Code installieren und anmelden.'});
+  let strategy;try{strategy=resolveStrategy(data.strategy,{hasApi:!!key||hasCli,hasGpu:!!externalBackends.gpu,hasDiffusion:!!externalBackends.diffusion,legacyParallel:process.env.SPECIT_PARALLEL_SPEC==='1'})}
+  catch(e){return send(res,400,{error:e.message})}
+  meter.getStore().strategy=strategy.id;
+  if(strategy.id==='preload'){try{preloads.key(data.preloadToken,data)}catch(e){return send(res,400,{error:e.message})}}
+  if(!key&&!hasCli&&!['gpu','diffusion'].includes(strategy.id))return send(res,503,{error:'Kein Claude-Zugang: ANTHROPIC_API_KEY setzen oder Claude Code installieren und anmelden.'});
   if(busy||Date.now()-lastAI<1500)return send(res,429,{error:'Analyse läuft oder wurde gerade begonnen. Bitte erneut versuchen.'});
   sketchAbort?.abort();busy=true;lastAI=Date.now();watch(res);head();
   // Bausteine: Rahmen und übertragbare Abschnitte stehen ohne KI fest; Claude schreibt nur den projektspezifischen Kern dazwischen.
   // Der Anfang erscheint dadurch sofort, und es ist deutlich weniger Text zu erzeugen.
   try{
    const frame=specFrame(data);
+   if(strategy.id==='preload'){
+    row({t:frame.head});
+    const cached=await preloads.take(data.preloadToken,data);
+    if(cached){row({done:true,source:'claude',strategy:'preload',preloaded:true,markdown:cached,usage:meter.getStore()});return}
+   }
    // Kapitelweise: Nur was sich durch die Änderungen ändern muss, wird neu geschrieben; Rahmen und Bausteine kommen frisch, der Rest bleibt wörtlich
-   if(data.update&&coreChapters(data.previous,frame).length>=3){
+   if(!strategy.full&&data.update&&coreChapters(data.previous,frame).length>=3){
     const text=data.changes.length?await askStream(withSkills('final',finalPrompt(data)+conceptNote(data))+updatePrompt(frame,data.changes),{...brief(data),fixedSections:frame.tail,previous:data.previous},16000,t=>row({t})):'';
     const merged=mergeSpec(data.previous,frame,text);
-    row({done:true,source:'claude',update:true,changed:merged.changed,entries:merged.entries,skipped:merged.skipped,markdown:withToc(merged.markdown),usage:meter.getStore()});
+    row({done:true,source:'claude',strategy:strategy.id,update:true,changed:merged.changed,entries:merged.entries,skipped:merged.skipped,markdown:withToc(merged.markdown),usage:meter.getStore()});
     return;
    }
-   row({t:frame.head});
+   if(strategy.id!=='preload')row({t:frame.head});
+   // Compact JSON contract: Claude emits only domain data; SpecIt renders all Markdown.
+   if(strategy.id==='structured'){
+    const json=await ask(withSkills('final',structuredPrompt+framePrompt(data.autonomy,data.duration,data.creativity,data.tone)+conceptNote(data))+startJson,
+      {...brief(data),fixedSections:frame.tail},12000);
+    const core=renderStructuredCore(parseJson(json),data.scope);
+    row({t:core});row({t:frame.tail});
+    row({done:true,source:'claude',strategy:'structured',markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
+    return;
+   }
+   // Experimental alternatives: local GPU model or hosted text-diffusion provider.
+   if(strategy.id==='gpu'||strategy.id==='diffusion'){
+    const backend=externalBackends[strategy.id];
+    const text=await streamChatCompletion({
+     backend,system,instruction:withSkills('final',finalPrompt(data)+conceptNote(data)+'\nReferenziere in „Funktionale Anforderungen“ jeden ausgewählten Feature-Namen aus features mindestens einmal wörtlich.')+corePrompt(frame),
+     data:{...brief(data),fixedSections:frame.tail},maxTokens:16000,
+     onText:t=>row({t}),signal:currentAbort?.signal,store:meter.getStore()
+    });
+    const core=validateExternalCore(text.trim(),data.scope);
+    row({t:frame.tail});
+    row({done:true,source:strategy.id,strategy:strategy.id,model:backend.model,
+      markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
+    return;
+   }
+   // Optional experiment: independent chapters are generated concurrently. API only; legacy flow stays default.
+   if(strategy.parallel){
+    const shared=finalPrompt(data)+conceptNote(data);
+    const payload={...brief(data),fixedSections:frame.tail};
+    const cancel=new AbortController();
+    const signal=currentAbort?.signal?AbortSignal.any([currentAbort.signal,cancel.signal]):cancel.signal;
+    const ordered=orderedChunks(chapterGroups.length,t=>row({t}));
+    let parts;
+    try{
+     parts=await Promise.all(chapterGroups.map(async(titles,i)=>{
+      const result=await askStream(withSkills('final',shared+partPrompt(frame,titles)),payload,i===1?9500:5500,t=>ordered.chunk(i,t),'',signal);
+      ordered.done(i);
+      return result;
+     }));
+    }catch(e){cancel.abort();throw e}
+    const core=joinParts(parts);
+    row({t:frame.tail});
+    row({done:true,source:'claude',strategy:strategy.id,parallel:true,markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
+    return;
+   }
    const text=await askStream(withSkills('final',finalPrompt(data)+conceptNote(data))+corePrompt(frame),{...brief(data),fixedSections:frame.tail},16000,t=>row({t}));
    const core=text.trim().replace(/^#\s+.*\n+/,'');row({t:frame.tail});
-   row({done:true,source:'claude',markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
+   row({done:true,source:'claude',strategy:strategy.id,markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
   }
   catch(e){row({error:e.message||'Claude nicht erreichbar.'})}
   finally{busy=false;currentAbort=null;res.end()}
@@ -575,6 +674,7 @@ http.createServer(async(req,res)=>{
   designing=true;res.on('close',()=>{if(!res.writableEnded)designing=false});try{return send(res,200,await layout(job))}catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}finally{designing=false}
  }
  let data;try{data=validate(JSON.parse(raw))}catch(e){return send(res,400,{error:e.message})}
+ meter.getStore().mode=data.mode;
  if(data.mode==='revise'){
   // Erst der sofortige Weg ohne KI; nur wenn er nicht greift und Claude aktiv ist, die KI fragen.
   const quick=reviseDemo(data.spec,data.project,data.idea,data.previous,data.questions,data.extras,data.index,data.frame);

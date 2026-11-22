@@ -148,3 +148,180 @@ Jeder Task trägt ID, Ziel, Anforderungsbezug, Abhängigkeiten, Scope und Nicht-
 ## Qualität und Datenschutz
 
 `npm test` prüft Planner, Fragenmodul (Standards, Pegel, Demo-Spezifikation) und die Stitch-Hilfsfunktionen, ohne Netzwerkzugriff. Ein Live-Test mit Claude benötigt Claude Code oder einen API-Key mit Guthaben. Server bindet an localhost, prüft Origin/Host und begrenzt Eingaben und parallele API-Anfragen. Entwürfe werden im Browser gespeichert; mit aktivierter KI werden Projektdaten an Anthropic übermittelt, mit aktivierter Layout-Erstellung an Google Stitch. Keine vertraulichen Daten nutzen. Keine öffentliche Bereitstellung ohne Authentifizierung, Zugriffskontrolle und Datenschutzkonzept. GitHub Pages kann das Node-Backend nicht ausführen. KI-Ausgaben stets fachlich prüfen.
+
+## Spezifikations-Performance messen (Experiment)
+
+Der bestehende Standard bleibt erhalten. Für einen schnellen Modellvergleich kann in der lokalen `.env`
+`SPECIT_FAST_MODE=1` gesetzt werden. Dadurch verwendet SpecIt für die Erstellung der
+Spezifikation und für die frühe Feature-Ermittlung `claude-haiku-5-5` mit `effort: low`.
+Andere KI-Phasen behalten ihre Modellwahl. Mit `SPECIT_FINAL_MODEL`,
+`SPECIT_FEATURE_MODEL` sowie `SPECIT_FINAL_EFFORT` und `SPECIT_FEATURE_EFFORT`
+sind abweichende, aufgabenbezogene Konfigurationen möglich; `SPECIT_AI_EFFORT`
+gilt als generelle Vorgabe, soweit für die Phase keine speziellere Einstellung gesetzt ist.
+Ein API-Schlüssel verwendet die Anthropic Messages API; ohne API-Schlüssel wird Claude Code
+weiterhin als lokaler CLI-Prozess aufgerufen. Die `effort`-Einstellung wird nur
+bei API-Aufrufen angewendet. Nicht jedes ältere Modell unterstützt jede Einstellung.
+
+Die Antwort der API enthält in `usage.timings` pro KI-Aufruf folgende Diagnosewerte:
+`model`, `transport` (`api` oder `cli`), `streaming`, `ok`,
+`totalMs`, bei gestreamter Ausgabe `firstTokenMs`, und bei API-Antworten,
+soweit verfügbar, `input_tokens`, `output_tokens` sowie Cache-Token-Zähler.
+Es werden **keine Eingabe- oder Ausgabetexte** in den Timing-Daten gespeichert.
+Die Werte können in den Entwicklertools in der Netzwerkanzeige betrachtet werden;
+die Browserkonsole meldet nach dem Erstellen zusätzlich die Gesamtdauer bis zur
+fertigen Spezifikation und die angefallenen Modellaufrufe. Für vergleichbare Tests
+dieselbe Projektidee, Feature-Auswahl und Zielzeit mehrfach verwenden;
+P50/P95 und fachliche Vollständigkeit getrennt auswerten. Ohne API-Zugang lassen
+sich keine belastbaren Modell-Benchmarks durchführen.
+
+### Generierungsstrategie auswählen
+
+Auf der Seite **Spezifikation** steht ein Dropdown mit mehreren Strategien:
+
+| Strategie | Verhalten | Voraussetzung |
+|---|---|---|
+| **Intelligent** (Voreinstellung) | Bestehender Weg: Bei einer Änderung nur betroffene Kapitel/Einträge aktualisieren; bei einer neuen Spezifikation seriell alles generieren. | Claude Code oder Anthropic API |
+| **Vorbereitet** (experimentell) | Wenn Idee, Features und Entscheidungen stabil sind, die vollständige Spezifikation bereits auf der Spezifikationsseite berechnen; beim Klick die passende gespeicherte Version übernehmen. | Anthropic API |
+| **GPU lokal** (experimentell) | Vollständige Erstellung über einen lokal laufenden OpenAI-kompatiblen GPU-Inferenzserver, z. B. vLLM. | Lokales Modell + Server |
+| **Diffusion** (experimentell) | Vollständige Erstellung über ein Mercury-Diffusion-Modell. | Inception-API-Schlüssel |
+| **Strukturiert** (experimentell) | Fachliche Inhalte als kompaktes JSON erzeugen; SpecIt baut acht Kapitel, FR-/NFR-IDs und Abnahmekriterien deterministisch. | Claude Code oder Anthropic API |
+| **Klassisch** | Bei jedem Klick den gesamten projektspezifischen Kern neu schreiben, immer sequentiell mit dem konfigurierten Standardmodell (kein Delta, kein schnelleres Modell). | Claude Code oder Anthropic API |
+| **Parallel** (experimentell) | Den vollständigen Kern mit drei parallelen Modellaufrufen schreiben, Ergebnis in Kapitelreihenfolge zusammenführen. | Anthropic API |
+| **Turbo** (experimentell) | Wie Parallel, aber mit Haiku 5.5 und niedrigem Denkaufwand. | Anthropic API |
+
+Die Wahl wird lokal im Browser gespeichert und bei **jeder Erstellung** an den
+Server übermittelt. Die letzte gemessene Erstellung je Strategie (in Sekunden)
+erscheint als Vergleichshilfe. Das Umschalten allein verändert die gespeicherte
+Spezifikation nicht. Ein vollständiger Neuaufbau verwendet weiterhin die
+gewählten Features und bestätigten Entscheidungen.
+
+**Technischer Hinweis:** Ohne einen expliziten Strategieparameter behalten
+ältere API-Clients den bisherigen Weg; `SPECIT_PARALLEL_SPEC=1` aktiviert
+bei solchen Alt-Clients den Parallelmodus. Eine ausdrücklich gewählte Strategie
+hat immer Vorrang. `SPECIT_FAST_MODE=1` bleibt als optionaler Server-Fast-Mode
+für sonstige/alte Aufrufe verfügbar; **Klassisch** erzwingt das Basismodell und
+**Turbo** das schnelle Modell, auch wenn die Umgebungsvariablen anders gesetzt sind.
+
+**Experimentell:** Parallele Fachkapitel können trotz Prüfung auf vollständige
+Überschriften und korrekte Reihenfolge fachlich widersprüchlich sein. Die
+Parallelausgabe ist deshalb nicht die Voreinstellung; ein Qualitätsvergleich
+gegen die klassische Spezifikation ist vor der Produktivfreigabe erforderlich.
+Parallelisierung kann zusätzliche Eingabetokens und API-Rate-Limits verursachen.
+
+### Reproduzierbarer Live-Benchmark
+
+Mit gestartetem SpecIt-Server und eingerichtetem Claude-/Anthropic-Zugang
+`npm run bench -- 3 classic` ausführen (3 Wiederholungen pro Testfall: Notizen,
+Teamaufgaben, Raumbuchung). Als zweites Argument können die Strategien
+`classic`, `incremental`, `parallel` und `turbo` übergeben werden.
+Für Parallel und Turbo ist ein API-Schlüssel nötig. Für einen anderen Port `SPECIT_BENCH_URL`
+setzen. Das Skript ermittelt Dauer bis zur vollständigen Spezifikation,
+Modell-Timing, API-Tokens, Vollständigkeit der acht Kapitel und P50/P95.
+Es speichert und protokolliert keine Projektspezifikationstexte. Testläufe
+nutzen echte API-Aufrufe und können Kosten verursachen. Die Strategien
+werden pro Anfrage gewählt, ein Serverneustart ist zwischen diesen Vergleichen
+nicht erforderlich. Für einen fairen Vergleich immer dieselben Eingaben und
+die gleiche Anzahl Wiederholungen verwenden.
+
+### Spekulatives Preloading
+
+Wähle **Vorbereitet**, schließe die offenen Entscheidungen ab und ermittle den
+Feature-Umfang. SpecIt startet nach einer kurzen Ruhephase einen optionalen
+separaten KI-Aufruf und hält das vollständige Ergebnis für maximal drei Minuten
+im Arbeitsspeicher des Servers. Derselbe zufällige Browser-Sitzungstoken und
+ein SHA-256-Fingerabdruck **aller validierten Generierungsparameter** müssen
+beim späteren Klick übereinstimmen. Bei Änderungen wird die laufende
+Vorbereitung abgebrochen und der vorherige Entwurf nicht wiederverwendet.
+Steht kein passender Entwurf bereit, generiert SpecIt normal im Vordergrund.
+
+Die Vorbereitung erfolgt nur mit aktivierter KI und Anthropic-API; jede
+spekulative Anfrage kann zusätzliche API-Kosten verursachen. Es werden höchstens
+zwei Einträge gespeichert; offene Vorbereitungen verschiedener Projekte
+werden abgebrochen. Ergebnisinhalte werden nicht auf die Festplatte geschrieben.
+
+### Anthropic Prompt-Caching
+
+Mit `SPECIT_PROMPT_CACHE=1` werden bei direkter Anthropic-API-Nutzung
+die **stabilen Skill-Richtlinien** als wiederverwendbarer Systemblock mit
+`cache_control: {type: "ephemeral"}` markiert. Die veränderlichen Anweisungen,
+Projektidee und Antworten bleiben im nicht gecachten User-Teil. CLI-Aufrufe
+bleiben unverändert. Die Alternative `SPECIT_PROMPT_CACHE_TTL=1h` aktiviert
+den optionalen einstündigen Cache mit höheren Cache-Schreibkosten. Der
+Standard von fünf Minuten wird bei unzulässigen TTL-Angaben verwendet.
+
+Mit `usage.timings[].cache_read_input_tokens` und
+`cache_creation_input_tokens` lassen sich echte Cache-Hits überprüfen.
+Bei zu kurzen statischen Präfixen kann Anthropic trotz gesetzter Markierung
+keinen Cache anlegen. Prompt-Caching beschleunigt die Eingabeverarbeitung,
+nicht die sequenzielle Erzeugung der Ausgabetokens.
+
+### Lokale GPU-Inferenz (experimentell)
+
+Stelle einen separaten, mit deinem GPU-Modell kompatiblen Inferenzdienst bereit,
+der **OpenAI Chat Completions mit SSE-Streaming** anbietet, etwa über vLLM.
+Beispiel (Befehl und unterstützte Modelle hängen von der GPU-Installation ab):
+
+```bash
+vllm serve Qwen/Qwen3-8B --host 127.0.0.1 --port 8000
+```
+
+Setze danach `SPECIT_GPU_MODEL=Qwen/Qwen3-8B` und
+`SPECIT_GPU_BASE_URL=http://127.0.0.1:8000/v1` in der `.env`.
+Die GPU-Strategie erscheint nach einem Server-Neustart. Der Adapter akzeptiert
+ausschließlich Loopback-Adressen und die API-Pfadwurzel `/v1`, folgt keinen
+HTTP-Weiterleitungen, übermittelt keine API-Schlüssel an den Browser und prüft
+die acht Kapitel sowie das Vorhandensein überprüfbarer FR-Anforderungen.
+Die fachliche Qualität ersetzt dieser Strukturcheck nicht.
+Welche Modelle/Quantisierungen im tatsächlichen VRAM funktionieren,
+muss auf dem Zielrechner erprobt werden. SpecIt selbst startet keinen
+GPU-Server und kann eine fehlende GPU nicht simulieren.
+
+### Text-Diffusion über Inception Mercury (experimentell)
+
+Nach Eintrag von `SPECIT_INCEPTION_API_KEY` erscheint die Strategie
+**Diffusion**. Voreingestellt ist `mercury-3`; über
+`SPECIT_INCEPTION_MODEL` kann ein anderes für das Konto freigeschaltetes
+Modell ausgewählt werden. Der Endpoint ist serverseitig fest auf
+`https://api.inceptionlabs.ai/v1/chat/completions` beschränkt.
+Es wird das OpenAI-kompatible Streaming-Protokoll verwendet. Modellkosten
+und Betriebsbedingungen sind beim Anbieter zu prüfen. **Wichtig:** Inception
+kündigt auf seiner aktuellen API-Startseite die Einstellung des bisherigen
+API-Dienstes zum 28. Dezember 2026 an. Die Anbindung ist daher zunächst
+ein Benchmark-Experiment, keine langfristige Produktionsabhängigkeit.
+
+Beide alternativen Strategien ersetzen nur den finalen Spezifikationsaufruf.
+Für die vorgelagerten Claude-Funktionen (Fragen/Features) ist derzeit weiterhin
+ein Anthropic-API- oder Claude-Code-Zugang erforderlich; GPU/Diffusion allein
+ersetzen diese Vorstufen noch nicht. Für den Vergleich gilt
+`npm run bench -- 3 gpu` beziehungsweise `npm run bench -- 3 diffusion`.
+
+### Kompakte strukturierte Generierung (experimentell)
+
+Mit der Strategie **Strukturiert** wird statt des gesamten Markdown-Kerns
+eine kompakte JSON-Repräsentation mit Zielen, Rollen, Abläufen, funktionalen
+Anforderungen, Qualitätsanforderungen, UX, Daten und Risiken erzeugt.
+SpecIt validiert, dass jedes ausgewählte Feature mindestens eine
+Anforderung mit Akzeptanzkriterium besitzt, und vergibt FR-/NFR-Kennungen
+lokal. Daraus werden alle acht Fachkapitel deterministisch zusammengesetzt,
+bevor die vorhandenen statischen Dokumentbausteine angehängt werden.
+
+Die Struktur kann die Anzahl der erzeugten Tokens reduzieren, ist aber
+noch kein Ersatz für einen fachlichen Konsistenzcheck. Bei ungültigem JSON,
+fehlenden Features oder unvollständigen Kriterien meldet SpecIt einen
+Fehler statt ein lückenhaftes Dokument zu speichern. Anders als der
+Streaming-Markdown-Modus erscheint die fertige Textstruktur erst nach
+Abschluss des JSON-Aufrufs. Das Verfahren verwendet die bestehende
+Claude-Anbindung und benötigt keine zusätzliche Hardware.
+
+#### Alternative Diffusion-Anbindung über OpenRouter
+
+Für die Diffusion-Strategie kann statt der direkten Inception-API
+`SPECIT_DIFFUSION_PROVIDER=openrouter` gesetzt werden. Dazu
+`SPECIT_OPENROUTER_API_KEY` und optional
+`SPECIT_DIFFUSION_MODEL=inception/mercury-3` konfigurieren. Die
+Anwendung verwendet dann den festen Endpoint
+`https://openrouter.ai/api/v1/chat/completions`.
+Die Host-Auswahl ist bewusst auf `inception` und `openrouter` begrenzt;
+Benutzereingaben können keine Netzwerkziele bestimmen.
+Auch diese Variante muss mit der tatsächlich verfügbaren Modell-ID und
+deren Streaming-Verhalten getestet werden.

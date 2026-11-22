@@ -1317,6 +1317,20 @@ body.merged.decqa #decDerive{margin-top:12px}
       <div class="actions"><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="specPdf" class="btn small" type="button" title="Öffnet die Druckvorschau des Browsers mit der Spezifikation im A4-Format. Dort als Ziel „Als PDF speichern“ wählen.">↓ PDF / Vorschau</button><button id="generate" class="btn primary small" type="button">↻ Spezifikation aktualisieren</button><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div></div>
       <div class="actions"><span class="chip" id="specBadge"></span><span id="specStatus" role="status" class="status" style="min-height:0"></span></div>
     </div>
+    <div class="actions" style="align-items:center;gap:10px;flex-wrap:wrap">
+      <label class="field-label" for="specStrategy" style="margin:0">Generierungsstrategie</label>
+      <select id="specStrategy" aria-describedby="specStrategyHint" style="max-width:270px">
+        <option value="incremental">Intelligent · Änderungen gezielt</option>
+        <option value="preload">Vorbereitet · Entwurf im Voraus</option>
+        <option value="structured">Strukturiert · kompaktes JSON</option>
+        <option value="classic">Klassisch · immer alles neu</option>
+        <option value="parallel">Parallel · 3 Fachgruppen</option>
+        <option value="turbo">Turbo · parallel + schnelles Modell</option>
+        <option value="gpu">GPU lokal · eigener Inferenzserver</option>
+        <option value="diffusion">Diffusion · Mercury API</option>
+      </select>
+      <span class="meta" id="specStrategyHint" role="status">Strategie für die nächste Erstellung auswählen.</span>
+    </div>
     <div id="changeBar" class="changebar hidden" role="status"></div>
     <div class="split">
       <div>
@@ -1531,7 +1545,7 @@ const toneNames=[
   ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung. Beschreibender Name, kein Humor.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,runOutput:null,own:{},sketch:null,logoCount:0,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,runOutput:null,own:{},sketch:null,logoCount:0,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -1549,6 +1563,8 @@ try{
     s.last=-1;
     if(!Number.isInteger(s.layoutCount)||s.layoutCount<1||s.layoutCount>5)s.layoutCount=3;
     if(!['DESKTOP','MOBILE','BOTH'].includes(s.layoutDevice))s.layoutDevice='DESKTOP';
+     if(!['classic','incremental','preload','structured','parallel','turbo','gpu','diffusion'].includes(s.specStrategy))s.specStrategy='incremental';
+     if(!s.strategyTimes||typeof s.strategyTimes!=='object'||Array.isArray(s.strategyTimes))s.strategyTimes={};
     if(!['LIGHT','DARK','BOTH'].includes(s.layoutTheme))s.layoutTheme='LIGHT';
     if(s.layout&&!Array.isArray(s.layout.chosen))s.layout.chosen=typeof s.layout.chosen==='string'&&s.layout.chosen?[s.layout.chosen]:[];
     s.autonomy=Number.isFinite(s.autonomy)&&s.autonomy>=0&&s.autonomy<=100?Math.round(s.autonomy/20)*20:40;
@@ -1583,7 +1599,7 @@ try{
   }
 }catch{s=blank()}
 
-let available=false,provider=null,statusLoaded=false,stitch=false,active=false,layoutBusy=false,runBusy=false,revision=0;
+let available=false,provider=null,statusLoaded=false,gpuAvailable=false,diffusionAvailable=false,stitch=false,active=false,layoutBusy=false,runBusy=false,revision=0;
 // Auswahl der gerade aktiven Frage, bis sie bestätigt wird
 let pick=[],custom='',customOpen=false;
 // Darstellung der Spezifikation: gerenderte Ansicht oder Markdown-Editor
@@ -1595,6 +1611,36 @@ let catOpen=-1,catPick=[],catCustom='',change=null;
 // Aufgeklappte Unterrubriken der beiden Felder: 'a'+Thema (beantwortet) bzw. 'o'+Thema (offen)
 const catGroups=new Set();
 
+const strategyDescription={
+ classic:'Erstellt die komplette Spezifikation jedes Mal neu, sequenziell mit dem konfigurierten Standardmodell.',
+ incremental:'Bestehender Weg: Bei Änderungen nur betroffene Kapitel neu schreiben, sonst vollständig sequenziell.',
+ preload:'Experimentell: Spezifikation wird nach stabilen Entscheidungen vorbereitet und beim Erstellen sofort übernommen.',
+ structured:'Experimentell: Kompakte Fachinformationen als JSON, alle acht Markdown-Kapitel werden lokal aufgebaut.',
+ parallel:'Experimentell: Erstellt die komplette Spezifikation mit drei parallelen Aufrufen. Qualität gesondert prüfen.',
+ turbo:'Experimentell: Parallele Neuerstellung mit Haiku und niedrigem Denkaufwand. Qualität gesondert prüfen.',
+ gpu:'Experimentell: Vollständige Erstellung über einen lokalen OpenAI-kompatiblen GPU-Inferenzserver.',
+ diffusion:'Experimentell: Vollständige Erstellung über ein gehostetes Text-Diffusion-Modell.'
+};
+function strategyUI(){
+ const select=$('specStrategy'),hasApi=available;
+ if(statusLoaded&&((!hasApi&&['preload','parallel','turbo'].includes(s.specStrategy))
+   ||(!gpuAvailable&&s.specStrategy==='gpu')||(!diffusionAvailable&&s.specStrategy==='diffusion')))s.specStrategy='incremental';
+ for(const option of select.options){
+  if(['preload','parallel','turbo'].includes(option.value))option.disabled=statusLoaded&&!hasApi;
+  if(option.value==='gpu')option.disabled=statusLoaded&&!gpuAvailable;
+  if(option.value==='diffusion')option.disabled=statusLoaded&&!diffusionAvailable;
+ }
+ select.value=s.specStrategy;
+ select.disabled=active;
+ const ms=s.strategyTimes?.[s.specStrategy],last=Number.isFinite(ms)&&ms>0?' Letzte gemessene Erstellung: '+(ms/1000).toFixed(1)+' s.':'';
+ const prep=s.specStrategy==='preload'&&preloadStatus.state==='ready'?' Vorbereitet – der nächste Klick kann den Entwurf übernehmen.':s.specStrategy==='preload'&&preloadStatus.state==='loading'?' Entwurf wird im Hintergrund vorbereitet …':s.specStrategy==='preload'&&preloadStatus.state==='error'?' Vorbereitung nicht verfügbar; Klick erstellt wie gewohnt.':'';
+ $('specStrategyHint').textContent=strategyDescription[s.specStrategy]+last+prep+(statusLoaded&&!hasApi?' Vorbereitet, Parallel und Turbo benötigen Claude (API-Schlüssel oder Claude Code).':'');
+}
+$('specStrategy').onchange=e=>{
+ if(active)return;
+ s.specStrategy=e.target.value;
+ save();strategyUI();phasesUI();scheduleSpecPreload();
+};
 function save(){try{localStorage.setItem('specit-v3',JSON.stringify(s))}catch{$('busy').textContent='Lokales Speichern nicht möglich.'}}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
 function button(text,cls,onclick){const b=node('button',text,cls);b.type='button';b.onclick=onclick;return b}
@@ -1754,7 +1800,7 @@ function phasesUI(){
   [0,1,2,3].forEach(i=>$('phase'+i).classList.toggle('hidden',i!==s.phase));
   // Genau eine primäre Aktion je Ansicht
   const ready=!!s.spec.trim()&&!s.dirty,allAnswered=s.questions.length>0&&firstOpen()<0;
-  $('generate').textContent=s.spec.trim()?'↻ Spezifikation aktualisieren':'✦ Spezifikation erstellen';
+  $('generate').textContent=s.spec.trim()?(s.specStrategy==='incremental'?'↻ Spezifikation aktualisieren':'↻ Spezifikation neu erstellen'):'✦ Spezifikation erstellen';
   $('generate').classList.toggle('primary',!ready);$('toTasks').classList.toggle('primary',ready);
   $('toSpec').classList.toggle('primary',allAnswered);
   navUI();
@@ -2832,18 +2878,59 @@ async function stream(url,data,onRow){
     for(let i;(i=buffer.indexOf('\n'))>=0;){const row=buffer.slice(0,i);buffer=buffer.slice(i+1);if(row.trim()){const m=JSON.parse(row);if(m.done&&m.usage)addUsage(data&&data.mode,m.usage);onRow(m)}}
   }
 }
+// Same complete payload is used for speculative preparation and the foreground run.
+// This ensures that the server's request fingerprint never accepts stale input.
+const preloadSession=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
+let preloadIdle=0,preloadTask=null,preloadStatus={key:'',state:''};
+function finalPayload(extra={}){
+ return {mode:'final',strategy:s.specStrategy,...extra,minutes:targetMinutes(),
+  ...(conceptPlain()?{concept:conceptPlain()}:{}),
+  idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,
+  features:s.features.filter(f=>f.on),ai:$('ai').checked,...frame(),
+  ...(s.specStrategy==='preload'?{preloadToken:preloadSession}:{})};
+}
+function scheduleSpecPreload(){
+ clearTimeout(preloadIdle);
+ const eligible=s.specStrategy==='preload'&&available&&$('ai').checked&&!active&&s.phase===2
+   &&s.idea.trim()&&s.features.length&&firstOpen()<0&&(!s.spec.trim()||s.dirty);
+ if(!eligible){
+  if(preloadTask&&!active){preloadTask.ac.abort();preloadTask=null}
+  return;
+ }
+ const payload=finalPayload(),key=JSON.stringify(payload);
+ if(preloadTask?.key===key)return;
+ if(preloadTask){preloadTask.ac.abort();preloadTask=null}
+ if(preloadStatus.key===key&&preloadStatus.state==='error')return;
+ if(preloadStatus.key===key&&preloadStatus.state==='ready'&&Date.now()-preloadStatus.when<120000)return;
+ preloadIdle=setTimeout(()=>runSpecPreload(payload,key),1400);
+}
+async function runSpecPreload(payload,key){
+ if(active||s.specStrategy!=='preload'||key!==JSON.stringify(finalPayload()))return;
+ const ac=new AbortController(),task={ac,key};preloadTask=task;
+ preloadStatus={key,state:'loading',when:Date.now()};strategyUI();
+ try{
+  const response=await fetch('/api/spec/preload',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),signal:ac.signal});
+  if(!response.ok)throw Error('Vorbereitung: HTTP '+response.status);
+  const result=await response.json();
+  if(!result.ready)throw Error('Vorbereitung nicht vollständig.');
+  if(preloadTask===task){preloadStatus={key,state:'ready',when:Date.now()};strategyUI()}
+ }catch(e){
+  if(preloadTask===task&&!ac.signal.aborted){preloadStatus={key,state:'error',when:Date.now()};strategyUI()}
+ }finally{if(preloadTask===task)preloadTask=null}
+}
 async function generate(){
   if(active)return;
   const note=t=>{$('specStatus').className='status';$('specStatus').textContent=t};
   if(!s.idea.trim()){note('Bitte zuerst eine Idee eingeben oder eine Spezifikation einfügen.');return}
   // Gibt es schon eine Spezifikation und ist klar, was sich geändert hat, werden nur die betroffenen Kapitel neu geschrieben
-  const changes=s.spec.trim()&&s.dirty?specChanges():null,partial=!!changes;
-  const rev=revision;lock(true,partial?'Geänderte Kapitel werden neu geschrieben':'Spezifikation wird erstellt');note(partial?'Geänderte Kapitel werden neu geschrieben …':'Spezifikation wird erstellt …');
+  const changes=s.specStrategy==='incremental'&&s.spec.trim()&&s.dirty?specChanges():null,partial=!!changes;
+  const generatedAt=performance.now();
+   const rev=revision;lock(true,partial?'Geänderte Kapitel werden neu geschrieben':'Spezifikation wird erstellt');note(partial?'Geänderte Kapitel werden neu geschrieben …':'Spezifikation wird erstellt …');
   let message='',done=null;
   try{
     // Die Antwort kommt als Strom und wird beim Entstehen angezeigt
     let r=null;streamText='';specMode='view';specUI();statuses();
-    await stream('/api/spec/stream',{mode:'final',...(partial?{update:true,spec:s.spec,changes}:{}),minutes:targetMinutes(),...(conceptPlain()?{concept:conceptPlain()}:{}),idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,features:s.features.filter(f=>f.on),ai:$('ai').checked,...frame()},m=>{
+    await stream('/api/spec/stream',finalPayload(partial?{update:true,spec:s.spec,changes}:{}),m=>{
       if(typeof m.t==='string'){streamText+=m.t;const now=performance.now();if(now-paintAt>180){paintAt=now;specUI();$('specCount').textContent=streamText.length.toLocaleString('de-DE')+' Zeichen …'}}
       else if(m.error)throw Error(m.error);else if(m.done)r=m;
     });
@@ -2855,6 +2942,11 @@ async function generate(){
       save()}
   }catch(e){message=e.message}finally{streamText=null;lock(false)}
   renderAll();if(message){note(message);return}
+   if(done){const elapsedMs=Math.round(performance.now()-generatedAt),models=done.usage?.timings||[];
+     s.strategyTimes[s.specStrategy]=elapsedMs;save();strategyUI();
+     console.info('[SpecIt performance]',{strategy:s.specStrategy,generationMs:elapsedMs,modelCalls:models});
+     note('Spezifikation in '+(elapsedMs/1000).toFixed(1)+' s erstellt'+(models[0]?.model?' · '+models[0].model:'')+'.');
+   }
   if(done&&done.update){const n=(done.changed||[]).length;note(n?(done.entries?plural(done.entries,'Eintrag','Einträge')+' in '+plural(n,'Kapitel','Kapiteln')+' geändert: ':plural(n,'Kapitel','Kapitel')+' neu geschrieben: ')+done.changed.join(', ')+'. Alles Übrige ist unverändert.'+((done.skipped||[]).length?' Nicht einzuordnen waren Änderungen in: '+done.skipped.join(', ')+' – dafür „Bearbeiten“ nutzen oder die Idee kurz ändern und ganz neu erstellen.':''):'Kein Kapitel musste sich ändern; Rahmen und Entscheidungen sind auf dem neuen Stand.');return}
   // Was Claude in der Spezifikation offen lässt, gleich als Fragen mit Alternativen anbieten
   // (nicht im Auto-Modus: dort entscheidet Claude sie selbst und es wird nicht rückgefragt)
@@ -4215,7 +4307,7 @@ $('runZip').onclick=async()=>{
 $('runOpen').onclick=async()=>{try{await post('/api/run',{action:'open',dir:(run&&run.dir)||s.runDir.trim()})}catch(e){$('runWhere').textContent=e.message}};
 $('runStop').onclick=async()=>{try{run=await post('/api/run',{action:'stop'})}catch(e){$('runStatus').textContent=e.message}pollRun()};
 
-function replaceState(next){revision++;next.autonomy=s.autonomy;next.layoutOn=s.layoutOn;next.layoutCount=s.layoutCount;next.layoutDevice=s.layoutDevice;next.layoutTheme=s.layoutTheme;s=next;pick=[];custom='';customOpen=false;change=null;catOpen=-1;renderAll()}
+function replaceState(next){revision++;next.autonomy=s.autonomy;next.specStrategy=s.specStrategy;next.layoutOn=s.layoutOn;next.layoutCount=s.layoutCount;next.layoutDevice=s.layoutDevice;next.layoutTheme=s.layoutTheme;s=next;pick=[];custom='';customOpen=false;change=null;catOpen=-1;renderAll()}
 // Zurücksetzen mit einem Klick: alle Angaben und Antworten leeren, ohne Rückfrage – dafür kurz widerrufbar.
 let undoTimer=0;
 $('reset').onclick=()=>{
@@ -4234,7 +4326,7 @@ if($('idea').value!==s.idea)$('idea').value=s.idea;
   $('creativity').value=s.creativity;$('tone').value=s.tone;
   $('autonomy').value=s.autonomy/20;$('durLevel').value=s.durLevel;
   $('repo').value=s.repo;$('agent').value=s.agent;$('layoutCount').value=s.layoutCount;$('layoutDevice').value=s.layoutDevice;$('layoutTheme').value=s.layoutTheme;
-  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();save();
+  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();strategyUI();save();scheduleSpecPreload();
 }
 if(MERGED){
   // Die Fragenliste zieht in die linke Spalte der Spezifikations-Ansicht um; die Ansicht „Fragen“ selbst wird nicht mehr gezeigt
@@ -4245,7 +4337,7 @@ if(MERGED){
 if(inQuestions()&&s.active<0)activate(firstOpen(),false);else if(s.active>=0)activate(s.active,false);
 renderAll();
 fetch('/api/status').then(r=>r.json()).then(r=>{
-  available=!!r.available;provider=r.provider||null;statusLoaded=true;stitch=!!r.stitch;agentsOk=!!r.agents;setAgentSkill(r.agentSkill);reviewers=Array.isArray(r.reviewers)?r.reviewers:[];agentModels=Array.isArray(r.models)?r.models:[];runModelUI();projectsDir=typeof r.projectsDir==='string'?r.projectsDir:'';pathSep=r.pathSep==='/'?'/':'\\';suggestRunDir();$('repoNew').disabled=!r.github;$('repoNew').title=r.github?'Legt über die GitHub-CLI ein leeres Repository in deinem Konto an.':'Dafür die GitHub-CLI einrichten: im Terminal „gh auth login“, dann SpecIt neu starten.';reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
+  available=!!r.available;provider=r.provider||null;statusLoaded=true;gpuAvailable=!!r.gpu;diffusionAvailable=!!r.diffusion;stitch=!!r.stitch;agentsOk=!!r.agents;setAgentSkill(r.agentSkill);reviewers=Array.isArray(r.reviewers)?r.reviewers:[];agentModels=Array.isArray(r.models)?r.models:[];runModelUI();projectsDir=typeof r.projectsDir==='string'?r.projectsDir:'';pathSep=r.pathSep==='/'?'/':'\\';suggestRunDir();$('repoNew').disabled=!r.github;$('repoNew').title=r.github?'Legt über die GitHub-CLI ein leeres Repository in deinem Konto an.':'Dafür die GitHub-CLI einrichten: im Terminal „gh auth login“, dann SpecIt neu starten.';reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
   let wanted=false;try{wanted=localStorage.getItem('specit-ai')==='1'}catch{}
   $('ai').checked=available&&wanted;aiUI();
   if(!stitch)$('layoutHint').textContent='Kein STITCH_API_KEY konfiguriert. Schlüssel in .env setzen und neu starten, siehe README.';
