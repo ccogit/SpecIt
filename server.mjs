@@ -12,6 +12,7 @@ const calibPlan=plan=>({...plan,tasks:scale(plan.tasks,factor('plan'))}),calibFe
 import { validateRun, startRun, stopRun, runStatus, killAgents, targetDir, openDir } from './runner.mjs';
 import { withSkills } from './skills.mjs';
 import { aiProfile, inferenceTimer } from './ai-performance.mjs';
+import { chapterGroups, partPrompt, joinParts, orderedChunks } from './spec-parallel.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
 import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, extendPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, cleanLogos, demoLogos, logoPrompt, brandLevels, cleanSvg, sketchPrompt, conceptPrompt, conceptSections, sketchRefinePrompt, modulators, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
@@ -539,6 +540,26 @@ http.createServer(async(req,res)=>{
     return;
    }
    row({t:frame.head});
+   // Optional experiment: independent chapters are generated concurrently. API only; legacy flow stays default.
+   if(key&&process.env.SPECIT_PARALLEL_SPEC==='1'){
+    const shared=withSkills('final',finalPrompt(data)+conceptNote(data));
+    const payload={...brief(data),fixedSections:frame.tail};
+    const cancel=new AbortController();
+    const signal=currentAbort?.signal?AbortSignal.any([currentAbort.signal,cancel.signal]):cancel.signal;
+    const ordered=orderedChunks(chapterGroups.length,t=>row({t}));
+    let parts;
+    try{
+     parts=await Promise.all(chapterGroups.map(async(titles,i)=>{
+      const result=await askStream(shared+partPrompt(frame,titles),payload,i===1?9500:5500,t=>ordered.chunk(i,t),'',signal);
+      ordered.done(i);
+      return result;
+     }));
+    }catch(e){cancel.abort();throw e}
+    const core=joinParts(parts);
+    row({t:frame.tail});
+    row({done:true,source:'claude',parallel:true,markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
+    return;
+   }
    const text=await askStream(withSkills('final',finalPrompt(data)+conceptNote(data))+corePrompt(frame),{...brief(data),fixedSections:frame.tail},16000,t=>row({t}));
    const core=text.trim().replace(/^#\s+.*\n+/,'');row({t:frame.tail});
    row({done:true,source:'claude',markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
