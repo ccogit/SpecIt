@@ -96,3 +96,9 @@ test('the data model is laid out without overlap and exported as a valid erDiagr
   const m = dataMermaid(d);
   assert.ok(m.startsWith('erDiagram') && m.includes('Runde }o--o{ Person : "enthält"') && m.includes('Groesse_cm') && m.includes('    string anwesend'));
 });
+
+test('nodes of the structure keep valid requirement references only', async () => {
+  const { cleanArch } = await import('../diagrams.mjs');
+  const a = cleanArch({ structure: { nodes: [{ id: 'a', label: 'Liste', kind: 'ui', refs: ['FR-001', 'FR-001', 'quatsch', 7] }, { id: 'b', label: 'Logik', kind: 'logic' }, { id: 'c', label: 'Speicher', kind: 'store', refs: 'FR-002' }], edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }] } });
+  assert.deepEqual(a.structure.nodes.map(n => n.refs), [['FR-001'], [], []]);
+});
