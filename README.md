@@ -301,3 +301,16 @@ Fehler statt ein lückenhaftes Dokument zu speichern. Anders als der
 Streaming-Markdown-Modus erscheint die fertige Textstruktur erst nach
 Abschluss des JSON-Aufrufs. Das Verfahren verwendet die bestehende
 Claude-Anbindung und benötigt keine zusätzliche Hardware.
+
+#### Alternative Diffusion-Anbindung über OpenRouter
+
+Für die Diffusion-Strategie kann statt der direkten Inception-API
+`SPECIT_DIFFUSION_PROVIDER=openrouter` gesetzt werden. Dazu
+`SPECIT_OPENROUTER_API_KEY` und optional
+`SPECIT_DIFFUSION_MODEL=inception/mercury-3` konfigurieren. Die
+Anwendung verwendet dann den festen Endpoint
+`https://openrouter.ai/api/v1/chat/completions`.
+Die Host-Auswahl ist bewusst auf `inception` und `openrouter` begrenzt;
+Benutzereingaben können keine Netzwerkziele bestimmen.
+Auch diese Variante muss mit der tatsächlich verfügbaren Modell-ID und
+deren Streaming-Verhalten getestet werden.
