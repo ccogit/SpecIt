@@ -171,6 +171,8 @@ Auf der Seite **Spezifikation** steht ein Dropdown mit vier Strategien:
 |---|---|---|
 | **Intelligent** (Voreinstellung) | Bestehender Weg: Bei einer Änderung nur betroffene Kapitel/Einträge aktualisieren; bei einer neuen Spezifikation seriell alles generieren. | Claude Code oder Anthropic API |
 | **Vorbereitet** (experimentell) | Wenn Idee, Features und Entscheidungen stabil sind, die vollständige Spezifikation bereits auf der Spezifikationsseite berechnen; beim Klick die passende gespeicherte Version übernehmen. | Anthropic API |
+| **GPU lokal** (experimentell) | Vollständige Erstellung über einen lokal laufenden OpenAI-kompatiblen GPU-Inferenzserver, z. B. vLLM. | Lokales Modell + Server |
+| **Diffusion** (experimentell) | Vollständige Erstellung über ein Mercury-Diffusion-Modell. | Inception-API-Schlüssel |
 | **Klassisch** | Bei jedem Klick den gesamten projektspezifischen Kern neu schreiben, immer sequentiell mit dem konfigurierten Standardmodell (kein Delta, kein schnelleres Modell). | Claude Code oder Anthropic API |
 | **Parallel** (experimentell) | Den vollständigen Kern mit drei parallelen Modellaufrufen schreiben, Ergebnis in Kapitelreihenfolge zusammenführen. | Anthropic API |
 | **Turbo** (experimentell) | Wie Parallel, aber mit Haiku 5.5 und niedrigem Denkaufwand. | Anthropic API |
@@ -240,3 +242,43 @@ Mit `usage.timings[].cache_read_input_tokens` und
 Bei zu kurzen statischen Präfixen kann Anthropic trotz gesetzter Markierung
 keinen Cache anlegen. Prompt-Caching beschleunigt die Eingabeverarbeitung,
 nicht die sequenzielle Erzeugung der Ausgabetokens.
+
+### Lokale GPU-Inferenz (experimentell)
+
+Stelle einen separaten, mit deinem GPU-Modell kompatiblen Inferenzdienst bereit,
+der **OpenAI Chat Completions mit SSE-Streaming** anbietet, etwa über vLLM.
+Beispiel (Befehl und unterstützte Modelle hängen von der GPU-Installation ab):
+
+```bash
+vllm serve Qwen/Qwen3-8B --host 127.0.0.1 --port 8000
+```
+
+Setze danach `SPECIT_GPU_MODEL=Qwen/Qwen3-8B` und
+`SPECIT_GPU_BASE_URL=http://127.0.0.1:8000/v1` in der `.env`.
+Die GPU-Strategie erscheint nach einem Server-Neustart. Der Adapter akzeptiert
+ausschließlich Loopback-Adressen und die API-Pfadwurzel `/v1`, folgt keinen
+HTTP-Weiterleitungen, übermittelt keine API-Schlüssel an den Browser und prüft
+die acht Kapitel sowie das Vorhandensein überprüfbarer FR-Anforderungen.
+Die fachliche Qualität ersetzt dieser Strukturcheck nicht.
+Welche Modelle/Quantisierungen im tatsächlichen VRAM funktionieren,
+muss auf dem Zielrechner erprobt werden. SpecIt selbst startet keinen
+GPU-Server und kann eine fehlende GPU nicht simulieren.
+
+### Text-Diffusion über Inception Mercury (experimentell)
+
+Nach Eintrag von `SPECIT_INCEPTION_API_KEY` erscheint die Strategie
+**Diffusion**. Voreingestellt ist `mercury-3`; über
+`SPECIT_INCEPTION_MODEL` kann ein anderes für das Konto freigeschaltetes
+Modell ausgewählt werden. Der Endpoint ist serverseitig fest auf
+`https://api.inceptionlabs.ai/v1/chat/completions` beschränkt.
+Es wird das OpenAI-kompatible Streaming-Protokoll verwendet. Modellkosten
+und Betriebsbedingungen sind beim Anbieter zu prüfen. **Wichtig:** Inception
+kündigt auf seiner aktuellen API-Startseite die Einstellung des bisherigen
+API-Dienstes zum 28. Dezember 2026 an. Die Anbindung ist daher zunächst
+ein Benchmark-Experiment, keine langfristige Produktionsabhängigkeit.
+
+Beide alternativen Strategien ersetzen nur den finalen Spezifikationsaufruf.
+Für die vorgelagerten Claude-Funktionen (Fragen/Features) ist derzeit weiterhin
+ein Anthropic-API- oder Claude-Code-Zugang erforderlich; GPU/Diffusion allein
+ersetzen diese Vorstufen noch nicht. Für den Vergleich gilt
+`npm run bench -- 3 gpu` beziehungsweise `npm run bench -- 3 diffusion`.
