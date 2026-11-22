@@ -64,6 +64,10 @@ test('mocked end-to-end spec generation: classic, parallel, structured, and loca
    assert.equal(file.status,200,asset);
    assert.ok(file.headers.get('content-type')?.startsWith(mime),asset+' has incorrect content type');
    assert.ok((await file.text()).length>100,asset+' is unexpectedly empty');
+   // Die Seite lädt eigene Stylesheets und Module: Die Richtlinie muss beides vom eigenen Server erlauben, sonst bleibt sie im Browser ungestaltet.
+   const csp=file.headers.get('content-security-policy')||'';
+   assert.match(csp,/style-src[^;]*'self'/,asset+': CSP blocks own stylesheets');
+   assert.match(csp,/script-src[^;]*'self'/,asset+': CSP blocks own modules');
   }
   for(const strategy of ['classic','parallel','structured','gpu']){
    const result=await generate(base,payload(strategy));
