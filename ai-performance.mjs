@@ -3,9 +3,12 @@ const effortLevels = new Set(['low', 'medium', 'high']);
 const modelId = value => /^[a-zA-Z][a-zA-Z0-9._-]{2,80}$/.test(value || '') ? value : '';
 
 /** Preserve existing defaults unless fast mode or a per-stage override is explicitly enabled. */
-export function aiProfile(mode, env = process.env, fallbackModel = 'claude-sonnet-4-6') {
+export function aiProfile(mode, env = process.env, fallbackModel = 'claude-sonnet-4-6', strategy = '') {
+  // Explicit benchmark strategies must not inherit global fast-mode settings.
+  if (mode === 'final' && strategy === 'classic') return { model: modelId(fallbackModel) || 'claude-sonnet-4-6' };
+  if (mode === 'final' && strategy === 'turbo') return { model: 'claude-haiku-5-5', effort: 'low' };
   const key = ({ final: 'FINAL', features: 'FEATURE', concept: 'CONCEPT', questions: 'QUESTIONS', review: 'REVIEW' })[mode] || '';
-  const fast = env.SPECIT_FAST_MODE === '1' && ['final', 'features'].includes(mode);
+  const fast = env.SPECIT_FAST_MODE === '1' && ['final', 'features'].includes(mode) && !(mode === 'final' && strategy === 'parallel');
   const configured = key && modelId(env[`SPECIT_${key}_MODEL`]);
   const model = configured || (fast ? 'claude-haiku-5-5' : modelId(fallbackModel) || 'claude-sonnet-4-6');
   const chosenEffort = (key && env[`SPECIT_${key}_EFFORT`]) || env.SPECIT_AI_EFFORT || (fast ? 'low' : '');
