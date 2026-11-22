@@ -1,4 +1,5 @@
 // Anbindung an Google Stitch (MCP-Endpunkt, JSON-RPC über HTTP). Der Schlüssel bleibt serverseitig.
+import { setTimeout as sleep } from 'node:timers/promises';
 const endpoint = 'https://stitch.googleapis.com/mcp';
 const devices = ['DESKTOP', 'MOBILE'];
 
@@ -60,12 +61,12 @@ export function screensFrom(data) {
   return found;
 }
 
-async function tool(name, args, timeout = 60000) {
+async function tool(name, args, timeout = 60000, signal) {
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', 'x-goog-api-key': stitchKey() },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
-    signal: AbortSignal.timeout(timeout),
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(timeout)]) : AbortSignal.timeout(timeout),
   });
   if (!response.ok) throw Error('Stitch API: HTTP ' + response.status + '. Schlüssel und Kontingent prüfen.');
   const body = await response.json();
@@ -76,21 +77,25 @@ async function tool(name, args, timeout = 60000) {
   try { return JSON.parse(result.content[0].text); } catch { throw Error('Stitch hat eine unlesbare Antwort geliefert.'); }
 }
 
-const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+const pause = (ms, signal) => sleep(ms, undefined, { signal });
 
 // Generierungen dauern mehrere Minuten. Bricht die Verbindung ab, kann der Auftrag trotzdem gelingen:
 // dann nicht erneut senden, sondern im Projekt nach neuen Screens suchen.
-async function generation(name, args, projectId, known, wait = pause) {
+async function generation(name, args, projectId, known, wait = pause, signal) {
+  if (signal?.aborted) throw Error('Stitch-Anfrage abgebrochen.');
   try {
-    const screens = screensFrom(await tool(name, args, 540000));
+    const screens = screensFrom(await tool(name, args, 540000, signal));
     if (screens.length) return screens;
     throw Error('Stitch hat kein Layout geliefert.');
   } catch (error) {
+    if (signal?.aborted) throw Error('Stitch-Anfrage abgebrochen.');
     if (/^Stitch(:| API| hat kein)/.test(error.message)) throw error;
     for (let attempt = 0; attempt < 8; attempt++) {
-      await wait(30000);
+      await wait(30000, signal);
+      if (signal?.aborted) throw Error('Stitch-Anfrage abgebrochen.');
       let listed = [];
-      try { listed = screensFrom(await tool('list_screens', { projectId })); } catch { /* weiter warten */ }
+      try { listed = screensFrom(await tool('list_screens', { projectId }, 60000, signal)); }
+      catch { if (signal?.aborted) throw Error('Stitch-Anfrage abgebrochen.'); }
       const fresh = listed.filter(sc => !known.includes(sc.id));
       if (fresh.length) return fresh;
     }
@@ -98,26 +103,27 @@ async function generation(name, args, projectId, known, wait = pause) {
   }
 }
 
-export async function createProject(project) {
+export async function createProject(project, signal) {
+  if (signal?.aborted) throw Error('Stitch-Anfrage abgebrochen.');
   const title = ('SpecIt – ' + (project.trim() || 'Layout')).slice(0, 120);
-  const created = await tool('create_project', { title });
+  const created = await tool('create_project', { title }, 60000, signal);
   const id = String(created.name || '').replace('projects/', '');
   if (!isProjectId(id)) throw Error('Stitch hat kein Projekt angelegt.');
   return { projectId: id, url: projectUrl(id) };
 }
 
-export function generateLayout({ projectId, project, spec, wish = '', tone = 2, theme = '', deviceType, known = [] }) {
-  return generation('generate_screen_from_text', { projectId, prompt: layoutPrompt(project, spec, wish, tone, theme), deviceType: device(deviceType) }, projectId, known);
+export function generateLayout({ projectId, project, spec, wish = '', tone = 2, theme = '', deviceType, known = [] }, signal) {
+  return generation('generate_screen_from_text', { projectId, prompt: layoutPrompt(project, spec, wish, tone, theme), deviceType: device(deviceType) }, projectId, known, undefined, signal);
 }
 
-export function generateVariants({ projectId, screenId, count, deviceType, known = [] }) {
+export function generateVariants({ projectId, screenId, count, deviceType, known = [] }, signal) {
   return generation('generate_variants', {
     projectId,
     selectedScreenIds: [screenId],
     deviceType: device(deviceType),
     prompt: 'Explore alternative layouts for this screen: different arrangement, navigation and information hierarchy. Keep content, language, scope and the colour mode (light or dark) unchanged.',
     variantOptions: { variantCount: count, creativeRange: 'EXPLORE', aspects: ['LAYOUT'] },
-  }, projectId, known);
+  }, projectId, known, undefined, signal);
 }
 
 /** Lädt Screenshot (PNG) oder HTML einer Stitch-Datei. */
