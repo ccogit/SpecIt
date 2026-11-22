@@ -224,3 +224,19 @@ Die Vorbereitung erfolgt nur mit aktivierter KI und Anthropic-API; jede
 spekulative Anfrage kann zusätzliche API-Kosten verursachen. Es werden höchstens
 zwei Einträge gespeichert; offene Vorbereitungen verschiedener Projekte
 werden abgebrochen. Ergebnisinhalte werden nicht auf die Festplatte geschrieben.
+
+### Anthropic Prompt-Caching
+
+Mit `SPECIT_PROMPT_CACHE=1` werden bei direkter Anthropic-API-Nutzung
+die **stabilen Skill-Richtlinien** als wiederverwendbarer Systemblock mit
+`cache_control: {type: "ephemeral"}` markiert. Die veränderlichen Anweisungen,
+Projektidee und Antworten bleiben im nicht gecachten User-Teil. CLI-Aufrufe
+bleiben unverändert. Die Alternative `SPECIT_PROMPT_CACHE_TTL=1h` aktiviert
+den optionalen einstündigen Cache mit höheren Cache-Schreibkosten. Der
+Standard von fünf Minuten wird bei unzulässigen TTL-Angaben verwendet.
+
+Mit `usage.timings[].cache_read_input_tokens` und
+`cache_creation_input_tokens` lassen sich echte Cache-Hits überprüfen.
+Bei zu kurzen statischen Präfixen kann Anthropic trotz gesetzter Markierung
+keinen Cache anlegen. Prompt-Caching beschleunigt die Eingabeverarbeitung,
+nicht die sequenzielle Erzeugung der Ausgabetokens.
