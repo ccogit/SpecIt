@@ -167,3 +167,17 @@ Dieses Audit basiert auf einer detaillierten statischen Prüfung von Server, Bro
 - **Sicherheitsgrenze:** SpecIt bleibt ein lokaler Prozess. Die vorhandenen Host-/Origin-Prüfungen, CSP-Regeln und die serverseitige Verwaltung externer API-Schlüssel bleiben unverändert.
 
 **Merge-Empfehlung:** Erst nach erfolgreichen CI-Tests und einem kurzen visuellen Smoke-Test, insbesondere für die neu definierte Dokumenten-Gliederung auf Mobilgeräten. Weitere größere Refactorings sollten in getrennten Pull Requests erfolgen.
+
+## 8. Umsetzung Etappe 2 – robuste Zustände und modulare Oberfläche
+
+**Erweiterung des Draft-PR #11 (22.11.2026).** Der erste Satz von Regressionstests und die nachfolgenden Browser-/Server-Änderungen sind implementiert.
+
+- **Sitzungsgültigkeit:** `work-session.mjs` stellt einen Abbruchcontroller und eine inkrementelle Sitzungs-ID bereit. Beim Zurücksetzen werden laufende Anfragecontroller, Concept-/Skizzen-Aufgaben, Preloading, Diagramme, Hintergrund-Feature-Suche, Layouts und deren Wiederholungswartezeiten abgebrochen. Späte Ergebnisse werden über Sitzungs-ID und Lock-ID verworfen.
+- **Foreground-Locks:** Für aktive KI-Arbeiten gibt `lock(true)` eine eindeutige ID zurück. Ein veraltetes `finally` darf einen später gestarteten Vorgang nicht entsperren. Rückmeldungen aus alten Sitzungen werden nicht in den neuen Arbeitsstand geschrieben.
+- **Agenten-Sicherheit:** Ein Reset während eines gestarteten oder laufenden Agentenlaufs wird nicht stillschweigend ausgeführt. Die Umsetzung muss zunächst beendet werden, damit keine weiterlaufenden Schreiboperationen unbeobachtet bleiben.
+- **Stitch-Anfragen:** Browser-Verbindungsabbrüche brechen den Serveraufruf, HTTP-Anfragen und Polling-Wartezeiten ab. Die Serverseitige Konkurrenzsperre wird erst freigegeben, wenn die laufende Funktion tatsächlich endet. Eine leere Stitch-Bildschirmliste liefert eine nachvollziehbare Fehlermeldung.
+- **Frontend-Modularisierung:** `public/index.html` enthält die Semantik; `public/app.mjs` die Browserlogik; `public/base.css` die Hauptstyles und `public/responsive.css` die Mobil-/Tablet-Regeln. Bestehende ES-Modulimporte bleiben erhalten. Kein Bundler und kein neues npm-Paket erforderlich.
+- **Mobile Bedienung:** Inputs erscheinen in der mobilen Lesereihenfolge vor der Dokumentenansicht, die Kapitel werden horizontal navigierbar und „Abbrechen“ wird auch bei schmaler Kopfzeile angezeigt. Kompakte Icons besitzen zugängliche Beschriftungen.
+- **Qualitätssicherung:** Zusätzliche Node-Tests für Sitzungsabbruch, ausstehende Wiederholungsversuche, Stitch-Abbruch und statische Frontend-Verträge; ein HTTP-Integrationstest prüft die tatsächliche Auslieferung der ausgelagerten CSS- und JavaScript-Dateien.
+
+**Noch nicht abgeschlossen:** Eine visuelle Prüfung mit echtem Browser bei definierten Viewportgrößen (360/390/768/1024/1440 px), Screenreader-/Tastaturtest der Dialoge sowie reale Ende-zu-Ende-Läufe von Claude Code, Google Stitch und lokaler GPU sind weiterhin Voraussetzung vor einem produktiven Merge. Die anschließende Feinkonsolidierung der bisherigen CSS-Regeln kann dann anhand tatsächlicher visueller Referenzen erfolgen.
