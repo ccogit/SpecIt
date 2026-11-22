@@ -2894,15 +2894,59 @@ function setAi(on){
 $('ai').onchange=()=>setAi($('ai').checked);
 $('spec').oninput=e=>{revision++;change=null;s.spec=e.target.value;s.specSource='manual';s.dirty=false;statuses();save()};
 for(const id of ['repo','agent'])$(id).oninput=e=>{revision++;s[id]=e.target.value;statuses();save()};
+/* ---------- Plan entsteht live: Der Plan kommt als Strom; was schon geschrieben ist, steht sofort in der Umsetzungsansicht ---------- */
+let planLive=null,planLiveTimer=0,planLiveRaf=0;
+function planLiveStart(note){
+  planLive={text:'',since:Date.now(),note:note||''};runViewOn=true;
+  clearInterval(planLiveTimer);planLiveTimer=setInterval(()=>{if(planLive)planLiveUI()},1000);
+  try{runFeatureUI();mainUI()}catch{}
+}
+function planLiveStop(){if(!planLive)return;planLive=null;clearInterval(planLiveTimer);planLiveTimer=0;try{runFeatureUI();mainUI()}catch{}}
+const planLiveTick=()=>{if(!planLiveRaf)planLiveRaf=requestAnimationFrame(()=>{planLiveRaf=0;planLiveUI()})};
+// Liest aus dem noch unvollständigen JSON, was schon da ist: Zusammenfassung, Festlegungen und die Arbeitsschritte mit Titel und Ziel
+function planLiveParts(text){
+  const str='"((?:[^"\\\\]|\\\\.)*)',field=(src,name)=>(src.match(new RegExp('"'+name+'"\\s*:\\s*'+str))||[])[1]||'';
+  const un=v=>{try{return JSON.parse('"'+v.replace(/\\+$/,'')+'"')}catch{return v.replace(/\\n/g,' ').replace(/\\(.)/g,'$1')}};
+  const ti=text.indexOf('"tasks"'),headText=ti<0?text:text.slice(0,ti),di=headText.indexOf('"decisions"');
+  const decisions=di<0?[]:[...headText.slice(di).replace(/^"decisions"\s*:\s*\[/,'').matchAll(/"((?:[^"\\]|\\.)*)("?)/g)].map(m=>un(m[1])).filter(Boolean);
+  const tasks=[];
+  if(ti>=0)for(const chunk of text.slice(ti).split(/\{\s*"id"\s*:/).slice(1)){
+    const min=(chunk.match(/"minutes"\s*:\s*([\d.]+)/)||[])[1];
+    tasks.push({id:(chunk.match(/^\s*"([^"]*)"/)||[])[1]||'…',title:un(field(chunk,'title')),goal:un(field(chunk,'goal')),minutes:min?Number(min):0,done:/"blockedBy"\s*:\s*\[[^\]]*\]/.test(chunk)});
+  }
+  return {summary:un(field(headText,'summary')),decisions,tasks};
+}
+function planLiveUI(){
+  const box=$('runView');if(!planLive||!document.body.classList.contains('runview'))return;
+  const p=planLiveParts(planLive.text),sec=Math.round((Date.now()-planLive.since)/1000);
+  const plain=(title,el,info)=>{const w=node('section',undefined,'rvplain'),h=node('div',undefined,'rvplainhead');h.append(node('span',title,'rvgroup'));if(info)h.append(node('span',info,'meta'));w.append(h,el);return w};
+  const head=node('div',undefined,'rvhead');
+  head.append(node('h2','Der Plan entsteht …'),node('p',(p.tasks.length?plural(p.tasks.length,'Arbeitsschritt','Arbeitsschritte')+' bisher':planLive.text?'Zusammenfassung und Festlegungen werden geschrieben':planLive.note||'Claude liest die Spezifikation und denkt nach')+' · '+dur(sec),'meta'));
+  const list=node('div',undefined,'pllist');
+  if(!p.tasks.length)list.append(node('p','Die Arbeitsschritte erscheinen hier, sobald Claude sie schreibt.','plempty'));
+  p.tasks.forEach((t,i)=>{
+    const row=node('div',undefined,'pltask'+(!t.done&&i===p.tasks.length-1?' writing':'')),h=node('div',undefined,'plhead');
+    h.append(node('span',t.id,'rvstep'+(t.done?' done':'')),node('b',t.title||'…'));if(t.minutes)h.append(node('span','≈ '+hm(t.minutes),'meta'));
+    row.append(h);if(t.goal)row.append(node('p',t.goal));list.append(row);
+  });
+  const side=node('div',undefined,'rvside'),cols=node('div',undefined,'rvcols');
+  side.append(plain('Zusammenfassung',node('div',p.summary||'…','pltext')));
+  if(p.decisions.length){const ul=node('ul');for(const d of p.decisions)ul.append(node('li',d));const w=node('div',undefined,'pltext');w.append(ul);side.append(plain('Festlegungen des Plans',w,String(p.decisions.length)))}
+  cols.append(plain('Arbeitsschritte',list,p.tasks.length?String(p.tasks.length):''),side);
+  box.replaceChildren(head,cols);
+}
 $('plan').onclick=async()=>{
   if(active)return;
   if(!s.spec.trim()||s.dirty){$('planStatus').textContent='Bitte eine aktuelle Spezifikation erzeugen oder manuell aktualisieren.';return}
   const rev=revision,context=ctx();const lockId=lock(true,'Arbeitsaufträge werden erstellt');$('planStatus').textContent='Arbeitsaufträge werden erstellt …';
+  planLiveStart();
   try{
-    const r=await call({mode:'plan',spec:s.spec,...context,features:s.features.filter(f=>f.on).map(f=>({id:f.id,name:f.name})),ai:$('ai').checked});
+    let r=null,fail='';
+    await stream('/api/plan/stream',{mode:'plan',spec:s.spec,...context,features:s.features.filter(f=>f.on).map(f=>({id:f.id,name:f.name})),ai:$('ai').checked},m=>{if(m.t){if(planLive){planLive.text+=m.t;planLiveTick()}}else if(m.error)fail=m.error;else if(m.done)r=m}).finally(refreshModels);
+    if(fail)throw Error(fail);if(!r||!r.plan)throw Error('Der Plan kam unvollständig an. Bitte erneut versuchen.');
     if(rev!==revision){$('planStatus').textContent='Eingaben geändert. Erneut starten.';return}
     s.plan=validatePlan(r.plan);s.planSource=r.source;s.planSpec=s.spec;s.planContext=context;s.planTrace=r.trace||null;statuses();save();
-  }catch(e){if(lockId===currentLockId)$('planStatus').textContent=e.message}finally{lock(false,undefined,lockId)}
+  }catch(e){if(lockId===currentLockId)$('planStatus').textContent=e.message}finally{planLive=null;clearInterval(planLiveTimer);planLiveTimer=0;lock(false,undefined,lockId);try{runFeatureUI();mainUI()}catch{}}
   if(lockId!==currentLockId)return;
 };
 
@@ -3102,13 +3146,14 @@ function flowMark(){for(const k in flowIds){const b=$(flowIds[k]),on=flowKind===
 async function goFlow(kind){
   if(active||runBusy||runStarting||flowKind)return;
   flowKind=kind;flowMark();
-  try{await goFlowRun(kind)}finally{flowKind='';flowMark()}
+  try{await goFlowRun(kind)}finally{flowKind='';flowMark();planLiveStop()}
 }
 async function goFlowRun(kind){
   const note=$('flowNote'),run=kind!=='download';note.textContent='';
   if(!s.spec.trim()||s.dirty){note.textContent='Bitte zuerst die Spezifikation aktualisieren.';return}
   if(run&&!agentsOk){note.textContent='Claude Code wurde auf diesem Rechner nicht gefunden; die Umsetzung hier ist nicht möglich.';return}
   if(run&&!s.runDir.trim()){note.textContent='Bitte zuerst den Zielordner angeben.';$('runDir').focus();return}
+  if(!(s.plan&&!stale()))planLiveStart(run&&repoAuto()?'Repository wird auf GitHub angelegt':'');else{runViewOn=true;runFeatureUI();mainUI()}
   // Repository eingeschaltet, aber noch keines eingetragen: jetzt anlegen – vor dem Plan, weil die Adresse in die Aufträge eingeht
   if(run&&repoAuto()){
     note.textContent='Repository wird auf GitHub angelegt …';
@@ -3192,6 +3237,12 @@ function featTasks(){
 function runFeatureUI(){
   const real=run&&run.items&&run.items.length?run:null,has=!!s.plan,box=$('runView'),tab=$('runTab'),key=real?(real.dir||'')+'|'+real.items.length:'';
   const r=real||{active:false,items:[],agents:agentsNow(),seconds:0,dir:s.runDir.trim(),shell:s.runShell,stopped:false};
+  if(planLive){
+    const on=runViewOn&&specMode!=='edit';tab.classList.remove('hidden');tab.setAttribute('aria-pressed',String(on));$('modeView').setAttribute('aria-pressed',String(!on));document.body.classList.toggle('runview',on);
+    if(runListEl.parentElement!==runListHome)runListHome.append(runListEl);if(implOutEl.parentElement!==implOutHome)implOutHome.append(implOutEl);
+    if(on)planLiveUI();else box.replaceChildren();
+    return;
+  }
   // Beginnt ein Lauf, wechselt die Ansicht von selbst hierher; zurück geht es über den Knopf oder die Gliederung
   if(has&&real&&real.active&&runSeen!==key){runSeen=key;runViewOn=true}
   // Ein neu erstellter Plan wird sofort gezeigt (nicht beim bloßen Laden der Seite)
@@ -3306,7 +3357,7 @@ function runFeatureUI(){
     for(const id of picked.ids){const t=byId.get(id);if(t)tasks.append(taskRow(t))}
     const w=plain(picked.name,tasks,label[picked.state]+' · '+plural(picked.ids.length,'Arbeitsschritt','Arbeitsschritte'));w.classList.add('rvdetail');w.querySelector('.rvplainhead').append(close);side.append(w);
   }else side.append(plain('Vorbereitung und Organisation',prep),plain('Plan',planSlot,(single?'Gesamtauftrag':'Zusammenfassung')+(p.decisions.length?' · '+plural(p.decisions.length,'Festlegung','Festlegungen'):'')));
-  cols.append(plain(rows.length?'Features und Arbeitsschritte':'Arbeitsschritte',grid,(rows.length?nDone+' von '+rows.length+' Features fertig'+(nRun?' · '+nRun+' in Arbeit':''):plural(p.tasks.length,'Arbeitsschritt','Arbeitsschritte'))+((single&&r.active)||(rows.length&&!exact)?' · Stand geschätzt':'')),side);
+  {const sec=node('section',undefined,'rvplain');sec.append(grid);cols.append(sec,side);if((single&&r.active)||(rows.length&&!exact)){const m=head.querySelector('p.meta');if(m)m.textContent+=' · Stand geschätzt'}}
   box.replaceChildren(head,cols);
   if(runListEl.parentElement!==runListHome)runListHome.append(runListEl);
   if(picked){if(implOutEl.parentElement!==implOutHome)implOutHome.append(implOutEl)}else planSlot.append(implOutEl);

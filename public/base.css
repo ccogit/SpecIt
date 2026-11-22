@@ -2722,3 +2722,30 @@ body.hasspec .specwrap .doccol>#specView::after,body.hasspec .specwrap .doccol>#
 .modeline .link{margin-left:auto;font-size:12.5px}
 .modeline:focus-visible{outline:2px solid var(--go);outline-offset:2px;border-radius:6px}
 .side>.modeline{order:-2;margin-top:-6px}
+/* ================= Der Plan entsteht live ================= */
+.pllist{display:flex;flex-direction:column;border-radius:12px;background:var(--surface-low);padding:4px 16px;min-height:64px}
+.pltask{padding:10px 0;border-top:1px solid color-mix(in srgb,var(--ink) 7%,transparent)}
+.pltask:first-child{border-top:0}
+.plhead{display:flex;align-items:baseline;gap:10px}
+.plhead .rvstep{flex:none}
+.plhead b{flex:1 1 auto;min-width:0;font:600 13.5px/1.3 var(--sans);color:var(--heading)}
+.plhead .meta{flex:none;font-size:11.5px!important}
+.pltask p{margin:4px 0 0;font-size:12.5px;line-height:1.45;color:var(--ink-soft)}
+.pltask.writing .plhead b::after,.pltask.writing p::after{content:"▍";margin-left:2px;color:var(--go);animation:writepulse 1s ease-in-out infinite}
+.pltask.writing:has(p) .plhead b::after{content:none}
+.plempty{margin:0;padding:14px 0;font-size:13px;color:var(--ink-soft)}
+.pltext{border-radius:12px;background:var(--surface-low);padding:12px 16px;font-size:13px;line-height:1.5;color:var(--ink)}
+.pltext ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+/* Liste links wie die Elemente rechts: einzelne Zeilen mit Abstand statt eines gemeinsamen Kastens */
+.rvcols .rvplain .rvgrid{gap:8px;padding:0;background:none;border-radius:0}
+.rvcols .rvplain .rvgrid>.rvgroup{margin:10px 0 0;padding:0 2px}
+.rvcols .rvplain .rvgrid>.rvgroup:first-child{margin-top:0}
+.rvcols .rvplain .rvgrid>.rvcard,.rvcols .rvplain .rvgrid>.rvcard.sel{margin:0;padding:11px 14px;border-top:0;border-radius:10px;background:var(--surface-low)!important}
+.rvcols .rvplain .rvgrid>.rvcard.more:hover{background:color-mix(in srgb,var(--ink) 5%,var(--surface-low))!important}
+.rvcols .rvplain .rvgrid>.rvcard.sel,.rvcols .rvplain .rvgrid>.rvcard.sel:hover{background:color-mix(in srgb,var(--go) 16%,var(--surface-low))!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--go) 45%,transparent)}
+.rvcols .pllist{gap:8px;padding:0;background:none;border-radius:0}
+.rvcols .pltask,.rvcols .pltask:first-child{padding:11px 14px;border-top:0;border-radius:10px;background:var(--surface-low)}
+.rvcols .plempty{padding:14px;border-radius:10px;background:var(--surface-low)}
+/* Liste links ohne eigene Abschnittsüberschrift: Die Gruppen (Vorarbeiten, Basis …) sind die Überschriften, gestaltet wie die rechts */
+.rvcols .rvplain .rvgrid>.rvgroup{margin:18px 0 2px;padding:0;font-size:12px;color:var(--heading)}
+.rvcols .rvplain .rvgrid>.rvgroup:first-child{margin-top:0}
