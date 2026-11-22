@@ -33,9 +33,17 @@ export function generationBackends(env = process.env) {
       gpu = { transport:'gpu', endpoint:endpoint.href, model:env.SPECIT_GPU_MODEL, key:env.SPECIT_GPU_API_KEY || '' };
     } catch { /* invalid local endpoint is disabled, never silently redirected */ }
   }
-  const diffusion = env.SPECIT_INCEPTION_API_KEY && modelId(env.SPECIT_INCEPTION_MODEL || 'mercury-3')
-    ? {transport:'diffusion',endpoint:'https://api.inceptionlabs.ai/v1/chat/completions',
-       model:env.SPECIT_INCEPTION_MODEL || 'mercury-3', key:env.SPECIT_INCEPTION_API_KEY}
+  const provider=env.SPECIT_DIFFUSION_PROVIDER||'inception';
+  const allowed=['inception','openrouter'].includes(provider);
+  const key=provider==='openrouter'?env.SPECIT_OPENROUTER_API_KEY:env.SPECIT_INCEPTION_API_KEY;
+  const selectedModel=provider==='openrouter'
+    ?env.SPECIT_DIFFUSION_MODEL||'inception/mercury-3'
+    :env.SPECIT_INCEPTION_MODEL||'mercury-3';
+  const diffusion = allowed&&key&&modelId(selectedModel)
+    ? {transport:'diffusion',endpoint:provider==='openrouter'
+         ?'https://openrouter.ai/api/v1/chat/completions'
+         :'https://api.inceptionlabs.ai/v1/chat/completions',
+       model:selectedModel,key}
     : null;
   return {gpu,diffusion};
 }
