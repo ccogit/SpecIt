@@ -24,3 +24,17 @@ test('concurrent text arrives in order even when later groups finish first', () 
   q.chunk(2, 'C'); q.done(2); q.chunk(1, 'B'); q.done(1); q.chunk(0, 'A'); q.done(0);
   assert.equal(emitted.join(''), 'ABC');
 });
+
+test('the shared outline numbers one requirement list for all parts and only holds if every feature is covered', async () => {
+  const { cleanOutline, partPrompt, chapterGroups } = await import('../spec-parallel.mjs');
+  const features = [{ name: 'Namensliste pflegen' }, { name: 'Paare auslosen' }];
+  const o = cleanOutline({ requirements: [{ id: 'X9', feature: 'paare auslosen', title: 'Zufällige Paare bilden', priority: 'Muss' }, { feature: 'Namensliste pflegen', title: 'Namen anlegen', priority: 'egal' }, { feature: 'Erfunden', title: 'x' }],
+    roles: ['Teamleitung'], address: 'Du', data: [{ entity: 'Person', note: 'Name' }, 'kaputt'], decisions: ['Anwesenheit bleibt gespeichert.'] }, features);
+  assert.deepEqual(o.requirements, [{ id: 'FR-001', feature: 'Paare auslosen', title: 'Zufällige Paare bilden', priority: 'Muss' }, { id: 'FR-002', feature: 'Namensliste pflegen', title: 'Namen anlegen', priority: 'Soll' }]);
+  assert.deepEqual([o.address, o.roles, o.data.length, o.decisions.length], ['neutral', ['Teamleitung'], 1, 1]);
+  assert.equal(cleanOutline({ requirements: [{ feature: 'Paare auslosen', title: 'x' }] }, features), null, 'a feature without requirement invalidates the outline');
+  assert.equal(cleanOutline('kein Objekt', features), null);
+  assert.match(partPrompt({ reserved: ['NFR-901'] }, chapterGroups[1], true), /genau die Anforderungen aus contract\.requirements/);
+  assert.match(partPrompt({ reserved: ['NFR-901'] }, chapterGroups[0], true), /lege keine eigenen fest/);
+  assert.doesNotMatch(partPrompt({ reserved: ['NFR-901'] }, chapterGroups[0]), /contract/);
+});

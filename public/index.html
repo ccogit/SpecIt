@@ -736,11 +736,11 @@ body{padding-bottom:62px}
 .effortbar .ebar{display:flex!important}
 .effortbar .ebar>i{border-radius:0}
 .effortbar .ebar>i.user{background:var(--src-user)}.effortbar .ebar>i.std{background:var(--src-std)}.effortbar .ebar>i.ai{background:var(--src-ai)}
-.lightbox.balance{width:min(94vw,1040px);height:fit-content;max-height:92vh}
+.lightbox.balance{width:min(96vw,1280px);height:fit-content;max-height:92vh}
 .balance .lightscroll{flex:0 1 auto}
 .balance .lightscroll{text-align:left;background:var(--card)}
 
-.balbody{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px 20px;padding:20px;align-items:start}
+.balbody{display:grid;grid-template-columns:minmax(0,.8fr) auto minmax(0,1.15fr) auto minmax(0,1.15fr);gap:16px 16px;padding:20px;align-items:start}
 .balcol{display:flex;flex-direction:column;gap:10px}
 .balcol h3{font-size:16px}
 .balarrow{align-self:center;font-size:26px;color:var(--secondary)}
@@ -757,7 +757,7 @@ body{padding-bottom:62px}
 .balgroups{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:13px}
 .balgroups li{display:flex;justify-content:space-between;gap:12px}
 .balsum{grid-column:1/-1;padding-top:12px;border-top:1px solid var(--outline-soft);font-size:14px}
-@media(max-width:760px){.balbody{grid-template-columns:1fr}.balarrow{display:none}}
+@media(max-width:900px){.balbody{grid-template-columns:1fr}.balarrow{display:none}}
 /* Füllstände in der Kopfzeile: Balken für die Festlegungen, sechs Felder für die Themen, Farbe nach Stand */
 .effortbar .m{--st:#e5484d;align-items:flex-start;gap:4px}
 .effortbar .m.part{--st:#e2a336}
@@ -1468,7 +1468,7 @@ body.merged.decqa #decDerive{margin-top:12px}
   <div class="lightscroll"><img id="lightImg" alt=""></div>
 </dialog>
 <dialog id="balance" class="lightbox balance" aria-label="Bilanz von Input und Output">
-  <div class="lightbar"><span class="meta">Bilanz · Input nach Quelle, Output nach Artefakt</span><div class="actions"><button id="balanceClose" class="btn small" type="button">Schließen</button></div></div>
+  <div class="lightbar"><span class="meta">Bilanz · vom eigenen Input über das Zwischenergebnis der KI zum Output</span><div class="actions"><button id="balanceClose" class="btn small" type="button">Schließen</button></div></div>
   <div class="lightscroll balbody" id="balanceBody"></div>
 </dialog>
 <dialog id="wbs" class="lightbox" aria-label="Work Breakdown Structure">
@@ -1732,15 +1732,18 @@ function balanceUI(){
   const b=bal(),box=$('balanceBody'),col=(title,sub)=>{const c=node('section',undefined,'balcol');c.append(node('h3',title),node('p',sub,'meta'));return c};
   const fact=(n,label)=>{const x=node('span',undefined,'balfact');x.append(node('b',compact(n)),' '+label);return x};
   const row=(kind,name,note,...facts)=>{const r=node('div',undefined,'balrow '+kind),head=node('div',undefined,'balhead'),nums=node('div',undefined,'balnums');head.append(node('i'),node('b',name));nums.append(...facts);r.append(head,nums,node('p',note,'meta'));return r};
-  const input=col('Input','Wer wie viel zum Konzept beigetragen hat'),output=col('Output','Was daraus entstanden ist');
+  // Drei Spalten in Leserichtung: was der Nutzer eingibt → was die KI daraus als Zwischenergebnis macht (zugleich ihr Input für
+  // den nächsten Schritt, zusammen mit dem, was SpecIt von sich aus beisteuert) → was am Ende entsteht.
+  const input=col('Dein Input','Was du selbst eingegeben und entschieden hast'),middle=col('KI-Zwischenergebnis','Was die KI daraus macht – und womit sie weiterarbeitet'),output=col('Output','Was am Ende entsteht');
+  input.append(row('user','Nutzer','',fact(b.user.words,b.user.words===1?'Wort getippt':'Wörter getippt'),fact(b.user.clicks,b.user.clicks===1?'Klick':'Klicks'),fact(b.user.decisions,b.user.decisions===1?'eigene Festlegung':'eigene Festlegungen')));
+  if(b.open)input.append(node('p',plural(b.open,'Entscheidung ist','Entscheidungen sind')+' noch offen. Je mehr du selbst beantwortest, desto größer wird dein Anteil an den Festlegungen.','meta'));
+  middle.append(
+    row('ai','KI','Fragen, Optionen, Features, Review, Namen – und eigene Vorschläge, die im Umfang stehen.',fact(b.ai.words,'Wörter erzeugt'),fact(b.ai.calls,b.ai.calls===1?'Anfrage':'Anfragen'),fact(b.ai.suggestions,b.ai.suggestions===1?'eigener Vorschlag im Umfang':'eigene Vorschläge im Umfang')),
+    row('std','Dazu von SpecIt','Übernommene Standardantworten und der feste Kontext (Anweisungen, Regeln, Vorlagen), der mit jeder Anfrage an die KI geht.',fact(b.std.decisions,b.std.decisions===1?'Annahme übernommen':'Annahmen übernommen'),...(b.std.auto?[fact(b.std.auto,'davon ohne Rückfrage')]:[]),fact(b.std.words,'Wörter Kontext')));
   const share=node('div',undefined,'balshare');for(const [kind,n] of [['user',b.shares.user],['std',b.shares.std],['ai',b.shares.ai]]){const x=node('i',n>=8?n+' %':'',kind);x.style.width=n+'%';share.append(x)}
   share.title='Anteile an den Festlegungen: Nutzer '+b.shares.user+' %, Standard '+b.shares.std+' %, KI '+b.shares.ai+' %';
-  input.append(share,
-    row('user','Nutzer','Was du selbst eingegeben und entschieden hast.',fact(b.user.words,b.user.words===1?'Wort getippt':'Wörter getippt'),fact(b.user.clicks,b.user.clicks===1?'Klick':'Klicks'),fact(b.user.decisions,b.user.decisions===1?'eigene Festlegung':'eigene Festlegungen')),
-    row('std','Standard','Was SpecIt ohne dein Zutun beisteuert: übernommene Standardantworten und der feste Kontext (Anweisungen, Regeln, Vorlagen), der mit jeder Anfrage an die KI geht.',fact(b.std.decisions,b.std.decisions===1?'Annahme übernommen':'Annahmen übernommen'),...(b.std.auto?[fact(b.std.auto,'davon ohne Rückfrage')]:[]),fact(b.std.words,'Wörter Kontext')),
-    row('ai','KI','Was die KI als Zwischenergebnis erzeugt hat: Fragen, Optionen, Features, Review, Namen – und eigene Vorschläge, die im Umfang stehen.',fact(b.ai.words,'Wörter erzeugt'),fact(b.ai.calls,b.ai.calls===1?'Anfrage':'Anfragen'),fact(b.ai.suggestions,b.ai.suggestions===1?'eigener Vorschlag im Umfang':'eigene Vorschläge im Umfang')));
-  if(b.open)input.append(node('p',plural(b.open,'Entscheidung ist','Entscheidungen sind')+' noch offen. Je mehr du selbst beantwortest, desto größer wird dein Anteil und desto kleiner der des Standards.','meta'));
-  if(!b.ai.calls)input.append(node('p','Ohne Claude (Demo-Modus) gibt es keine Anfragen an die KI; Kontext und KI stehen dann bei null.','meta'));
+  middle.append(node('p','Wer die Festlegungen getroffen hat: Nutzer · Standard · KI','meta'),share);
+  if(!b.ai.calls)middle.append(node('p','Ohne Claude (Demo-Modus) gibt es keine Anfragen an die KI; Kontext und KI stehen dann bei null.','meta'));
   if(!b.outputs.length)output.append(node('p','Noch nichts entstanden. Zuerst kommt die Spezifikation; danach, je nach Vorgehen, die Aufträge zum Download oder der Code im Zielordner.','meta'));
   for(const o of b.outputs){
     const r=row('out'+(o.pending?' pending':''),o.label,o.detail||'',fact(o.value,o.unit));
@@ -1748,7 +1751,7 @@ function balanceUI(){
     output.append(r);
   }
   const sum=node('p',undefined,'balsum');sum.append(node('b',compact(b.user.words)),' getippte Wörter und ',node('b',compact(b.user.clicks)),' Klicks → ',node('b',compact(b.outWords)),' Wörter Spezifikation und Aufträge'+(s.runOutput&&s.nextStep==='run'?', ':''),...(s.runOutput&&s.nextStep==='run'?[node('b',compact(s.runOutput.lines||0)),' Zeilen im Zielordner']:[]),'.');
-  box.replaceChildren(input,node('span','→','balarrow'),output,sum);
+  box.replaceChildren(input,node('span','→','balarrow'),middle,node('span','→','balarrow'),output,sum);
 }
 $('navHint').onclick=()=>{balanceUI();if(!$('balance').open)$('balance').showModal()};
 $('navHint').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('navHint').click()}};
@@ -1941,7 +1944,7 @@ async function derive(more){
     // Je nach Modus entscheidet SpecIt einen Teil der Fragen selbst; im Auto-Modus alle, dann geht es direkt zur Spezifikation.
     s.questions=applyAutonomy(s.questions,s.autonomy);auto=!more&&firstOpen()<0;
     s.qSource=r.source;s.phase=auto||MERGED?2:1;activate(firstOpen(),false);renderAll();if(!more)window.scrollTo({top:0});
-  }catch(e){status.textContent=e.message}finally{lock(false)}
+  }catch(e){status.textContent=e.message;flashNote(e.message)}finally{lock(false)}
   // Auch im Auto-Modus wird nur der Umfang ermittelt; geschrieben wird erst auf „Spezifikation erstellen“
   if(auto)startSpec(false);
 }
@@ -2498,6 +2501,9 @@ function ensureFits(next){
   if(!$('askBox').open)$('askBox').showModal();
 }
 // write=false: nur den Umfang (Features, Namen) vorbereiten – die Spezifikation selbst entsteht nie ohne Klick
+// Kurze Meldung über der Fußleiste – dort, wo gerade geklickt wurde. Die Meldung am Ideenfeld steht oft außerhalb des Sichtbaren.
+let flashTimer=0;
+function flashNote(text){const t=$('toast');clearTimeout(flashTimer);t.replaceChildren(node('span',text));t.classList.remove('hidden');flashTimer=setTimeout(()=>t.classList.add('hidden'),7000)}
 async function startSpec(write=true){
   if(active)return;
   if(!s.idea.trim()){generate();return}
