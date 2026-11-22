@@ -45,8 +45,8 @@ function countLines(buf) {
 
 // Zählt rekursiv die Dateien unter dir.
 export async function scanArtifacts(dir, { maxFiles = 5000 } = {}) {
-  const groups = artifactGroups.map(([key, label]) => ({ key, label, files: 0, lines: 0 }));
-  const res = { files: 0, lines: 0, bytes: 0, truncated: false, groups };
+  const groups = artifactGroups.map(([key, label]) => ({ key, label, files: 0, lines: 0, words: 0 }));
+  const res = { files: 0, lines: 0, words: 0, bytes: 0, truncated: false, groups };
   const byKey = Object.fromEntries(groups.map((g) => [g.key, g]));
 
   async function walk(abs, rel) {
@@ -63,17 +63,17 @@ export async function scanArtifacts(dir, { maxFiles = 5000 } = {}) {
       }
       if (!e.isFile()) continue;
       if (res.files >= maxFiles) { res.truncated = true; return; }
-      let size = 0, lines = 0;
+      let size = 0, lines = 0, wordCount = 0;
       try {
         size = (await stat(childAbs)).size;
         if (size <= MAX_TEXT && !IMAGE_EXT.has(path.extname(e.name).toLowerCase())) {
           const buf = await readFile(childAbs);
-          if (!buf.subarray(0, 8000).includes(0)) lines = countLines(buf);
+          if (!buf.subarray(0, 8000).includes(0)) { lines = countLines(buf); wordCount = (buf.toString('utf8').match(/\S+/g) || []).length; }
         }
       } catch { /* nicht lesbar: als Datei ohne Zeilen zählen */ }
       const g = byKey[classify(childRel)];
-      g.files++; g.lines += lines;
-      res.files++; res.lines += lines; res.bytes += size;
+      g.files++; g.lines += lines; g.words += wordCount;
+      res.files++; res.lines += lines; res.words += wordCount; res.bytes += size;
     }
   }
 

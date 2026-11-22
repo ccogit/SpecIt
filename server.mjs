@@ -112,17 +112,17 @@ function frameIn(b){
  return {autonomy,duration,creativity,tone,excluded,frame:{duration,tone:toneLevels[tone],excluded}};
 }
 function validate(b){
- if(!b||!['questions','final','plan','revise','decisions','triage','adjust','features','scope','fit','extend','names','review','logos','sketch','concept','flow','arch','proto'].includes(b.mode))throw Error('Ungültiger Modus.');
+ if(!b||!['questions','final','plan','revise','decisions','triage','adjust','features','scope','fit','extend','names','tidy','review','logos','sketch','concept','flow','arch','proto'].includes(b.mode))throw Error('Ungültiger Modus.');
  if(b.mode==='adjust'){
   // Änderungswunsch in eigenen Worten; die Idee darf fehlen (eingefügte Spezifikation).
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
   const wish=String(b.wish||'').trim().replace(/\s+/g,' ').slice(0,2000);
   if(!wish)throw Error('Bitte den Änderungswunsch eingeben.');
   return {mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),questions:cleanQuestions(b.questions||[]),extras:cleanExtras(b.extras),...frameIn(b),spec:b.spec,wish};
  }
  if(b.mode==='review'){
   // Review der Spezifikation durch einen gewählten Agenten
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
   const provider=b.provider==='codex'?'codex':'claude',wanted=String(b.model||'');
   return {mode:b.mode,ai:b.ai===true,spec:b.spec,provider,model:(reviewers.find(r=>r.id===provider)?.models||[]).some(m=>m.id===wanted)?wanted:'',duration:frameIn(b).duration};
  }
@@ -145,30 +145,35 @@ function validate(b){
  }
  if(b.mode==='proto'){
   // Klickbarer Prototyp aus der fertigen Spezifikation
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
   return {mode:b.mode,ai:b.ai===true,spec:b.spec,project:String(b.project||'').trim().slice(0,100)};
  }
  if(b.mode==='flow'||b.mode==='arch'){
   // Schaubilder (Ablauf bzw. Aufbau und Datenmodell) als Struktur, abgeleitet aus der fertigen Spezifikation
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
   return {mode:b.mode,ai:b.ai===true,spec:b.spec};
  }
  if(b.mode==='logos'){
   // Logo-Entwürfe als SVG
-  const idea=String(b.idea||'').trim().slice(0,2000),spec=typeof b.spec==='string'?b.spec.slice(0,50000):'';
+  const idea=String(b.idea||'').trim().slice(0,2000),spec=typeof b.spec==='string'?b.spec.slice(0,150000):'';
   if(!idea&&!spec.trim())throw Error('Für Logo-Entwürfe braucht es eine Idee oder eine Spezifikation.');
   return {mode:b.mode,ai:b.ai===true,idea,spec,project:String(b.project||'').trim().slice(0,100),tone:Number.isInteger(b.tone)&&b.tone>=0&&b.tone<=4?b.tone:2,count:Number.isInteger(b.count)?Math.min(5,Math.max(1,b.count)):3};
  }
+ if(b.mode==='tidy'){
+  // Die Idee in sauberer Schreibweise – nur Rechtschreibung, Groß-/Kleinschreibung und Zeichensetzung
+  const idea=String(b.idea||'').trim().slice(0,2000);if(!idea)throw Error('Es gibt keine Idee.');
+  return {mode:b.mode,ai:b.ai===true,idea};
+ }
  if(b.mode==='names'){
   // Namensvorschläge aus Idee und – falls vorhanden – Spezifikation
-  const idea=String(b.idea||'').trim().slice(0,2000),spec=typeof b.spec==='string'?b.spec.slice(0,50000):'';
+  const idea=String(b.idea||'').trim().slice(0,2000),spec=typeof b.spec==='string'?b.spec.slice(0,150000):'';
   if(!idea&&!spec.trim())throw Error('Für Namensvorschläge braucht es eine Idee oder eine Spezifikation.');
   const tone=Number.isInteger(b.tone)&&b.tone>=0&&b.tone<=4?b.tone:2;
   return {mode:b.mode,ai:b.ai===true,idea,spec,tone,count:Number.isInteger(b.count)?Math.min(8,Math.max(1,b.count)):3,avoid:cleanNames(b.avoid).map(n=>n.name)};
  }
  if(b.mode==='fit'||b.mode==='extend'){
   // Lösungsvorschlag, wie die Features in die Zielzeit passen; die Spezifikation darf noch fehlen (Umfang zuerst)
-  if(typeof b.spec!=='string'||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
   if(!b.spec.trim()&&!String(b.idea||'').trim())throw Error('Für einen Vorschlag braucht es eine Idee oder eine Spezifikation.');
   const features=cleanFeatures(b.features),target=Number.isFinite(b.target)?Math.round(b.target):0;
   if(!features.length||target<1)throw Error('Für einen Vorschlag braucht es Features und eine Zielzeit.');
@@ -177,7 +182,7 @@ function validate(b){
  }
  if(b.mode==='features'||b.mode==='scope'){
   // Features ermitteln (aus der Spezifikation oder, bevor es sie gibt, aus Idee und Entscheidungen) bzw. eine geänderte Auswahl einarbeiten.
-  if(typeof b.spec!=='string'||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
   if(!b.spec.trim()&&(b.mode==='scope'||!String(b.idea||'').trim()))throw Error(b.mode==='scope'?'Spezifikation fehlt oder zu lang.':'Für die Features braucht es eine Idee oder eine Spezifikation.');
   const concept=typeof b.concept==='string'?b.concept.trim().slice(0,6000):'';
   const base={concept,mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),questions:cleanQuestions(b.questions||[]),extras:cleanExtras(b.extras),...frameIn(b),spec:b.spec};
@@ -188,11 +193,11 @@ function validate(b){
  }
  if(b.mode==='triage')return {mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),questions:cleanQuestions(b.questions||[])};
  if(b.mode==='decisions'){
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
   return {mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),spec:b.spec,questions:cleanQuestions(b.questions||[])};
  }
  if(b.mode==='plan'){
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
   return {mode:b.mode,ai:b.ai===true,spec:b.spec,repo:String(b.repo||'').slice(0,500),agent:String(b.agent||'').slice(0,100),reuse:cleanSelections(b.reuse)};
  }
  if(typeof b.idea!=='string'||b.idea.length>2000)throw Error('Ungültige Idee.');
@@ -201,7 +206,7 @@ function validate(b){
  // Festgelegter Umfang: Die Spezifikation wird für genau diese Features geschrieben
  if(typeof b.concept==='string'&&b.concept.trim())data.concept=b.concept.trim().slice(0,6000);
   if(b.mode==='questions')data.fill=b.fill===true&&data.questions.length>0;
-  if(b.mode==='final'&&b.update===true&&typeof b.spec==='string'&&b.spec.trim()&&b.spec.length<=50000){
+  if(b.mode==='final'&&b.update===true&&typeof b.spec==='string'&&b.spec.trim()&&b.spec.length<=150000){
    // Kapitelweise Aktualisierung: bisherige Spezifikation und was sich seit ihrem Stand geändert hat
    data.update=true;data.previous=b.spec;data.changes=(Array.isArray(b.changes)?b.changes:[]).filter(x=>typeof x==='string'&&x.trim()).slice(0,40).map(x=>x.trim().replace(/\s+/g,' ').slice(0,400));
   }
@@ -211,7 +216,7 @@ function validate(b){
   if(b.mode==='final')data.scope=cleanFeatures(b.features||[]).map(f=>({name:f.name,note:f.note,basis:!!f.core}));
  if(b.mode!=='revise')return data;
  // Eine Antwort wurde geändert: Spezifikation, Stand davor und Index der geänderten Frage.
- if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+ if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
  const previous=cleanQuestions(b.previous||[]),index=b.index;
  // index = die eine geänderte Frage, -1 bei mehreren zugleich; maßgeblich ist der Vergleich beider Stände.
  if(!Number.isInteger(index)||index<-1||index>=data.questions.length||previous.length!==data.questions.length||previous.some((p,i)=>p.question!==data.questions[i].question))throw Error('Ungültige Änderung.');
@@ -229,6 +234,7 @@ function demo(b){
  if(b.mode==='flow')return {source:'demo',flow:null};
  if(b.mode==='arch')return {source:'demo',arch:null};
  if(b.mode==='proto')return {source:'demo',proto:null};
+ if(b.mode==='tidy')return {source:'demo',text:''};
  if(b.mode==='names')return {source:'demo',names:demoNames(b.idea||b.spec,b.count)};
  if(b.mode==='logos')return {source:'demo',logos:demoLogos(b.project||b.idea,b.count)};
  if(b.mode==='sketch')return {source:'demo',svg:''};
@@ -241,7 +247,7 @@ function demo(b){
  return {source:'demo',markdown:demoSpec(b.project,b.idea,b.questions,b.extras,b.frame)};
 }
 // Kompakte Sicht für die KI: Antworttext statt Options-Indizes.
-const conceptNote=b=>b.concept?' Das Konzept (concept in den Projektdaten) hat der Nutzer bereits gesehen und bearbeitet: Baue darauf auf, übernimm seine Szene, Begriffe und Festlegungen und widersprich ihm nicht.':'';
+const conceptNote=b=>b.concept?' Der Grobentwurf (concept in den Projektdaten) ist das Gerüst dieser Spezifikation; der Nutzer hat ihn gesehen und bearbeitet: Arbeite jedes Kapitel daraus aus, übernimm seine Szene, Begriffe, Abläufe, Daten und Festlegungen und widersprich ihm nicht. Was dort steht, bleibt; es wird genauer, vollständiger und prüfbar.':'';
 function brief(b){return b.mode==='plan'?b:{project:b.project,idea:b.idea,...(b.concept?{concept:b.concept}:{}),answers:b.questions.map(q=>({topic:topics[q.topic],question:q.question,answer:answerOf(q),state:q.state})),additionalRequirements:b.extras,...(b.duration?{targetDuration:b.duration}:{}),...(b.excluded&&b.excluded.length?{excludedFeatures:b.excluded}:{}),...(b.scope&&b.scope.length?{features:b.scope}:{})}}
 const finalPrompt=b=>'Erstelle eine verständliche Markdown-Spezifikation mit Ziel/Nicht-Zielen, Nutzern, priorisierten Anforderungen, Regeln, UX, Architektur und Schnittstellen, Qualität, Betrieb, Risiken, Akzeptanzkriterien und offenen Entscheidungen. Antworten mit state=decided sind bestätigte Vorgaben; state=default sind übernommene Standards und als Annahmen zu kennzeichnen; state=open sind offene Entscheidungen. Widersprüche benennen.'+framePrompt(b.autonomy,b.duration,b.creativity,b.tone)+(b.excluded&&b.excluded.length?' Die Features in excludedFeatures hat der Nutzer abgewählt: Sie gehören nicht zum Umfang und stehen ausschließlich bei den Nicht-Zielen.':'')+(b.scope&&b.scope.length?' Der Umfang ist bereits festgelegt und auf die Zielzeit abgestimmt: features ist die verbindliche, abschließende Feature-Liste (basis=true: Basis-Feature, sonst Erweiterung). Spezifiziere genau diese Features in dem Umfang, den name und note beschreiben. Füge keine weiteren Funktionen hinzu, auch nicht als Soll- oder Kann-Anforderung; was darüber hinausginge, steht höchstens bei den Nicht-Zielen.':'');
 // Wie ask(), aber als Strom: onText erhält jedes Textstück, sobald es entsteht; geliefert wird der vollständige Text.
@@ -399,7 +405,7 @@ async function claude(b){
   // Erst gezielte Ersetzungen; greifen sie nicht, die Spezifikation einmal vollständig überarbeiten lassen.
   const scope=b.mode==='scope',data={project:b.project,idea:b.idea,...(b.duration?{targetDuration:b.duration}:{}),...(scope?{remove:b.remove,restore:b.restore,decisions:decisionsOf(b.questions)}:{wish:b.wish}),spec:b.spec};
   let md=null,answers=[];try{const parsed=parseJson(await ask(withSkills(b.mode,scope?scopePrompt:adjustPrompt),data,8000));md=applyEdits(b.spec,parsed.edits);if(scope&&md!==null)answers=mapAnswers(b.questions,parsed.answers)}catch(e){if(!(e instanceof SyntaxError)&&!/JSON/.test(String(e.message)))throw e}
-  if(md===null){const full=(await ask(withSkills(b.mode,scope?scopeFullPrompt:adjustFullPrompt),data,16000)).trim().replace(/^```(?:markdown|md)?\s*/i,'').replace(/\s*```$/,'');md=full&&full.length<=50000?full:null}
+  if(md===null){const full=(await ask(withSkills(b.mode,scope?scopeFullPrompt:adjustFullPrompt),data,16000)).trim().replace(/^```(?:markdown|md)?\s*/i,'').replace(/\s*```$/,'');md=full&&full.length<=150000?full:null}
   return {markdown:md===null?null:withToc(md),answers};
  }
  if(b.mode==='review'){
@@ -416,6 +422,11 @@ async function claude(b){
   const logos=cleanLogos(parsed.logos).slice(0,b.count);
   if(!logos.length)throw Error('Es kamen keine brauchbaren Logo-Entwürfe zurück. Bitte erneut versuchen.');
   return {source:'claude',logos};
+ }
+ if(b.mode==='tidy'){
+  const out=String(await ask('Korrigiere im folgenden Text (text in den Projektdaten) ausschließlich Rechtschreibung, Groß- und Kleinschreibung, Bindestriche und Zeichensetzung nach den Regeln der Sprache, in der er geschrieben ist. Ändere keine Wörter, keine Reihenfolge und keinen Inhalt, ergänze nichts und kürze nichts. Der Text beginnt mit einem Großbuchstaben. Gib nur den korrigierten Text aus, ohne Anführungszeichen, ohne Erklärung.',{text:b.idea},1200)).trim().replace(/^["„“»]+|["“”«]+$/g,'');
+  // Weicht die Länge stark ab, wurde umformuliert statt korrigiert: Dann gilt das Original
+  return {source:'claude',text:out&&Math.abs(out.length-b.idea.length)<=Math.max(12,b.idea.length*0.2)?out:''};
  }
  if(b.mode==='names'){
   let parsed;try{parsed=parseJson(await ask(namesPrompt,{count:b.count,idea:b.idea,context:toneLevels[b.tone]+'. '+brandLevels[b.tone],avoid:b.avoid,spec:b.spec.slice(0,12000)},1800))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
@@ -512,7 +523,7 @@ function validateLayout(b){
   if(!isScreenId(b.screenId))throw Error('Ungültiger Stitch-Screen.');
   return {action:b.action,projectId:b.projectId,screenId:b.screenId,count:variantCount(b.count),deviceType:device(b.deviceType),known};
  }
- if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
+ if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
  return {action:b.action,projectId:b.projectId,project:String(b.project||'').slice(0,100),spec:b.spec,wish:String(b.wish||'').trim().slice(0,500),tone:Number.isInteger(b.tone)&&b.tone>=0&&b.tone<=4?b.tone:2,theme:b.theme==='DARK'?'DARK':b.theme==='LIGHT'?'LIGHT':'',deviceType:device(b.deviceType),known};
 }
 async function layout(b){
@@ -579,7 +590,7 @@ http.createServer(async(req,res)=>{
  }
  if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/reuse','/api/repo'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
  if(!['http://'+host+':'+port,'http://localhost:'+port].includes(req.headers.origin)||!String(req.headers['content-type']).startsWith('application/json'))return send(res,403,{error:'Nur lokale Anfragen erlaubt.'});
- let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>500000)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
+ let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>1500000)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
  if(req.url==='/api/repo'){
   let body;try{body=JSON.parse(raw)}catch{return send(res,400,{error:'Ungültige Anfrage.'})}
   try{return send(res,200,await createRepo(body))}catch(e){return send(res,400,{error:e.message||'Das Repository konnte nicht angelegt werden.'})}
@@ -713,7 +724,7 @@ http.createServer(async(req,res)=>{
   return;
  }
  if(req.url==='/api/reuse'){
-  let spec;try{const b=JSON.parse(raw);if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Gültige Spezifikation erforderlich.');spec=b.spec}catch(e){return send(res,400,{error:e.message})}
+  let spec;try{const b=JSON.parse(raw);if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Gültige Spezifikation erforderlich.');spec=b.spec}catch(e){return send(res,400,{error:e.message})}
   if(!key&&!hasCli)return send(res,503,{error:'Die Recherche benötigt Claude Code oder einen Anthropic-API-Schlüssel.'});
   if(busy)return send(res,429,{error:'Eine KI-Analyse läuft bereits.'});
   sketchAbort?.abort();busy=true;lastAI=Date.now();watch(res);try{return send(res,200,await discoverReuse({spec}))}catch(e){return send(res,502,{error:e instanceof SyntaxError?'Claude hat eine unlesbare Antwort geliefert. Bitte erneut versuchen.':e.message||'Recherche fehlgeschlagen.'})}finally{busy=false;currentAbort=null}
@@ -735,7 +746,7 @@ http.createServer(async(req,res)=>{
  if(!key&&!hasCli)return send(res,503,{error:'Kein Claude-Zugang: ANTHROPIC_API_KEY setzen oder Claude Code installieren und anmelden.'});
  if(data.mode==='concept'){
   // Live-Konzept: als Strom, immer nur das jüngste; jede andere Anfrage hat Vorrang und bricht es ab
-  if(!data.ai||(!key&&!hasCli))return send(res,503,{error:'Das Live-Konzept braucht Claude.'});
+  if(!data.ai||(!key&&!hasCli))return send(res,503,{error:'Der Grobentwurf braucht Claude.'});
   if(busy)return send(res,429,{error:'Gerade läuft eine andere Anfrage.'});
   sketchAbort?.abort();const ac=new AbortController();sketchAbort=ac;res.on('close',()=>{if(!res.writableEnded)ac.abort()});
   res.writeHead(200,{'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
@@ -744,7 +755,7 @@ http.createServer(async(req,res)=>{
   const part=data.only.length&&data.only.length<conceptSections.length&&data.prev.trim()?data.only:null;
   const marks=part?'ein bis zwei je Abschnitt':(data.autonomy>=80?'3 bis 4':data.autonomy>=40?'5 bis 7':'8 bis 10')+' neue (die vom Nutzer schon entschiedenen zählen nicht mit)';
   // Geänderte Vorgaben betreffen nur einzelne Abschnitte: Nur sie entstehen neu, der Rest bleibt stehen
-  const scope=part?' Es gibt bereits ein Konzept (previous in den Projektdaten). Schreibe ausschließlich diese Abschnitte neu, passend zu den geänderten Vorgaben: '+part.join(', ')+'. Gib nur diese Abschnitte aus, jeden mit seiner Zeile „## Titel“, in dieser Reihenfolge, zusammen höchstens '+(part.length*40)+' Wörter. Alle anderen Abschnitte bleiben unverändert und dürfen nicht ausgegeben werden; die neuen Abschnitte müssen widerspruchsfrei zu ihnen passen. Das erste Zeichen deiner Antwort ist „#“ von „## '+part[0]+'“.':'';
+  const scope=part?' Es gibt bereits ein Konzept (previous in den Projektdaten). Schreibe ausschließlich diese Abschnitte neu, passend zu den geänderten Vorgaben: '+part.join(', ')+'. Gib nur diese Abschnitte aus, jeden mit seiner Zeile „## Titel“, in dieser Reihenfolge, zusammen höchstens '+(part.length*55)+' Wörter. Alle anderen Abschnitte bleiben unverändert und dürfen nicht ausgegeben werden; die neuen Abschnitte müssen widerspruchsfrei zu ihnen passen. Das erste Zeichen deiner Antwort ist „#“ von „## '+part[0]+'“.':'';
   // Änderungswunsch: Nur die Abschnitte, die er betrifft, entstehen neu
   const wishOn=!!(data.wish&&data.prev.trim());
   const wishScope=wishOn?' Es gibt bereits ein Konzept (previous in den Projektdaten). Der Nutzer wünscht diese Änderung: „'+data.wish+'“. Arbeite sie ein und gib ausschließlich die Abschnitte aus, die sich dadurch ändern – jeden vollständig, mit seiner Zeile „## Titel“, in der bisherigen Reihenfolge; unveränderte Abschnitte nicht ausgeben. Markierungen in diesen Abschnitten bleiben wörtlich erhalten, soweit der Wunsch sie nicht ersetzt; was der Wunsch festlegt, steht ohne Markierung im Text. Das erste Zeichen deiner Antwort ist „#“.':'';
@@ -765,7 +776,7 @@ http.createServer(async(req,res)=>{
  }
  // Hintergrund-Spur: Ableitungen, die nichts am Dokument ändern (Namen, Logos, Schaubilder), laufen neben der Vordergrund-Anfrage
  // und nebeneinander – mit eigenem Abbruchsignal, höchstens vier zugleich. So wartet der Nutzer nicht nacheinander auf jede einzelne.
- if(background&&['names','logos','flow','arch','proto','extend'].includes(data.mode)){
+ if(background&&['names','tidy','logos','flow','arch','proto','extend'].includes(data.mode)){
   if(bgRunning>=4)return send(res,429,{error:'Zu viele Hintergrund-Anfragen. Bitte gleich erneut versuchen.'});
   const ac=new AbortController();res.on('close',()=>{if(!res.writableEnded)ac.abort()});
   Object.defineProperty(meter.getStore(),'signal',{value:ac.signal,enumerable:false});bgRunning++;
