@@ -24,3 +24,10 @@ test('timing records latency and optional token counts once, no text data', () =
   t = 250; m.finish(true); m.finish(false);
   assert.deepEqual(store.timings, [{ model: 'm', transport: 'api', streaming: true, ok: true, totalMs: 150, input_tokens: 120, output_tokens: 45, cache_read_input_tokens: 55, firstTokenMs: 32 }]);
 });
+
+test('explicit strategy controls the model regardless of global fast mode', () => {
+  const fastEnv = { SPECIT_FAST_MODE: '1', SPECIT_FINAL_MODEL: 'claude-haiku-5-5', SPECIT_FINAL_EFFORT: 'high' };
+  assert.deepEqual(aiProfile('final', fastEnv, 'claude-sonnet-4-6', 'classic'), { model: 'claude-sonnet-4-6' });
+  assert.deepEqual(aiProfile('final', fastEnv, 'claude-sonnet-4-6', 'turbo'), { model: 'claude-haiku-5-5', effort: 'low' });
+  assert.deepEqual(aiProfile('final', { SPECIT_FAST_MODE: '1' }, 'claude-sonnet-4-6', 'parallel'), { model: 'claude-sonnet-4-6' });
+});
