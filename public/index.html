@@ -2875,8 +2875,8 @@ let tidyBusy='';
 function tidyIdea(){
   const raw=s.idea.trim();
   if(!raw||!statusLoaded||!$('ai').checked||!document.body.classList.contains('started')||document.body.classList.contains('ideaedit')||tidyBusy===raw||(s.ideaTidy&&s.ideaTidy.src===raw))return;
-  tidyBusy=raw;
-  bgCall({mode:'tidy',idea:raw,ai:true},2).then(r=>{if(s.idea.trim()===raw){s.ideaTidy={src:raw,text:typeof r.text==='string'?r.text.trim().slice(0,2000):''};save();$('ideaText').textContent=ideaShownText()}},()=>{if(s.idea.trim()===raw)s.ideaTidy={src:raw,text:''}}).finally(()=>{if(tidyBusy===raw)tidyBusy=''});
+  tidyBusy=raw;const epoch=workSession.generation;
+  bgCall({mode:'tidy',idea:raw,ai:true},2).then(r=>{if(workSession.isCurrent(epoch)&&s.idea.trim()===raw){s.ideaTidy={src:raw,text:typeof r.text==='string'?r.text.trim().slice(0,2000):''};save();$('ideaText').textContent=ideaShownText()}},()=>{if(workSession.isCurrent(epoch)&&s.idea.trim()===raw)s.ideaTidy={src:raw,text:''}}).finally(()=>{if(workSession.isCurrent(epoch)&&tidyBusy===raw)tidyBusy=''});
 }
 // Die Idee steht nach dem Start als Text da; der Stift macht sie wieder zum Textfeld, beim Verlassen wird sie wieder Text
 $('ideaPen').onclick=()=>{document.body.classList.add('ideaedit');const i=$('idea');i.focus();i.setSelectionRange(i.value.length,i.value.length)};
@@ -3384,29 +3384,29 @@ function ensureBrand(){
   if(!statusLoaded||!(wsOpen()||s.concept||conceptJob)||(!s.idea.trim()&&!s.spec.trim()))return;
   const base=[s.idea.trim(),s.tone,$('ai').checked].join('|');
   if(s.nameCount>0&&!s.project.trim()&&!s.names.length&&!brandBusy.names&&brandTried.names!==base+'|'+s.nameCount){
-    const key=brandTried.names=base+'|'+s.nameCount;brandBusy.names=true;namesUI();
+    const key=brandTried.names=base+'|'+s.nameCount,epoch=workSession.generation;brandBusy.names=true;namesUI();
     bgCall({mode:'names',idea:s.idea,spec:s.spec,count:s.nameCount,tone:s.tone,avoid:[],ai:$('ai').checked})
-      .then(r=>{if(key===brandTried.names&&!s.project.trim()&&!s.names.length){s.names=cleanNames(r.names);save()}},()=>{})
-      .finally(()=>{brandBusy.names=false;renderAll()});
+      .then(r=>{if(workSession.isCurrent(epoch)&&key===brandTried.names&&!s.project.trim()&&!s.names.length){s.names=cleanNames(r.names);save()}},()=>{})
+      .finally(()=>{if(workSession.isCurrent(epoch)){brandBusy.names=false;renderAll()}});
   }
   if(s.logoCount>0&&!s.logos.length&&!brandBusy.logos&&brandTried.logos!==base+'|'+s.logoCount){
-    const key=brandTried.logos=base+'|'+s.logoCount;brandBusy.logos=true;logoUI();
+    const key=brandTried.logos=base+'|'+s.logoCount,epoch=workSession.generation;brandBusy.logos=true;logoUI();
     bgCall({mode:'logos',idea:s.idea,spec:s.spec,project:s.project,count:s.logoCount,tone:s.tone,ai:$('ai').checked})
-      .then(r=>{if(key===brandTried.logos&&!s.logos.length){s.logos=cleanLogos(r.logos);s.logoChosen=s.logos.length===1?0:-1;save()}},()=>{})
-      .finally(()=>{brandBusy.logos=false;renderAll()});
+      .then(r=>{if(workSession.isCurrent(epoch)&&key===brandTried.logos&&!s.logos.length){s.logos=cleanLogos(r.logos);s.logoChosen=s.logos.length===1?0:-1;save()}},()=>{})
+      .finally(()=>{if(workSession.isCurrent(epoch)){brandBusy.logos=false;renderAll()}});
   }
   // Genau ein Namensvorschlag gewünscht und gekommen: übernehmen – einmal je Vorschlag, damit ein bewusst geleerter Name leer bleibt
   if(s.nameCount===1&&s.names.length===1&&!s.project.trim()&&!active&&s.nameAuto!==s.names[0].name){s.nameAuto=s.names[0].name;save();setTimeout(()=>applyName(s.names[0].name),0)}
 }
 async function deriveDiagram(src,force){
-  const key=diagKey(src),def=diagSrc[src];
+  const key=diagKey(src),def=diagSrc[src],epoch=workSession.generation;
   if(diagBusy[src]||!key||!$('ai').checked||(!force&&(diagTried[src]===key||diagNow(src))))return;
   diagTried[src]=key;diagBusy[src]=true;diagNote[src]='';if(force)specUI();
   try{
     const r=await bgCall({mode:src,spec:s.spec,project:s.project,ai:true}),m=def.clean(r[def.field]);
-    if(m&&key===diagKey(src)){s[src]={key,...m};save()}
-  }catch(e){diagNote[src]=e.message}
-  diagBusy[src]=false;if(specMode==='view'&&!active)specUI();
+    if(workSession.isCurrent(epoch)&&m&&key===diagKey(src)){s[src]={key,...m};save()}
+  }catch(e){if(workSession.isCurrent(epoch))diagNote[src]=e.message}
+  if(workSession.isCurrent(epoch)){diagBusy[src]=false;if(specMode==='view'&&!active)specUI()}
 }
 // Die drei Schaubilder: Titel, Quelle, wie aus dem Stand das Modell wird, wie es gezeichnet und als Mermaid-Text ausgegeben wird
 const diagKinds={
