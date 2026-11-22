@@ -456,11 +456,14 @@ function mainUI(){
   b.title=busy?'':need?'Claude schreibt aus deiner Idee und den Einstellungen den Grobentwurf der Spezifikation: das Gerüst aller Kapitel mit ersten Inhalten – und den Stellen, an denen du entscheiden kannst.':nextTitle;
   // Beim Konzept: der Schritt vom Konzept zur Spezifikation
   // Sind die Entscheidungen schon abgeleitet, heißt der Schritt „Spezifikation erstellen“ (auch ohne Claude)
-  const upd=!atIdea()&&typeof streamText!=='string'&&specMode!=='edit'&&!!s.spec.trim()&&!!s.dirty;
-  const make=ideaSame(),show=(atIdea()&&specMode!=='edit')||upd,old=draftStale();e.classList.toggle('hidden',!show);e.classList.toggle('specact',upd);
-  e.textContent=upd?'↻ Spezifikation aktualisieren – Eingaben oder Antworten wurden geändert':busy?'Entwurf entsteht …':old?'↻ Entwurf aktualisieren – Idee oder Einstellungen wurden geändert':need?'✦ Entwurf erstellen':make?'✦ Spezifikation erstellen →':next;
+  const specReady=!atIdea()&&typeof streamText!=='string'&&specMode!=='edit'&&!!s.spec.trim(),upd=specReady&&!!s.dirty;
+  // Spezifikation steht: erst eine geänderte Feature-Auswahl übernehmen, sonst weiter zur Umsetzung (in der Umsetzungsansicht selbst entfällt der Knopf)
+  const pend=specReady&&!upd&&s.features.some(f=>f.on!==f.inSpec),planOk=!!s.plan&&!stale(),doneImpl=planOk&&s.finished===finishKey();
+  const goImpl=specReady&&!upd&&!pend&&!document.body.classList.contains('runview');
+  const make=ideaSame(),show=(atIdea()&&specMode!=='edit')||upd||pend||goImpl,old=draftStale();e.classList.toggle('hidden',!show);e.classList.toggle('specact',upd||pend||goImpl);e.dataset.act=upd?'update':pend?'apply':goImpl?'impl':'';
+  e.textContent=pend?'✓ Feature-Auswahl in die Spezifikation übernehmen':goImpl?(doneImpl?'▸ Umsetzung ansehen – Plan, Dateien und Stand':planOk?(s.nextStep==='run'?'▸ Plan freigeben und Umsetzung starten':'✓ Plan bestätigen und Dateien bereitstellen'):'▸ Weiter zur Umsetzung'):upd?'↻ Spezifikation aktualisieren – Eingaben oder Antworten wurden geändert':busy?'Entwurf entsteht …':old?'↻ Entwurf aktualisieren – Idee oder Einstellungen wurden geändert':need?'✦ Entwurf erstellen':make?'✦ Spezifikation erstellen →':next;
   e.title=upd?'Die Spezifikation passt nicht mehr zu deinen Eingaben. Die geänderten Kapitel werden neu geschrieben.':busy?'':old?'Der Entwurf passt nicht mehr zu Idee oder Einstellungen. Erst wenn er aktualisiert ist, fließen die Änderungen in die Spezifikation ein.':need?(empty?'Zuerst links die Idee eingeben und die Zeit wählen.':'Claude schreibt aus deiner Idee und den Einstellungen den Grobentwurf der Spezifikation.'):make?'Schreibt aus Entwurf, Entscheidungen und Features die vollständige Spezifikation.':nextTitle;
-  e.disabled=upd?active:active||busy||(need&&empty)||(!ai&&!s.idea.trim());e.classList.toggle('stale',upd||(old&&!busy));
+  e.disabled=upd||pend||goImpl?active:active||busy||(need&&empty)||(!ai&&!s.idea.trim());e.classList.toggle('stale',upd||pend||(old&&!busy&&!goImpl));
   e.classList.toggle('nudge',show&&!e.disabled&&(!make||$('generate').classList.contains('nudge')));
 }
 function mainAction(){
@@ -474,7 +477,11 @@ function mainAction(){
   }
   derive(false);
 }
-$('elaborate').onclick=()=>{if($('elaborate').classList.contains('specact')){$('generate').click();return}if(needConcept()){mainAction();return}if(ideaSame())$('generate').click();else derive(false)};
+function openImpl(showView){
+  $('specGroup').open=false;const p=$('implPanel');p.open=true;p.scrollIntoView({block:'nearest'});p.classList.remove('attn');void p.offsetWidth;p.classList.add('attn');setTimeout(()=>p.classList.remove('attn'),1800);
+  if(showView&&s.plan){runViewOn=true;runFeatureUI()}mainUI();
+}
+$('elaborate').onclick=()=>{const act=$('elaborate').dataset.act;if(act==='apply'){applyScope();return}if(act==='impl'){const ok=!!s.plan&&!stale(),fin=ok&&s.finished===finishKey();if(ok&&!fin&&!$('finish').disabled){openImpl(false);$('finish').click();return}openImpl(ok);return}if($('elaborate').classList.contains('specact')){$('generate').click();return}if(needConcept()){mainAction();return}if(ideaSame())$('generate').click();else derive(false)};
 // Ist das Konzept fertig, leuchten einmal die Stellen auf, die geprüft werden wollen – und „Alles akzeptieren“
 function conceptAttention(){
   const box=$('concept'),all=$('conceptAll');
@@ -3054,16 +3061,19 @@ function finishKey(){return digest(JSON.stringify([s.planSpec,s.plan?s.plan.task
 // Übersicht vor dem Abschluss: jede Festlegung mit Sprung zu der Stelle, an der sie sich ändern lässt
 function reviewUI(p,agents){
   const box=$('review'),sum=summary(s.questions),c=chosenLayout(),direct=s.nextStep==='run',single=agents===1;box.replaceChildren();
-  $('reviewCard').classList.toggle('noplan',!p);
+  $('reviewCard').classList.toggle('noplan',!p);try{runFeatureUI()}catch{}
+  {const fin=!!p&&s.finished===finishKey();$('implPanel').querySelector('summary h2').textContent=fin?'Umsetzung':p?'Plan prüfen und …':'Plan erstellen und …';
+   if(!reviewUI.init){reviewUI.init=true;if(s.spec.trim()&&!s.dirty){$('specGroup').open=false;$('implPanel').open=true}}try{mainUI()}catch{}}
   {const l=$('agentLine'),n=agents,max=planMax(),want=Math.max(1,s.featAgents||1),lock=active||runBusy||runStarting;
    const minus=button('−','btn small agentstep',()=>{s.featAgents=Math.max(1,n-1);renderAll()}),plus=button('+','btn small agentstep',()=>{s.featAgents=Math.min(max,n+1);renderAll()});
    minus.disabled=n<=1||lock;plus.disabled=n>=max||lock;minus.setAttribute('aria-label','Einen Agenten weniger');plus.setAttribute('aria-label','Einen Agenten mehr');
    const txt=node('span',n===1?'nacheinander':'parallel','agenttext'),cost=n>1?node('span','≈ '+n+'-fache Kosten','agentcost'):null;
    l.className='agentline'+(n>=5?' high':n>1?' multi':'');l.title=n===1?'Ein Agent arbeitet alle Schritte nacheinander ab.':n+' Agenten arbeiten gleichzeitig – so in der Feature-Schätzung eingestellt. Jeder Agent verbraucht eigenes Kontingent: rund '+n+'-fache Kosten je Minute.'+(want>n?' Eingestellt sind '+want+'; mehr als '+n+' lassen sich bei diesem Umfang nicht gleichzeitig beschäftigen.':'');
-   l.replaceChildren(node('span','Agenten','eyebrow'),minus,node('b',String(n),'agentnum'),plus,txt,...(cost?[cost]:[]))}
+   const est=p?estimate(p,agents):s.features.length?featDuration().total:0,dauer=est?node('span','≈ '+hm(est),'agentest'):null;if(dauer)dauer.title='Voraussichtliche Dauer der Umsetzung mit dieser Zahl an Agenten';
+   l.replaceChildren(node('span','Agenten','eyebrow'),minus,node('b',String(n),'agentnum'),plus,txt,...(dauer?[dauer]:[]),...(cost?[cost]:[]))}
   {const busy=active||runBusy||runStarting||layoutBusy;$('goDownload').disabled=busy;$('goApprove').disabled=$('goDirect').disabled=busy||!agentsOk;if(!agentsOk)$('goApprove').title=$('goDirect').title='Claude Code wurde auf diesem Rechner nicht gefunden.';
    const sum=summary(s.questions),on=s.features.filter(f=>f.on).length;$('specGroupMeta').textContent=s.features.length||s.questions.length?[on?plural(on,'Feature','Features'):'',s.questions.length?(sum.open?sum.open+' offen':'alle Entscheidungen getroffen'):''].filter(Boolean).join(' · '):''}$('plan').classList.toggle('hasplan',!!p);$('planAgainRow').classList.toggle('hidden',!p);$('planAgain').disabled=active||runBusy;
-  {const m=$('implMoreMeta');if(m)m.textContent=[single?'1 Agent':agents+' Agenten parallel',$('agent').value,$('repo').value.trim()?'Repository angegeben':'kein Repository','Layouts '+($('layoutOn').checked?'an':'aus')].join(' · ')}
+  {const m=$('implMoreMeta');if(m)m.textContent=['Zielagent '+$('agent').value,$('repo').value.trim()?'Repository angegeben':'kein Repository','Layouts '+($('layoutOn').checked?'an':'aus')].join(' · ')}
   const jump=id=>()=>$(id).scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   const row=(label,value,go,warn)=>{const r=node('div',undefined,'reviewrow'+(warn?' warn':'')),b=button('Ändern','link',go);b.setAttribute('aria-label',label+' ändern');r.append(node('span',label,'eyebrow'),node('span',value,'val'),b);box.append(r)};
   row('Abarbeitung',single?'Nacheinander · ein Agent · ein Gesamtauftrag':'Parallel · '+agents+' Agenten · mehrere Teilaufträge',jump('planConfig'));
@@ -3072,6 +3082,7 @@ function reviewUI(p,agents){
   // Abschluss: der Knopf steht direkt unter der Übersicht
   const done=!!p&&s.finished===finishKey(),ready=!!p&&!active&&!runBusy&&!layoutBusy&&(!direct||(agentsOk&&!!s.runDir.trim())),f=$('finish');
   f.textContent=done&&!direct?'✓ Abgeschlossen':direct?'▸ Freigeben und Umsetzung starten':'✓ Bestätigen und bereitstellen';f.disabled=!ready||(done&&!direct);
+  {const again=direct&&done;f.classList.toggle('again',again);if(again)f.textContent=runBusy?'Umsetzung läuft …':'↻ Umsetzung erneut starten'}
   $('finishHint').textContent=!p?'Zum Abschließen fehlt ein aktueller Plan – „Plan erstellen“ (rot markiert).':layoutBusy?'Die Layout-Entwürfe werden noch erzeugt.':direct&&!agentsOk?'Claude Code wurde auf diesem Rechner nicht gefunden; „Direkt umsetzen“ ist nicht möglich.':direct&&!s.runDir.trim()?'Zum Abschließen fehlt der Zielordner (Abschnitt 1, rot markiert).':done?(direct?'':'Abgeschlossen. Die Dateien stehen bereit; eine Änderung der Festlegungen erfordert eine neue Bestätigung.'):'Bitte prüfen. Bestätigt wird mit dem Knopf darunter.';
   // Was zum Abschließen fehlt, ist an Ort und Stelle rot markiert; der Hinweis führt per Klick dorthin
   const lacks=!p?'plan':direct&&!agentsOk?'nextRun':direct&&!s.runDir.trim()?'runDir':'';
@@ -3102,6 +3113,7 @@ $('planAgain').onclick=()=>$('plan').onclick();
 $('goDownload').onclick=()=>goFlow('download');$('goApprove').onclick=()=>goFlow('approve');$('goDirect').onclick=()=>goFlow('direct');
 // Zielordner und Erlaubnis für Befehle stehen bei den beiden Aktionen für diesen Rechner
 $('runSlot').replaceWith($('runPanel'));
+{const m=document.querySelector('.runmodel'),sw=$('runShell').closest('label');if(m&&sw)sw.before(m)}
 // Klappt in der Gruppe etwas auf, öffnet sich auch die Gruppe
 for(const id of ['featPanel','decPanel'])$(id).addEventListener('toggle',()=>{if($(id).open)$('specGroup').open=true});
 $('finish').onclick=async()=>{
@@ -3152,7 +3164,7 @@ const targetMinutes=()=>{const c=durOwn();return c?c.n*durUnits[c.unit][0]:durat
 const dur=sec=>sec<60?sec+' s':hm(sec/60);
 const stateNames={waiting:'wartet',running:'läuft',done:'fertig',failed:'Fehler',skipped:'übersprungen',stopped:'gestoppt'};
 /* ---------- Umsetzung nach Features: steht während des Laufs an der Stelle des Dokuments ---------- */
-let runViewOn=false,runSeen='';const runListEl=$('runList'),runListHome=runListEl.parentElement;
+let runViewOn=false,runSeen='',runPlanRef;const runSecOpen=new Set(),runCardOpen=new Set();const runListEl=$('runList'),runListHome=runListEl.parentElement,implOutEl=$('implOut'),implOutHome=implOutEl.parentElement;
 // Welche Arbeitsschritte zu welchem Feature gehören: aus dem Plan (features je Task); ältere Pläne ohne diese Angabe werden nach Stichworten zugeordnet
 function featTasks(){
   const p=s.plan,map=new Map();if(!p)return {map,exact:false};
@@ -3165,13 +3177,16 @@ function featTasks(){
   return {map,exact};
 }
 function runFeatureUI(){
-  const r=run,box=$('runView'),tab=$('runTab'),has=!!(r&&r.items&&r.items.length&&s.plan&&s.features.length),key=has?(r.dir||'')+'|'+r.items.length:'';
+  const real=run&&run.items&&run.items.length?run:null,has=!!s.plan,box=$('runView'),tab=$('runTab'),key=real?(real.dir||'')+'|'+real.items.length:'';
+  const r=real||{active:false,items:[],agents:agentsNow(),seconds:0,dir:s.runDir.trim(),shell:s.runShell,stopped:false};
   // Beginnt ein Lauf, wechselt die Ansicht von selbst hierher; zurück geht es über den Knopf oder die Gliederung
-  if(has&&r.active&&runSeen!==key){runSeen=key;runViewOn=true}
+  if(has&&real&&real.active&&runSeen!==key){runSeen=key;runViewOn=true}
+  // Ein neu erstellter Plan wird sofort gezeigt (nicht beim bloßen Laden der Seite)
+  if(s.plan!==runPlanRef){if(runPlanRef!==undefined&&s.plan)runViewOn=true;runPlanRef=s.plan||null}
   if(!has)runViewOn=false;
   tab.classList.toggle('hidden',!has);tab.setAttribute('aria-pressed',String(runViewOn));tab.textContent=runViewOn?'▤ Dokument zeigen':'▸ Umsetzung zeigen';
   document.body.classList.toggle('runview',runViewOn&&specMode!=='edit');
-  if(!runViewOn){if(runListEl.parentElement!==runListHome)runListHome.append(runListEl);box.replaceChildren();return}
+  if(!runViewOn){if(runListEl.parentElement!==runListHome)runListHome.append(runListEl);if(implOutEl.parentElement!==implOutHome)implOutHome.append(implOutEl);box.replaceChildren();return}
   const p=s.plan,single=r.items.length===1&&r.items[0].id==='Gesamt',{map,exact}=featTasks(),st=new Map(),mins=id=>{const t=p.tasks.find(x=>x.id===id);return t&&t.minutes>0?t.minutes:1};
   if(!single)for(const it of r.items)st.set(it.id,it.state);
   else{
@@ -3186,10 +3201,15 @@ function runFeatureUI(){
   const nDone=rows.filter(x=>x.state==='done').length,nRun=rows.filter(x=>x.state==='running'||x.state==='partial').length,nBad=rows.filter(x=>x.state==='failed').length;
   const head=node('div',undefined,'rvhead'),bar=node('div',undefined,'rvbar'),fill=node('i');
   fill.style.width=(rows.length?Math.round(100*(nDone+nRun*.4)/rows.length):0)+'%';bar.append(fill);
-  head.append(node('h2',r.active?'Umsetzung läuft':r.stopped?'Umsetzung gestoppt':nBad?'Umsetzung beendet – nicht alles abgeschlossen':'Umsetzung abgeschlossen'),
-    node('p',nDone+' von '+rows.length+' Features fertig'+(nRun?' · '+nRun+' in Arbeit':'')+(nBad?' · '+nBad+' nicht abgeschlossen':'')+' · '+dur(r.seconds)+' · '+(r.agents===1?'1 Agent':r.agents+' Agenten parallel'),'meta'),bar);
-  if(single&&r.active)head.append(node('p','Ein einzelner Agent arbeitet den ganzen Auftrag am Stück ab und meldet keinen Zwischenstand. Welches Feature gerade an der Reihe ist, ist deshalb nach der bisherigen Laufzeit geschätzt.','rvnote'));
-  if(!exact)head.append(node('p','Dieser Plan ordnet seine Arbeitsschritte den Features noch nicht ausdrücklich zu; die Zuordnung ist nach Stichworten geschätzt. Ein neu erstellter Plan ordnet sie genau zu.','rvnote'));
+  {const order=p.waves.flat(),tot=order.reduce((n,id)=>n+mins(id),0)||1,part=id=>{const x=st.get(id);return x==='done'?1:x==='running'?.5:0};
+   let pct=real?Math.round(100*order.reduce((n,id)=>n+part(id)*mins(id),0)/tot):0;if(real&&r.active)pct=Math.min(99,pct);
+   const num=node('div',undefined,'rvpnum'),segs=node('div',undefined,'rvsegs'),track=node('div',undefined,'rvtrack'),scale=node('div',undefined,'rvscale');
+   num.append(node('b',String(pct)),node('span','%'));
+   for(const id of order){const t=p.tasks.find(x=>x.id===id),sg=node('i',undefined,st.get(id)||'waiting');sg.style.flexGrow=String(mins(id));sg.title=id+' · '+(t?t.title:'')+' – '+(stateNames[st.get(id)||'waiting']||'');segs.append(sg)}
+   for(const v of [0,25,50,75,100])scale.append(node('span',String(v)));
+   track.append(segs,scale);bar.className='rvpct'+(real&&r.active?' live':'');bar.setAttribute('role','progressbar');bar.setAttribute('aria-valuemin','0');bar.setAttribute('aria-valuemax','100');bar.setAttribute('aria-valuenow',String(pct));bar.replaceChildren(num,track)}
+  head.append(node('h2',!real?(stale()?'Der Plan ist veraltet':'Der Plan steht – noch nicht umgesetzt'):r.active?'Umsetzung läuft':r.stopped?'Umsetzung gestoppt':nBad?'Umsetzung beendet – nicht alles abgeschlossen':'Umsetzung abgeschlossen'),
+    node('p',!real?plural(p.tasks.length,'Arbeitsschritt','Arbeitsschritte')+' in '+plural(p.waves.length,'Stufe','Stufen')+' · '+rows.length+' Features · '+(r.agents===1?'1 Agent':r.agents+' Agenten parallel'):nDone+' von '+rows.length+' Features fertig'+(nRun?' · '+nRun+' in Arbeit':'')+(nBad?' · '+nBad+' nicht abgeschlossen':'')+' · '+dur(r.seconds)+' · '+(r.agents===1?'1 Agent':r.agents+' Agenten parallel'),'meta'),bar);
   const grid=node('div',undefined,'rvgrid'),label={done:'fertig',running:'in Arbeit',partial:'teilweise fertig',waiting:'wartet',failed:'nicht abgeschlossen',none:'ohne Arbeitsschritt'};
   for(const [title,list] of [['Basis',rows.filter(x=>x.f.core)],['Erweiterungen',rows.filter(x=>!x.f.core)]]){
     if(!list.length)continue;grid.append(node('h3',title+' · '+list.filter(x=>x.state==='done').length+' von '+list.length+' fertig','rvgroup'));
@@ -3197,12 +3217,13 @@ function runFeatureUI(){
       const card=node('div',undefined,'rvcard '+x.state),top=node('div',undefined,'rvtop'),pb=node('div',undefined,'rvprog'),pf=node('i');
       top.append(node('span',undefined,'rvdot'),node('b',x.f.name),node('span',label[x.state],'rvstate'));
       pf.style.width=(x.ids.length?Math.round(100*x.done/x.ids.length):0)+'%';pb.append(pf);card.append(top,pb);
-      if(x.ids.length){const steps=node('div',undefined,'rvsteps');for(const id of x.ids){const t=p.tasks.find(y=>y.id===id),c=node('span',id,'rvstep '+(st.get(id)||'waiting'));c.title=(t?t.title:'')+' – '+(stateNames[st.get(id)||'waiting']||'');steps.append(c)}card.append(steps)}
+      if(x.ids.length){card.classList.add('more');card.tabIndex=0;card.setAttribute('role','button');card.title='Arbeitsschritte dieses Features '+(runCardOpen.has(x.f.id)?'ausblenden':'zeigen');const flip=()=>{runCardOpen.has(x.f.id)?runCardOpen.delete(x.f.id):runCardOpen.add(x.f.id);runFeatureUI()};card.onclick=flip;card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}}}
+      if(x.ids.length&&runCardOpen.has(x.f.id)){const steps=node('div',undefined,'rvsteps');for(const id of x.ids){const t=p.tasks.find(y=>y.id===id),c=node('span',id,'rvstep '+(st.get(id)||'waiting'));c.title=(t?t.title:'')+' – '+(stateNames[st.get(id)||'waiting']||'');steps.append(c)}card.append(steps)}
       grid.append(card);
     }
   }
   const used=new Set([...map.values()].flat()),rest=p.tasks.filter(t=>!used.has(t.id));
-  if(rest.length){grid.append(node('h3','Übergreifende Arbeitsschritte · '+rest.length,'rvgroup'));const wrap=node('div',undefined,'rvrest');for(const t of rest){const c=node('span',undefined,'rvstep '+(st.get(t.id)||'waiting'));c.append(node('b',t.id),' '+t.title);wrap.append(c)}grid.append(wrap)}
+  let restBox=null;if(rest.length){restBox=node('div',undefined,'rvrestbox');const wrap=node('div',undefined,'rvrest');for(const t of rest){const c=node('span',undefined,'rvstep '+(st.get(t.id)||'waiting'));c.append(node('b',t.id),' '+t.title);wrap.append(c)}restBox.append(node('p','Ohne Bezug zu einem einzelnen Feature · '+rest.length,'meta'),wrap)}
   // Vorbereitung und Organisation: was vor und neben der eigentlichen Programmierung geschieht
   const prep=node('div',undefined,'rvprep'),step=(label,text,state)=>{const x=node('div',undefined,'rvpstep '+(state||'done'));x.append(node('span',state==='off'?'–':state==='running'?'…':'✓','rvpmark'),node('b',label),node('span',text));prep.append(x)};
   const repo=(s.repo||'').trim(),lay=typeof chosenLayout==='function'?chosenLayout():null,started=r.items.some(x=>x.state!=='waiting');
@@ -3212,15 +3233,27 @@ function runFeatureUI(){
   step('Repository',repo?repo:'keines angegeben – gearbeitet wird nur im Zielordner',repo?'done':'off');
   step('Logo',s.logos[s.logoChosen]?'liegt als design/logo.svg im Zielordner':'keines gewählt',s.logos[s.logoChosen]?'done':'off');
   step('Layout-Entwurf',lay?'gewählter Entwurf liegt im Ordner design':'keiner gewählt',lay?'done':'off');
-  step('Agenten',(r.agents===1?'1 Agent, nacheinander':r.agents+' Agenten parallel')+(r.shell?' · dürfen Befehle ausführen (Tests, Build, Installation)':' · ohne Befehle'),started?'done':'running');
-  const sec=(title,el)=>{const w=node('section',undefined,'rvsec');w.append(node('h3',title,'rvgroup'),el);return w};
+  step('Agenten',(r.agents===1?'1 Agent, nacheinander':r.agents+' Agenten parallel')+(r.shell?' · dürfen Befehle ausführen (Tests, Build, Installation)':' · ohne Befehle'),!real?'off':started?'done':'running');
+  const sec=(title,el,info)=>{const w=node('details',undefined,'rvsec'),sm=node('summary');sm.append(node('span',title,'rvgroup'));if(info)sm.append(node('span',info,'meta'));w.open=runSecOpen.has(title);w.ontoggle=()=>{w.open?runSecOpen.add(title):runSecOpen.delete(title)};w.append(sm,el);return w};
   const slot=node('div',undefined,'rvlist'),acts=node('div',undefined,'rvacts');
   if(r.active)acts.append(button('■ Umsetzung stoppen','btn small',()=>$('runStop').click()));
-  acts.append(button('▤ Dokument zeigen','btn small',()=>{runViewOn=false;runFeatureUI()}));head.prepend(acts);
-  box.replaceChildren(head,sec('Vorbereitung und Organisation',prep),sec('Features',grid),sec(r.agents>1?'Agenten und Aufträge':'Auftrag',slot));
-  slot.append(runListEl);
+  if(!r.active&&!stale()&&s.finished!==finishKey()&&!$('finish').disabled)acts.append(button(s.nextStep==='run'?'▸ Plan freigeben und Umsetzung starten':'✓ Plan bestätigen und Dateien bereitstellen','btn small rvmain',()=>$('finish').click()));
+  if(real&&!r.active&&!$('runZip').classList.contains('hidden'))acts.append(button('↓ Implementierung (ZIP)','btn small rvmain',()=>$('runZip').click()),button('Ordner öffnen','btn small',()=>$('runOpen').click()));
+  acts.append(button('▤ Dokument zeigen','btn small',()=>{runViewOn=false;runFeatureUI();mainUI()}));head.prepend(acts);
+  const planSlot=node('div',undefined,'rvplan');
+  const agentInfo=real?r.items.filter(x=>x.state==='done').length+' von '+r.items.length+' Aufträgen fertig':'';
+  const plain=(title,el,info)=>{const w=node('section',undefined,'rvplain'),h=node('div',undefined,'rvplainhead');h.append(node('span',title,'rvgroup'));if(info)h.append(node('span',info,'meta'));w.append(h,el);return w};
+  // Agenten als schlanke Karten: woran jeder gerade arbeitet
+  let agentRow=null;
+  if(real){agentRow=node('div',undefined,'rvagents');
+    if(single){const it=r.items[0],c=node('div',undefined,'rvagent '+it.state);c.append(node('b','Agent 1'),node('span',it.state==='running'?'arbeitet den Gesamtauftrag ab · '+dur(it.seconds):stateNames[it.state]||it.state));agentRow.append(c)}
+    else for(let n=1;n<=r.agents;n++){const mine=r.items.filter(x=>x.agent===n),now=mine.find(x=>x.state==='running'),c=node('div',undefined,'rvagent '+(now?'running':'idle'));c.append(node('b','Agent '+n),node('span',now?now.id+' · '+now.title:r.active?'frei – wartet auf den nächsten Auftrag':'fertig'),node('span',mine.filter(x=>x.state==='done').length+' erledigt','meta'));agentRow.append(c)}}
+  if(restBox)slot.prepend(restBox);
+  box.replaceChildren(head,...(agentRow?[plain('Agenten',agentRow,agentInfo)]:[]),plain('Features',grid,nDone+' von '+rows.length+' fertig'+(nRun?' · '+nRun+' in Arbeit':'')+((single&&r.active)||!exact?' · Stand geschätzt':'')+' · Zeile anklicken für die Arbeitsschritte'),...(real||restBox?[sec('Alle Aufträge',slot,agentInfo||plural(rest.length,'übergreifender Schritt','übergreifende Schritte'))]:[]),sec('Vorbereitung und Organisation',prep,'Spezifikation, Plan, Zielordner, Repository …'),sec('Plan',planSlot,plural(p.tasks.length,'Arbeitsschritt','Arbeitsschritte')+' in '+plural(p.waves.length,'Stufe','Stufen')));
+  if(real)slot.append(runListEl);else if(runListEl.parentElement!==runListHome)runListHome.append(runListEl);
+  planSlot.append(implOutEl);
 }
-$('runTab').onclick=()=>{runViewOn=!runViewOn;runFeatureUI()};
+$('runTab').onclick=()=>{runViewOn=!runViewOn;runFeatureUI();mainUI()};
 $('specRail').addEventListener('click',()=>{if(runViewOn){runViewOn=false;runFeatureUI()}},true);
 function runUI(){
   const r=run,busyRun=!!(r&&r.active),list=runListEl;list.replaceChildren();
