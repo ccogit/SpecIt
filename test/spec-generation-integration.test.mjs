@@ -77,6 +77,7 @@ test('prepared result is reused with the exact project fingerprint',async()=>{
   const used=await generate(base,input);
   assert.equal(used?.preloaded,true);
   assert.match(used.markdown,/FR-001/);
+  await pause(1600); // existing foreground rate limit is 1500 ms
   const changed=await generate(base,{...input,idea:'Andere Idee'});
   assert.equal(changed?.preloaded,undefined);
  });
