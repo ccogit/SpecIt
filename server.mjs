@@ -16,7 +16,7 @@ import { validateRun, startRun, stopRun, runStatus, killAgents, targetDir, openD
 import { withSkills } from './skills.mjs';
 import { aiProfile, inferenceTimer } from './ai-performance.mjs';
 import { chapterGroups, partPrompt, joinParts, orderedChunks, outlinePrompt, cleanOutline } from './spec-parallel.mjs';
-import { resolveStrategy } from './spec-strategies.mjs';
+import { resolveStrategy, strategyIds } from './spec-strategies.mjs';
 import { SpecPreloadCache } from './spec-preload.mjs';
 import { anthropicMessageBody, enabledPromptCache, promptCacheTtl } from './anthropic-cache.mjs';
 import { generationBackends, streamChatCompletion, validateExternalCore } from './chat-backends.mjs';
@@ -57,8 +57,26 @@ const cliModel=process.env.CLAUDE_CODE_MODEL||'sonnet';
 // Claude Code wird auch mit API-Schlüssel gebraucht: Die direkte Umsetzung läuft immer über seine Agenten.
 const cliOk=process.env.SPECIT_NO_CLAUDE_CODE!=='1'&&await cli(['--version'],'',15000).then(()=>true,()=>false);
 const hasCli=!key&&cliOk;
+// Welches Modell tatsächlich arbeitet: Claude Code nimmt Kurznamen wie „sonnet“ an; die genaue Kennung steht erst in der Antwort.
+const cliVersion=cliOk?await cli(['--version'],'',15000).then(v=>(String(v).match(/\d+\.\d+\.\d+/)||[''])[0],()=>''):'';
+const exactModels={};
+const noteModel=(asked,exact)=>{if(typeof asked==='string'&&typeof exact==='string'&&/^[a-zA-Z0-9._:\/-]{3,120}$/.test(exact))exactModels[asked]=exact};
+// Aus mehreren abgerechneten Modellen (Claude Code nutzt nebenbei ein kleines) das angefragte heraussuchen
+const noteUsage=(asked,usage)=>{const ids=Object.keys(usage&&typeof usage==='object'?usage:{});const hit=ids.find(id=>id.includes(asked.replace(/^claude-/,'')))||(ids.length===1?ids[0]:'');if(hit)noteModel(asked,hit)};
+let gpuInfo=null;
+async function probeGpu(){
+ const b=externalBackends.gpu;if(!b)return;
+ const get=async(pathname,body)=>{const r=await fetch(b.origin+pathname,{method:body?'POST':'GET',headers:{'content-type':'application/json'},body:body?JSON.stringify(body):undefined,redirect:'error',signal:AbortSignal.timeout(4000)});if(!r.ok)throw Error('HTTP '+r.status);return r.json()};
+ const text=v=>typeof v==='string'?v.replace(/[^\p{L}\p{N} ._:\/+-]/gu,'').slice(0,60):'';
+ try{
+  // Ollama nennt Basismodell, Größe und Quantisierung; andere Server kennen diese Adressen nicht
+  const [show,version]=await Promise.all([get('/api/show',{model:b.model}),get('/api/version')]);
+  const info=show.model_info||{},d=show.details||{};
+  gpuInfo={server:'Ollama '+text(version.version),base:text(info['general.base_model.0.name']||info['general.basename']||d.family),size:text(d.parameter_size),quant:text(d.quantization_level),modified:text(show.modified_at).slice(0,10)};
+ }catch{gpuInfo={server:'lokaler Server '+new URL(b.origin).host}}
+}
 const preloads=new SpecPreloadCache();
-const externalBackends=generationBackends(process.env);
+const externalBackends=generationBackends(process.env);probeGpu();
 const startNow="\n\nSchreibe sofort los, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „#“ der Hauptüberschrift; die Gedankenarbeit geschieht beim Schreiben, Abschnitt für Abschnitt.",startJson="\n\nAntworte sofort, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „{“.";
 const meter=new AsyncLocalStorage();meterReady=true;const wordsOf=t=>(String(t).match(/\S+/g)||[]).length;
 const profileFor=(use='')=>{
@@ -75,7 +93,7 @@ async function askRaw(instruction,data,maxTokens,use='',signal){
  if(!key){
   let r;try{r=JSON.parse(await cli(['-p','--output-format','json','--system-prompt',system,'--tools','','--strict-mcp-config','--no-session-persistence','--disable-slash-commands','--model',profile.model],content,240000,signal))}catch(e){throw e instanceof SyntaxError?Error('Claude Code hat eine unlesbare Antwort geliefert.'):e}
   if(r.is_error||typeof r.result!=='string'||!r.result.trim())throw Error('Claude Code hat keine Antwort geliefert. Anmeldung und Kontingent prüfen.');
-  metric.tokens(r.usage);ok=true;return r.result;
+  noteUsage(profile.model,r.modelUsage);metric.tokens(r.usage);ok=true;return r.result;
  }
  const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify(anthropicMessageBody({model:profile.model,maxTokens,effort:profile.effort,system,instruction,data,cache:enabledPromptCache(process.env),ttl:promptCacheTtl(process.env)})),signal:signal?AbortSignal.any([AbortSignal.timeout(120000),signal]):within(90000)});
  if(!response.ok)throw Error('Claude API: HTTP '+response.status+'. Schlüssel, Modell und Kontingent prüfen.');
@@ -244,7 +262,8 @@ function askStreamRaw(instruction,data,maxTokens,onText,use='',signal){
     let m;try{m=JSON.parse(row)}catch{continue}
     const d=m.type==='stream_event'&&m.event?.type==='content_block_delta'&&m.event.delta?.type==='text_delta'?m.event.delta.text:'';
     if(d){metric.firstToken();text+=d;onText(d)}
-    if(m.type==='result'){failed=m.is_error===true;if(typeof m.result==='string')result=m.result}
+    if(m.type==='stream_event'&&m.event?.type==='message_start')noteModel(profile.model,m.event.message?.model);
+    if(m.type==='result'){failed=m.is_error===true;noteUsage(profile.model,m.modelUsage);if(typeof m.result==='string')result=m.result}
    }
   });
   child.on('error',()=>finish(reject,Error('Claude Code konnte nicht gestartet werden.')));
@@ -324,6 +343,17 @@ async function codexModels(){
   return (Array.isArray(j.models)?j.models:[]).filter(m=>m&&m.visibility==='list'&&/^[\w.-]{1,60}$/.test(m.slug||'')).sort((a,b)=>(a.priority||99)-(b.priority||99)).slice(0,12)
    .map((m,i)=>({id:m.slug,name:String(m.display_name||m.slug).slice(0,60),note:String(m.description||'').slice(0,160),preferred:i===0}));
  }catch{return []}
+}
+// Je Strategie: Modell, das die Spezifikation schreibt, mit allem, was SpecIt darüber weiß
+function usedModels(){
+ const out={},via=key?'Anthropic-API':hasCli?'Claude Code'+(cliVersion?' '+cliVersion:''):'';
+ for(const id of strategyIds){
+  if(id==='gpu'){const b=externalBackends.gpu;if(b)out.gpu={name:b.model,local:true,...(gpuInfo||{})};continue}
+  if(!key&&!hasCli)continue;
+  const p=aiProfile('final',process.env,key?model:cliModel,id),exact=exactModels[p.model]||(/^claude-.*\d/.test(p.model)?p.model:''),known=claudeModels.find(m=>(exact||p.model).startsWith(m.id));
+  out[id]={name:known?known.name:exact||p.model,id:exact,asked:p.model,via,...(p.effort?{effort:p.effort}:{})};
+ }
+ return out;
 }
 const reviewers=[...(key?[{id:'claude',name:'Claude',models:[claudeModels.find(m=>m.id===model)||{id:model,name:model}]}]:cliOk?[{id:'claude',name:'Claude',models:claudeModels}]:[]),...(codexOk?[{id:'codex',name:'Codex',models:await codexModels()}]:[])];
 // Neues Repository auf GitHub anlegen: über die GitHub-CLI mit der Anmeldung des Nutzers, leer und standardmäßig privat
@@ -534,7 +564,8 @@ http.createServer(async(req,res)=>{
   return res.end(req.url==='/'?html:modules[req.url]);
  }
  if(req.method==='GET'&&req.url==='/api/alive')return alive(req,res);
- if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,gpu:!!externalBackends.gpu,diffusion:!!externalBackends.diffusion,stitch:!!stitchKey(),agents:cliOk,agentSkill,reviewers,models:cliOk?claudeModels:[],github:ghOk,projectsDir,pathSep:path.sep});
+ if(req.method==='GET'&&req.url==='/api/models')return send(res,200,usedModels());
+ if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,gpu:!!externalBackends.gpu,specModels:usedModels(),stitch:!!stitchKey(),agents:cliOk,agentSkill,reviewers,models:cliOk?claudeModels:[],github:ghOk,projectsDir,pathSep:path.sep});
  if(req.method==='GET'&&req.url==='/api/run')return send(res,200,{...runStatus(),calib:calibInfo()});
  if(req.method==='GET'&&req.url.startsWith('/api/layout/file?')){
   const query=new URL(req.url,'http://'+host).searchParams,name=query.get('name');
@@ -600,11 +631,11 @@ http.createServer(async(req,res)=>{
   const head=()=>res.writeHead(200,{'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
   const row=o=>res.write(JSON.stringify(o)+'\n');
   if(!data.ai){head();row({done:true,...demo(data)});return res.end()}
-  let strategy;try{strategy=resolveStrategy(data.strategy,{hasApi:!!key||hasCli,hasGpu:!!externalBackends.gpu,hasDiffusion:!!externalBackends.diffusion,legacyParallel:process.env.SPECIT_PARALLEL_SPEC==='1'})}
+  let strategy;try{strategy=resolveStrategy(data.strategy,{hasApi:!!key||hasCli,hasGpu:!!externalBackends.gpu,legacyParallel:process.env.SPECIT_PARALLEL_SPEC==='1'})}
   catch(e){return send(res,400,{error:e.message})}
   meter.getStore().strategy=strategy.id;
   if(strategy.id==='preload'){try{preloads.key(data.preloadToken,data)}catch(e){return send(res,400,{error:e.message})}}
-  if(!key&&!hasCli&&!['gpu','diffusion'].includes(strategy.id))return send(res,503,{error:'Kein Claude-Zugang: ANTHROPIC_API_KEY setzen oder Claude Code installieren und anmelden.'});
+  if(!key&&!hasCli&&strategy.id!=='gpu')return send(res,503,{error:'Kein Claude-Zugang: ANTHROPIC_API_KEY setzen oder Claude Code installieren und anmelden.'});
   if(busy||Date.now()-lastAI<1500)return send(res,429,{error:'Analyse läuft oder wurde gerade begonnen. Bitte erneut versuchen.'});
   sketchAbort?.abort();busy=true;lastAI=Date.now();watch(res);head();
   // Bausteine: Rahmen und übertragbare Abschnitte stehen ohne KI fest; Claude schreibt nur den projektspezifischen Kern dazwischen.
@@ -633,11 +664,13 @@ http.createServer(async(req,res)=>{
     row({done:true,source:'claude',strategy:'structured',markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
     return;
    }
-   // Experimental alternatives: local GPU model or hosted text-diffusion provider.
-   if(strategy.id==='gpu'||strategy.id==='diffusion'){
-    const backend=externalBackends[strategy.id];
+   // Lokales Modell über einen OpenAI-kompatiblen Server (z. B. Ollama)
+   if(strategy.id==='gpu'){
+    const backend=externalBackends.gpu;
     const text=await streamChatCompletion({
-     backend,system,instruction:withSkills('final',finalPrompt(data)+conceptNote(data)+'\nReferenziere in „Funktionale Anforderungen“ jeden ausgewählten Feature-Namen aus features mindestens einmal wörtlich.')+corePrompt(frame),
+     backend,system,instruction:withSkills('final',finalPrompt(data)+conceptNote(data)+'\nReferenziere in „Funktionale Anforderungen“ jeden ausgewählten Feature-Namen aus features mindestens einmal wörtlich.')+corePrompt(frame)
+      // Kleine lokale Modelle schreiben sonst die festen Abschnitte ab und lassen dafür eigene Kapitel aus
+      +'\n\nWichtig für die Form: Jede Überschrift beginnt mit genau zwei Rautenzeichen („## Titel“), nie mit „# ##“. Schreibe genau die acht genannten Kapitel in der genannten Reihenfolge und höre nach „## Projektspezifische Risiken“ auf. Die Abschnitte aus fixedSections ('+frame.titles.join('; ')+') schreibst du nicht.',
      data:{...brief(data),fixedSections:frame.tail},maxTokens:16000,
      onText:t=>row({t}),signal:currentAbort?.signal,store:meter.getStore()
     });
@@ -732,7 +765,7 @@ http.createServer(async(req,res)=>{
  }
  // Hintergrund-Spur: Ableitungen, die nichts am Dokument ändern (Namen, Logos, Schaubilder), laufen neben der Vordergrund-Anfrage
  // und nebeneinander – mit eigenem Abbruchsignal, höchstens vier zugleich. So wartet der Nutzer nicht nacheinander auf jede einzelne.
- if(background&&['names','logos','flow','arch','proto'].includes(data.mode)){
+ if(background&&['names','logos','flow','arch','proto','extend'].includes(data.mode)){
   if(bgRunning>=4)return send(res,429,{error:'Zu viele Hintergrund-Anfragen. Bitte gleich erneut versuchen.'});
   const ac=new AbortController();res.on('close',()=>{if(!res.writableEnded)ac.abort()});
   Object.defineProperty(meter.getStore(),'signal',{value:ac.signal,enumerable:false});bgRunning++;

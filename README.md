@@ -46,7 +46,7 @@ Setze `STITCH_API_KEY` in `.env` (oder in der Umgebung) und starte neu. Bei der 
 
 ## Ablauf
 
-Leitidee: so wenig eigener Prompt-Text wie möglich. Ein Satz genügt; alles Weitere wird erfragt und lässt sich per Klick beantworten. Die Oberfläche führt durch vier Schritte, die über die Leiste oben jederzeit erreichbar sind.
+Leitidee: so wenig eigener Prompt-Text wie möglich. Ein Satz genügt; alles Weitere wird erfragt und lässt sich per Klick beantworten. Alles geschieht in einer einzigen Ansicht: Links entsteht das Ergebnis – oben die Idee mit dem live mitwachsenden Konzept, darunter die Fragen, dann die Spezifikation und am Ende Plan und Lauf der Umsetzung. Rechts stehen alle Festlegungen als aufklappbare Bereiche: Einstellungen, Name, Layout und Logo, Features, Entscheidungen, Review, Open-Source-Bausteine und – sobald es eine Spezifikation gibt – die Umsetzung. Die Leiste oben zeigt den Stand von Idee, Spezifikation und Umsetzung und führt per Klick zur passenden Stelle; der Knopf unten rechts nennt immer den nächsten sinnvollen Schritt. Die folgenden Abschnitte beschreiben die Teile dieser Ansicht der Reihe nach (die Überschriften „Schritt“ bezeichnen keine getrennten Seiten mehr).
 
 **↺ Zurücksetzen** in der Kopfzeile leert mit einem Klick alles Angegebene und Beantwortete (Projektname, Idee, Modus, Dauer, Antworten, Spezifikation, Agent Tasks) – ohne Rückfrage, dafür 20 Sekunden lang über „Rückgängig“ widerrufbar.
 
@@ -75,7 +75,7 @@ Die Kopfzeile zeigt Projektname und die vier Schritte. Eine feste Leiste am unte
 
 2. **Fragen** – SpecIt leitet aus dem Satz Fragen zu Ziel, Nutzern, Funktionen, UX, Technik und Qualität ab. Jede Frage hat 2–5 Antwortoptionen, eine davon als begründeter Standard vorausgewählt. Bestätigen per Klick oder Tastatur (`1`–`5` wählen, `Enter` übernehmen), „Alle Standards übernehmen“ beantwortet alle offenen Fragen auf einmal, „Eigene Antwort“ und „Eigene Anforderung ergänzen“ sind die Ausnahme für Freitext. Gibt es eine Kurzfassung, sind ihre markierten Stellen die ersten Fragen (Thema = Abschnitt, Standard = die Annahme im Text); Claude ergänzt nur, was für eine umsetzbare Spezifikation noch fehlt, bis zu 14 insgesamt, und formuliert Stichwort-Fragen zu ganzen Sätzen aus. Kurzfassung und Fragen bleiben in beide Richtungen synchron: Eine Wahl im Text entscheidet die Frage, eine Antwort auf die Frage färbt die Stelle im Text. Mit Claude sind die Fragen auf die Idee zugeschnitten und lassen sich nachschärfen („Weitere Fragen ableiten“); die Demo nutzt einen allgemeinen Fragenkatalog.
    - Die **Pegelanzeige „Minimal-Konzept“** zeigt nach jeder Antwort, wie viel des implementierungsfähigen Minimal-Konzepts steht: sechs Themen-Segmente, jedes gefüllt nach dem Anteil seiner beantworteten Fragen; 100 % = alle Themen gedeckt.
-   - Die **Bilanz** in der Kopfzeile stellt den Input nach Quelle dem Output nach Artefakt gegenüber: Nutzer (getippte Wörter, Klicks, eigene Festlegungen), Standard (übernommene Standardantworten und der feste Kontext von SpecIt in den Anfragen an die KI) und KI (erzeugte Zwischenergebnisse) – gegenüber Spezifikation, Aufträgen und, bei direkter Umsetzung, den Dateien und Zeilen im Zielordner nach Art (Code, Tests, Dokumentation …). Ein Klick öffnet die Übersicht in drei Spalten: der eigene Input, das Zwischenergebnis der KI (mit dem, was SpecIt an Standards und festem Kontext beisteuert) und der Output. Wird es neben der Navigation eng, fallen erst die Zusatzzahlen weg, dann die ganze Leiste.
+   - Die **Bilanz** in der Kopfzeile stellt den Input nach Quelle dem Output nach Artefakt gegenüber: Nutzer (getippte Wörter, Klicks, eigene Festlegungen), Standard (übernommene Standardantworten und der feste Kontext von SpecIt in den Anfragen an die KI) und KI (erzeugte Zwischenergebnisse) – gegenüber Spezifikation, Aufträgen und, bei direkter Umsetzung, den Dateien und Zeilen im Zielordner nach Art (Code, Tests, Dokumentation …). Ein Klick öffnet die Übersicht in drei Spalten: der eigene Input, die Verarbeitung durch KI und SpecIt (Zwischenergebnisse der KI, Standards und fester Kontext) und der Output. Wird es neben der Navigation eng, fallen erst die Zusatzzahlen weg, dann die ganze Leiste.
    - Rechts wächst die Spezifikation live mit. Einzeln bestätigte Antworten gelten als entschieden, per Sammelaktion übernommene Standards bleiben als „Annahme (Standard)“ gekennzeichnet, offene Fragen erscheinen als offene Entscheidungen.
 3. **Spezifikation** – konsolidierten Entwurf erzeugen und als formatiertes Dokument lesen („Ansicht“); über „Bearbeiten“ auf den Markdown-Editor umschalten, als SPEC.md laden. Die Antwort kommt als Strom und beginnt nach gut einer Sekunde. Jede erzeugte Spezifikation beginnt mit einem **Inhaltsverzeichnis**, dessen Einträge in der Ansicht und auf GitHub zu den Abschnitten springen; nach Änderungen über den Katalog wird es neu gebildet.
    - **Bausteine:** Die Spezifikation besteht aus drei Teilen. Ohne KI stehen sofort da: Titel, Idee, Rahmen, die Feature-Liste, die Entscheidungen und Annahmen, die offenen Entscheidungen sowie übertragbare Abschnitte – nichtfunktionale Standards mit Abnahme (NFR-901 ff., je nach Zieldauer 3 bis 11), Betrieb und Übergabe, Standard-Risiken, Abnahme (`blocks.mjs`). Claude schreibt nur den projektspezifischen Kern dazwischen: Ziel und Nicht-Ziele, Nutzer, Kernabläufe, funktionale Anforderungen, projektspezifische Zusatzanforderungen, UX, Daten und Schnittstellen, Risiken. Die Kurzfassung der Idee-Seite geht als Grundlage ein.
@@ -88,6 +88,7 @@ Die Kopfzeile zeigt Projektname und die vier Schritte. Eine feste Leiste am unte
    - **Name, Layout und Logo** stehen als Gruppe in der rechten Spalte; ausgeschaltete Teile sind ausgegraut und lassen sich dort einschalten.
    - **Umfang zuerst:** Bevor die Spezifikation geschrieben wird, legt SpecIt aus Idee und Entscheidungen die Feature-Liste mit Aufwand fest und prüft sie gegen die Zielzeit. Passt der Umfang nicht, steht sofort ein Vorschlag bereit. Erst wenn Auswahl und Zielzeit stimmen, entsteht mit „Spezifikation erstellen“ die Spezifikation – für genau diese Features. So wird kein Konzept geschrieben, das danach gekürzt und neu geschrieben werden müsste. Geschrieben wird die Spezifikation nie von selbst, auch nicht im Auto-Modus: Nach dem Ermitteln des Umfangs pulsiert „Spezifikation erstellen“; wer trotz Überschreitung der Zielzeit schreiben lässt, bestätigt das ausdrücklich.
    - **Freie Zeit nutzen:** Liegt die geschätzte Dauer spürbar unter der Zielvorgabe (mindestens 10 % frei), ergänzt Claude auf Knopfdruck weitere nützliche Features, die zusätzlich hineinpassen. Sie kommen als abwählbare Erweiterungen dazu, gekennzeichnet als Vorschlag der KI; eingearbeitet werden sie erst mit „Spezifikation aktualisieren“ – meist wird mehrfach ergänzt, bis die Zielzeit ausgeschöpft ist.
+   - **Vorrat an Vorschlägen:** Solange in der Zielzeit Luft ist, holt SpecIt im Hintergrund weitere Feature-Vorschläge und hält sie bereit, bis sich die freie Zeit damit füllen ließe (höchstens fünf Abrufe, höchstens 20 Vorschläge). Ein Klick auf das freie Stück des Zeitstrahls übernimmt dann sofort, was hineinpasst; der Tooltip nennt die bereitliegenden Vorschläge. Danach wird der Vorrat wieder aufgefüllt.
    - **Sofort-Vorschlag für die Zielzeit:** Schon beim Ermitteln der Features liefert Claude je Feature eine Schlank-Fassung (was bleibt, was entfällt, wie lange sie dauert) und einen Rang. Daraus entsteht der Vorschlag für die Zielzeit ohne weiteren KI-Aufruf – auch live, wenn die Zielvorgabe im Feld „Features“ verschoben wird. Claude wird nur noch gefragt, wenn auch die Schlank-Fassungen nicht reichen.
    - **Name der Anwendung:** Eine eigene Karte über der Spezifikation zeigt den gewählten Namen und die Vorschläge und nimmt einen eigenen Namen entgegen. Die Vorschläge entstehen schon mit dem Umfang, damit der Name gleich in der Spezifikation steht.
    - Vor dem Erstellen müssen alle Entscheidungen getroffen sein. Sind welche offen, fragt SpecIt nach: Entweder trifft die KI sie (vorgeschlagener Standard, als Annahme gekennzeichnet), oder man bricht ab – dann sind die Stellen, an denen noch etwas fehlt, rot markiert.
@@ -191,7 +192,6 @@ Auf der Seite **Spezifikation** steht ein Dropdown mit mehreren Strategien:
 | **Intelligent** (Voreinstellung) | Bestehender Weg: Bei einer Änderung nur betroffene Kapitel/Einträge aktualisieren; bei einer neuen Spezifikation seriell alles generieren. | Claude Code oder Anthropic API |
 | **Vorbereitet** (experimentell) | Wenn Idee, Features und Entscheidungen stabil sind, die vollständige Spezifikation bereits auf der Spezifikationsseite berechnen; beim Klick die passende gespeicherte Version übernehmen. | Anthropic API |
 | **GPU lokal** (experimentell) | Vollständige Erstellung über einen lokal laufenden OpenAI-kompatiblen GPU-Inferenzserver, z. B. vLLM. | Lokales Modell + Server |
-| **Diffusion** (experimentell) | Vollständige Erstellung über ein Mercury-Diffusion-Modell. | Inception-API-Schlüssel |
 | **Strukturiert** (experimentell) | Fachliche Inhalte als kompaktes JSON erzeugen; SpecIt baut acht Kapitel, FR-/NFR-IDs und Abnahmekriterien deterministisch. | Claude Code oder Anthropic API |
 | **Klassisch** | Bei jedem Klick den gesamten projektspezifischen Kern neu schreiben, immer sequentiell mit dem konfigurierten Standardmodell (kein Delta, kein schnelleres Modell). | Claude Code oder Anthropic API |
 | **Parallel** (experimentell) | Den vollständigen Kern mit drei parallelen Modellaufrufen schreiben, Ergebnis in Kapitelreihenfolge zusammenführen. | Anthropic API |
@@ -284,24 +284,25 @@ Welche Modelle/Quantisierungen im tatsächlichen VRAM funktionieren,
 muss auf dem Zielrechner erprobt werden. SpecIt selbst startet keinen
 GPU-Server und kann eine fehlende GPU nicht simulieren.
 
-### Text-Diffusion über Inception Mercury (experimentell)
+Die Strategie ersetzt nur den finalen Spezifikationsaufruf. Für die vorgelagerten
+Claude-Funktionen (Fragen/Features) ist weiterhin ein Anthropic-API- oder
+Claude-Code-Zugang erforderlich. Für den Vergleich gilt `npm run bench -- 3 gpu`.
 
-Nach Eintrag von `SPECIT_INCEPTION_API_KEY` erscheint die Strategie
-**Diffusion**. Voreingestellt ist `mercury-3`; über
-`SPECIT_INCEPTION_MODEL` kann ein anderes für das Konto freigeschaltetes
-Modell ausgewählt werden. Der Endpoint ist serverseitig fest auf
-`https://api.inceptionlabs.ai/v1/chat/completions` beschränkt.
-Es wird das OpenAI-kompatible Streaming-Protokoll verwendet. Modellkosten
-und Betriebsbedingungen sind beim Anbieter zu prüfen. **Wichtig:** Inception
-kündigt auf seiner aktuellen API-Startseite die Einstellung des bisherigen
-API-Dienstes zum 28. Dezember 2026 an. Die Anbindung ist daher zunächst
-ein Benchmark-Experiment, keine langfristige Produktionsabhängigkeit.
+Mit Ollama genügt in `.env`: `SPECIT_GPU_BASE_URL=http://127.0.0.1:11434/v1` und
+`SPECIT_GPU_MODEL=<Modellname>`. Das Modell braucht ein Kontextfenster von
+mindestens 16.384 Tokens (eigene Variante per Modelfile mit `num_ctx`).
+Gemessen auf einer RTX 5080 mit Qwen3.5 9B (Q4_K_M): 17 bis 27 Sekunden je
+Spezifikation; Form und Akzeptanzkriterien stimmen, das Deutsch ist schwächer
+als bei Claude. Text-Diffusionsmodelle (lokal Dream 7B, gehostet Mercury) wurden
+erprobt und wieder entfernt: Das lokale Modell lieferte keine brauchbaren Texte.
 
-Beide alternativen Strategien ersetzen nur den finalen Spezifikationsaufruf.
-Für die vorgelagerten Claude-Funktionen (Fragen/Features) ist derzeit weiterhin
-ein Anthropic-API- oder Claude-Code-Zugang erforderlich; GPU/Diffusion allein
-ersetzen diese Vorstufen noch nicht. Für den Vergleich gilt
-`npm run bench -- 3 gpu` beziehungsweise `npm run bench -- 3 diffusion`.
+### Verwendetes Modell
+
+Neben der Strategie-Auswahl steht, welches Modell die gewählte Strategie
+tatsächlich benutzt: bei Claude die genaue Modellkennung (sie steht nach dem
+ersten Aufruf fest, vorher der eingestellte Name) samt Zugang und Version von
+Claude Code, beim lokalen Modell Name, Basismodell, Größe, Quantisierung und
+die Version des Servers.
 
 ### Kompakte strukturierte Generierung (experimentell)
 
@@ -321,15 +322,3 @@ Streaming-Markdown-Modus erscheint die fertige Textstruktur erst nach
 Abschluss des JSON-Aufrufs. Das Verfahren verwendet die bestehende
 Claude-Anbindung und benötigt keine zusätzliche Hardware.
 
-#### Alternative Diffusion-Anbindung über OpenRouter
-
-Für die Diffusion-Strategie kann statt der direkten Inception-API
-`SPECIT_DIFFUSION_PROVIDER=openrouter` gesetzt werden. Dazu
-`SPECIT_OPENROUTER_API_KEY` und optional
-`SPECIT_DIFFUSION_MODEL=inception/mercury-3` konfigurieren. Die
-Anwendung verwendet dann den festen Endpoint
-`https://openrouter.ai/api/v1/chat/completions`.
-Die Host-Auswahl ist bewusst auf `inception` und `openrouter` begrenzt;
-Benutzereingaben können keine Netzwerkziele bestimmen.
-Auch diese Variante muss mit der tatsächlich verfügbaren Modell-ID und
-deren Streaming-Verhalten getestet werden.

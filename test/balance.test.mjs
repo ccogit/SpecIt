@@ -42,5 +42,7 @@ test('outputs follow the chosen way: download lists files, direct implementation
   assert.deepEqual(run.outputs.map(o => o.key), ['spec', 'brand', 'plan', 'code']);
   assert.equal(run.outputs[3].value, 12);
   assert.deepEqual(run.outputs[3].groups.map(g => g.label), ['Code', 'Dokumentation']);
-  assert.equal(run.outputs[1].value, 2);
+  assert.equal(run.outputs[1].value, 3, 'the name counts as a result next to the two logos');
+  assert.equal(run.outputs[1].unit, 'Ergebnisse');
+  assert.equal(balance({ name: 'Notizio', logos: 1 }).outputs[0].detail, 'Name „Notizio“ · 1 Logo-Entwurf');
 });

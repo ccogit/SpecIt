@@ -1,11 +1,14 @@
-/** OpenAI-compatible streaming backend for local GPU inference and text diffusion. */
+/** OpenAI-compatible streaming backend for local GPU inference. */
 import { inferenceTimer } from './ai-performance.mjs';
 import { splitChapters } from './blocks.mjs';
 import { chapterGroups } from './spec-parallel.mjs';
 
 /** Structural gate for experimental non-Claude output, not a semantic guarantee. */
 export function validateExternalCore(content, features = []) {
- const sections=splitChapters(content),wanted=chapterGroups.flat();
+ // Kleine lokale Modelle setzen gern ein zweites Rautenzeichen vor die Überschrift („# ## Titel“) und hängen
+ // Kapitel an, die SpecIt selbst ergänzt. Beides wird bereinigt, statt die ganze Antwort zu verwerfen.
+ const wanted=chapterGroups.flat(),sections=splitChapters(String(content).replace(/^#\s+(##\s)/gm,'$1'));
+ if(sections.chapters.length>wanted.length)sections.chapters=sections.chapters.filter(c=>wanted.includes(c.title));
  if(sections.intro.trim()||sections.chapters.length!==wanted.length
     ||sections.chapters.some((c,i)=>c.title!==wanted[i]||!c.body.trim()))
    throw Error('Der Inferenzdienst hat keine vollständige Kapitelstruktur geliefert.');
@@ -26,7 +29,8 @@ const modelId = v => typeof v === 'string' && /^[a-zA-Z0-9._:/-]{1,120}$/.test(v
 
 export function generationBackends(env = process.env) {
   let gpu = null;
-  if (modelId(env.SPECIT_GPU_MODEL)) {
+  const model = modelId(env.SPECIT_GPU_MODEL);
+  if (model) {
     try {
       const base = new URL(env.SPECIT_GPU_BASE_URL || 'http://127.0.0.1:8000/v1/');
       if (!['http:','https:'].includes(base.protocol)
@@ -34,33 +38,21 @@ export function generationBackends(env = process.env) {
         || !['/v1','/v1/'].includes(base.pathname)
         || base.username || base.password || base.search || base.hash)
         throw Error('GPU-Endpunkt muss ein lokaler OpenAI-kompatibler /v1-Server sein.');
-      const endpoint = new URL(base.origin + '/v1/chat/completions');
-      gpu = { transport:'gpu', endpoint:endpoint.href, model:env.SPECIT_GPU_MODEL, key:env.SPECIT_GPU_API_KEY || '' };
-    } catch { /* invalid local endpoint is disabled, never silently redirected */ }
+      gpu = { transport:'gpu', endpoint:base.origin + '/v1/chat/completions', origin:base.origin, model, key:env.SPECIT_GPU_API_KEY || '' };
+    } catch { /* Ungültige lokale Endpunkte bleiben deaktiviert. */ }
   }
-  const provider=env.SPECIT_DIFFUSION_PROVIDER||'inception';
-  const allowed=['inception','openrouter'].includes(provider);
-  const key=provider==='openrouter'?env.SPECIT_OPENROUTER_API_KEY:env.SPECIT_INCEPTION_API_KEY;
-  const selectedModel=provider==='openrouter'
-    ?env.SPECIT_DIFFUSION_MODEL||'inception/mercury-3'
-    :env.SPECIT_INCEPTION_MODEL||'mercury-3';
-  const diffusion = allowed&&key&&modelId(selectedModel)
-    ? {transport:'diffusion',endpoint:provider==='openrouter'
-         ?'https://openrouter.ai/api/v1/chat/completions'
-         :'https://api.inceptionlabs.ai/v1/chat/completions',
-       model:selectedModel,key}
-    : null;
-  return {gpu,diffusion};
+  return {gpu};
 }
 
 /** Consumes OpenAI Chat Completions SSE events. Skips reasoning-only deltas. */
 export async function streamChatCompletion({ backend, system, instruction, data, maxTokens = 16000,
   onText = () => {}, signal, store, request = fetch }) {
-  if (!backend || !['gpu','diffusion'].includes(backend.transport)) throw Error('Kein Inferenz-Backend konfiguriert.');
+  if (!backend || backend.transport !== 'gpu') throw Error('Kein Inferenz-Backend konfiguriert.');
   const timer = inferenceTimer(store,{model:backend.model,transport:backend.transport,streaming:true});
   let ok = false, output = '', buffer = '', stop = '', ended = false;
   try {
-    const body = { model:backend.model,max_tokens:maxTokens,stream:true,
+    // Lokale Server (z. B. Ollama) nehmen ohne Angabe Temperatur 1,0 – für formtreue Kapitel zu hoch
+    const body = { model:backend.model,max_tokens:maxTokens,stream:true,temperature:0.35,top_p:0.9,
       stream_options:{include_usage:true},
       messages:[{role:'system',content:system},
         {role:'user',content:instruction+'\n\nProjektdaten (JSON):\n'+JSON.stringify(data)}] };

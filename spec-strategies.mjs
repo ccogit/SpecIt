@@ -7,17 +7,15 @@ const descriptors = {
   parallel: { full: true, parallel: true, label: 'Parallel' },
   turbo: { full: true, parallel: true, label: 'Turbo' },
   gpu: { full: true, parallel: false, label: 'GPU lokal' },
-  diffusion: { full: true, parallel: false, label: 'Diffusion' },
 };
 export const strategyIds = Object.freeze(Object.keys(descriptors));
 
 /** hasApi = Claude ist erreichbar – über einen API-Schlüssel oder über das lokal angemeldete Claude Code. */
 /** Reject unknown explicit strategies. Old clients without a strategy retain the prior setting. */
-export function resolveStrategy(raw, { hasApi = false, hasGpu = false, hasDiffusion = false, legacyParallel = false } = {}) {
+export function resolveStrategy(raw, { hasApi = false, hasGpu = false, legacyParallel = false } = {}) {
   const id = raw == null || raw === '' ? (legacyParallel ? 'parallel' : 'incremental') : raw;
   if (!Object.hasOwn(descriptors, id)) throw Error('Unbekannte Generierungsstrategie.');
   if ((descriptors[id].parallel || id === 'preload') && !hasApi) throw Error('Die Strategie ' + descriptors[id].label + ' erfordert Claude: einen Anthropic-API-Schlüssel oder ein angemeldetes Claude Code.');
   if (id==='gpu' && !hasGpu) throw Error('Lokaler GPU-Inferenzserver ist nicht konfiguriert.');
-  if (id==='diffusion' && !hasDiffusion) throw Error('Diffusion-Anbieter ist nicht konfiguriert.');
   return { id, ...descriptors[id] };
 }

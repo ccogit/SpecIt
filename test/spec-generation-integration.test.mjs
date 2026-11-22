@@ -16,7 +16,7 @@ async function freePort(){
 async function serverSession(run){
  const port=await freePort(),base='http://127.0.0.1:'+port;
  const env={...process.env,PORT:String(port),SPECIT_NO_CLAUDE_CODE:'1',SPECIT_NO_CODEX:'1',SPECIT_NO_GITHUB:'1',
-  SPECIT_KEEP_RUNNING:'1',ANTHROPIC_API_KEY:'mock-key',SPECIT_INCEPTION_API_KEY:'mock-key',
+  SPECIT_KEEP_RUNNING:'1',ANTHROPIC_API_KEY:'mock-key',
   SPECIT_GPU_MODEL:'Qwen/Qwen3-8B',SPECIT_PROMPT_CACHE:'1'};
  const cp=spawn(process.execPath,['--import',new URL('./mock-remote.mjs',import.meta.url).href,'server.mjs'],
   {cwd:fileURLToPath(new URL('../',import.meta.url)),env,stdio:['ignore','pipe','pipe']});
@@ -55,11 +55,11 @@ async function generate(base,value){
  const error=rows.find(row=>row.error);if(error)throw Error(error.error);
  return rows.find(row=>row.done);
 }
-test('mocked end-to-end spec generation: classic, parallel, structured, local GPU and diffusion',async()=>{
+test('mocked end-to-end spec generation: classic, parallel, structured, and local GPU',async()=>{
  await serverSession(async base=>{
   const status=await (await fetch(base+'/api/status')).json();
-  assert.equal(status.gpu,true);assert.equal(status.diffusion,true);
-  for(const strategy of ['classic','parallel','structured','gpu','diffusion']){
+  assert.equal(status.gpu,true);assert.equal(status.specModels.gpu.name,'Qwen/Qwen3-8B');assert.ok(status.specModels.classic.name);
+  for(const strategy of ['classic','parallel','structured','gpu']){
    const result=await generate(base,payload(strategy));
    assert.ok(result?.markdown,strategy);
    const actual=coreChapters(result.markdown,specFrame({...payload(strategy),scope:[{name:'Notizen',note:'Anlegen und bearbeiten',basis:true}]})).map(c=>c.title);
