@@ -832,17 +832,32 @@ body{padding-bottom:62px}
 .specrail .eyebrow{padding:4px 10px 2px}
 @media(max-width:1500px){.specrail{flex-basis:168px}}
 @media(max-width:900px){.specwrap{flex-direction:column}.specrail{position:static;flex:none;flex-direction:row;flex-wrap:wrap;max-height:none;width:100%}.specrail .sep,.specrail .eyebrow{display:none}}
-.specsum{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0 18px}
-.specsum button{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:8px;background:var(--surface-low)}
-.specsum button:hover,.specsum button:focus-visible{box-shadow:inset 0 0 0 1.5px var(--go)}
-.specsum b{font-family:var(--mono);font-size:20px;line-height:24px;color:var(--heading);font-variant-numeric:tabular-nums}
-.specsum span{font-size:12px;color:var(--ink-soft)}
-.specsum button.warn b{color:var(--on-error-container)}
+.specsum{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:14px 0 18px}
+.specsum>button:not(.link){all:unset;cursor:pointer;display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:8px;background:var(--surface-low);min-width:0}
+.specsum>button:not(.link):hover,.specsum>button:not(.link):focus-visible{box-shadow:inset 0 0 0 1.5px var(--go)}
+.specsum .eyebrow{font-size:10px}
+.sumline{display:flex;align-items:baseline;gap:8px}
+.sumline b{font-family:var(--mono);font-size:22px;line-height:26px;color:var(--heading);font-variant-numeric:tabular-nums}
+.sumline span{font-size:12px;color:var(--ink-soft)}
+.sumbar{position:relative;display:flex;height:10px;border-radius:5px;background:var(--surface-mid);margin-top:2px}
+.sumbar i:first-child{border-radius:5px 0 0 5px}.sumbar i:last-child:not(.goal){border-radius:0 5px 5px 0}.sumbar i:only-child{border-radius:5px}
+.sumbar .goal{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);transform:translateX(-1px);border-radius:0}
+.sumdots{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;min-height:10px}
+.sumdots i{width:10px;height:10px;border-radius:50%}
+.specsum i.base{background:var(--secondary)}.specsum i.ext{background:color-mix(in srgb,var(--secondary) 45%,transparent)}
+.specsum i.over{background:var(--warn-line)}.specsum i.free{background:var(--surface-mid);box-shadow:inset 0 0 0 1px var(--outline-soft)}
+.specsum i.off{background:none;box-shadow:inset 0 0 0 1.5px var(--outline-soft)}
+.sumcap{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;color:var(--ink-soft)}
+.sumcap span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.sumcap i{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.specsum>button.warn .sumline b{color:var(--warn-line)}
+.specsum .sumall{grid-column:1/-1;justify-self:start}
 @media screen{
   .md .chap-hidden{display:none!important}
   .md li.req{list-style:none;margin-left:-18px}
   .md p.req{margin:0}
   .md details.req{border-radius:6px;background:var(--surface-low);margin:4px 0}
+  /* Geänderte Anforderung: Der eigene graue Grund weicht, damit die grüne Hervorhebung der Stelle sichtbar ist */
+  .md .chg details.req,.md .chg.reqbody,.md .chg .reqhead{background:transparent}
   .md details.req>summary{padding:8px 12px;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);list-style:none;display:flex;gap:8px;align-items:baseline}
   .md details.req>summary::-webkit-details-marker{display:none}
   .md details.req>summary::before{content:"▸";font-family:var(--mono);font-size:12px;color:var(--outline)}
@@ -856,7 +871,10 @@ body{padding-bottom:62px}
   .md .reqtools{display:flex;justify-content:flex-end;margin:6px 0}
 }
 @media print{.md .reqtools{display:none}}
-.md .speclogo{float:right;margin:0 0 10px 18px}
+/* Logo links neben dem Titel; was folgt, beginnt darunter und läuft nicht unter das Logo */
+.md .speclogo{float:left;margin:0 14px 12px 0}
+.md .speclogo+:is(h1,h2){min-height:44px;display:flex;align-items:center;margin-bottom:12px}
+.md .speclogo~*:not(h1,h2){clear:both}
 .md .speclogo svg{display:block;border-radius:10px}
 /* Nach einer Änderung pulsiert der Knopf, der den Stand wieder aktuell macht – ruhig, ohne zu blinken */
 /* Aufmerksamkeit – der eine Mechanismus der ganzen Anwendung: Was als Nächstes bedient werden sollte, trägt eine feine grüne
@@ -885,9 +903,9 @@ body{padding-bottom:62px}
 .featsum b{font-size:26px;line-height:32px;color:var(--heading);font-variant-numeric:tabular-nums}
 .featline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.featline .chip{margin-left:auto;align-self:center}
 .splitbar.tall{height:30px;border-radius:8px}.splitbar.tall .base{border-radius:8px 0 0 8px}
-.splitbar .free{border:1.5px dashed var(--go);border-left-width:0;border-radius:0 8px 8px 0;background:var(--hl);color:var(--heading);font:600 12px/1 var(--mono);letter-spacing:.02em;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px;min-width:0;transition:background .15s}
+.splitbar .free{border:0;border-radius:0 8px 8px 0;background:var(--hl);color:var(--heading);font:600 12px/1 var(--mono);letter-spacing:.02em;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px;min-width:0;transition:background .15s}
 .splitbar .free:hover:not(:disabled),.splitbar .free:focus-visible{background:var(--hl2)}
-.splitbar .free:disabled{cursor:default;border-color:var(--outline-soft);background:none;color:var(--ink-soft)}
+.splitbar .free:disabled{cursor:default;background:none;color:var(--ink-soft)}
 .featsum.over{border-left-color:var(--warn-line);background:var(--error-container)}
 .featsum.over b,.featsum.over .meta,.featsum.over .eyebrow{color:var(--on-error-container)}
 /* Parallelisierung und Schaubild der Work Breakdown Structure */
@@ -2162,8 +2180,26 @@ async function commitAnswers(next,ids,label){
 // Vergleicht die Textbausteine der alten und neuen Spezifikation und markiert neue oder geänderte.
 const unitSel='h2,h3,h4,h5,h6,p,li,tr,pre';
 function unitText(e){if(e.tagName!=='LI')return e.tagName+e.textContent.trim();const c=e.cloneNode(true);for(const x of c.querySelectorAll('ul,ol'))x.remove();return 'LI'+c.textContent.trim()}
+// Die Schätzung gehört in den Rahmen der Spezifikation – in Ansicht, Download und PDF. Sie hängt an der aktuellen Feature-Auswahl
+// und der Agentenzahl, steht deshalb nicht im gespeicherten Text, sondern wird beim Ausgeben eingesetzt (direkt unter der Zielvorgabe).
+const estLabel='Geschätzte Entwicklungsdauer';
+function estText(){if(!s.features.some(f=>f.on))return '';const fd=featDuration();return hm(fd.total)+' für die gewählten Features, '+(fd.agents===1?'mit einem Agenten':'mit '+fd.agents+' parallelen Agenten')}
+function specOut(md){
+  const est=estText(),lines=String(md||'').split('\n').filter(l=>!l.startsWith('- **'+estLabel+'**'));if(!est)return lines.join('\n');
+  const at=lines.findIndex(l=>/^## Rahmen\s*$/.test(l));if(at<0)return lines.join('\n');
+  let end=at+1;while(end<lines.length&&!/^#{1,2} /.test(lines[end]))end++;
+  let pos=-1;for(let i=at+1;i<end;i++){if(lines[i].startsWith('- **Ziel-Entwicklungsdauer**'))pos=i+1;else if(pos<0&&lines[i].startsWith('- '))pos=i}
+  if(pos<0)pos=at+1;
+  lines.splice(pos,0,'- **'+estLabel+'** '+est);return lines.join('\n');
+}
+// Die heruntergeladene Datei trägt zusätzlich das gewählte Logo: als eingebettetes Bild über dem Titel, damit sie für sich allein vollständig ist
+function specFile(){
+  const md=specOut(s.spec),pick=s.logos[s.logoChosen];if(!pick)return md;
+  let data='';try{data=btoa(unescape(encodeURIComponent(cleanSvg(pick.svg))))}catch{return md}
+  return '!['+('Logo '+(s.project.trim()||pick.name)).replace(/[\[\]]/g,'')+'](data:image/svg+xml;base64,'+data+')\n\n'+md;
+}
 function markChanges(view,oldSpec,show){
-  const box=node('div'),left=new Map(),hits=[];box.append(renderMarkdown(oldSpec,document));
+  const box=node('div'),left=new Map(),hits=[];box.append(renderMarkdown(specOut(oldSpec),document));
   for(const e of box.querySelectorAll(unitSel)){const t=unitText(e);left.set(t,(left.get(t)||0)+1)}
   for(const e of view.querySelectorAll(unitSel)){const t=unitText(e),n=left.get(t)||0;if(n)left.set(t,n-1);else hits.push(e)}
   drawMarks(view,show?hits:[]);
@@ -2317,6 +2353,9 @@ function keepIds(root){
 // „Überblick“ zeigt die Kennzahlen und das Ziel, „Ganzes Dokument“ alles am Stück (so wird auch gedruckt).
 const fixedChapters=new Set(['Rahmen','Umfang','Nichtfunktionale Standards','Betrieb und Übergabe','Standard-Risiken','Entscheidungen und Annahmen','Offene Entscheidungen','Abnahme']);
 let specChapter='Überblick';const reqOpen=new Set(),specFresh=new Set();
+// „Ganzes Dokument“ zeigt alles aufgeklappt; was dort einzeln zugeklappt wird, merkt sich reqShut (bis zum nächsten Aufruf)
+const reqShut=new Set(),reqWhole=()=>specChapter==='Alles',reqIsOpen=id=>reqWhole()?!reqShut.has(id):reqOpen.has(id);
+const reqSet=(id,open)=>{const set=reqWhole()?reqShut:reqOpen,add=reqWhole()?!open:open;if(add)set.add(id);else set.delete(id)};
 function chaptersUI(view){
   const rail=$('specRail'),chapters=[];let cur=null,lastIntro=null;
   for(const el of [...view.children]){
@@ -2328,23 +2367,45 @@ function chaptersUI(view){
   // Nach einer Änderung steht das ganze Dokument da, damit jede markierte Stelle zu sehen ist
   const all=!!change||specChapter==='Alles';
   if(!all&&specChapter!=='Überblick'&&!list.some(c=>c.title===specChapter))specChapter='Überblick';
-  const overview=!all&&specChapter==='Überblick',go=title=>{specChapter=title;specFresh.delete(title);specUI();$('specView').closest('.specwrap').scrollIntoView({block:'start'})};
+  const overview=!all&&specChapter==='Überblick',go=title=>{specChapter=title;if(title==='Alles')reqShut.clear();specFresh.delete(title);specUI();$('specView').closest('.specwrap').scrollIntoView({block:'start'})};
   for(const c of chapters)for(const el of c.els)el.classList.toggle('chap-hidden',!list.includes(c)||!(all||c.title===specChapter||(overview&&!conceptLive()&&/^Ziel/i.test(c.title))));
   // Kennzahlen des Überblicks; jede führt in ihr Kapitel
   if(overview){
     const ids=[...new Set(s.spec.match(/\b(?:FR|NFR)-\d{3}\b/g)||[])],fr=ids.filter(x=>x.startsWith('FR')).length,sum=summary(s.questions),feats=s.features.filter(f=>f.on);
     const box=node('div',undefined,'specsum'),find=re=>(list.find(c=>re.test(c.title))||{}).title;
-    const tile=(n,label,target,warn)=>{const b=node('button',undefined,warn?'warn':'');b.type='button';b.append(node('b',String(n)),node('span',label));if(target)b.onclick=()=>go(target);else b.disabled=true;box.append(b);return b};
-    // Geschätzte Dauer der gewählten Features neben der Zielvorgabe: Beides zusammen zeigt, wie viel Zeit frei bleibt oder fehlt
-    if(feats.length){const fd=featDuration(),tm=targetMinutes();tile(hm(fd.total),'geschätzte Entwicklungsdauer'+(fd.agents>1?' · '+fd.agents+' Agenten':''),find(/^Umfang/),!!tm&&fd.total>tm).id='estTile'}
-    tile(duration()||'–','Ziel-Entwicklungsdauer',find(/^Rahmen/));
-    if(feats.length)tile(feats.filter(f=>f.core).length+' + '+feats.filter(f=>!f.core).length,'Basis-Features + Erweiterungen',find(/^Umfang/));
-    tile(fr,fr===1?'funktionale Anforderung':'funktionale Anforderungen',find(/^Funktionale Anforderungen/));
-    tile(ids.length-fr,'nichtfunktionale Anforderungen',find(/^Nichtfunktionale Standards/)||find(/nichtfunktional/i));
-    tile(sum.decided+s.extras.length,'eigene Festlegungen',find(/^Entscheidungen/));
-    tile(sum.defaults,sum.defaults===1?'Annahme':'Annahmen',find(/^Entscheidungen/));
-    tile(sum.open,sum.open===1?'offene Entscheidung':'offene Entscheidungen',find(/^Offene Entscheidungen/),sum.open>0);
-    tile(words(s.spec).toLocaleString('de-DE'),'Wörter insgesamt','Alles');
+    // Vier Karten mit Schaubild statt vieler Zahlenkacheln; jede führt in ihr Kapitel. fill() zeichnet den Inhalt (auch später neu).
+    const card=(label,target,fill)=>{const b=node('button');b.type='button';b._fill=()=>{b.replaceChildren(node('span',label,'eyebrow'));b.classList.remove('warn');fill(b)};b._fill();if(target)b.onclick=()=>go(target);else b.disabled=true;box.append(b);return b};
+    const big=(b,n,unit)=>{const l=node('div',undefined,'sumline');l.append(node('b',String(n)),node('span',unit));b.append(l)};
+    // Balken aus Anteilen: [Klasse, Wert, Beschriftung]; leere Anteile fallen weg
+    const parts=(b,list,span,goal)=>{
+      const bar=node('div',undefined,'sumbar'),cap=node('div',undefined,'sumcap'),total=span||list.reduce((n,x)=>n+x[1],0)||1;
+      for(const [cls,v,text] of list){if(v>0){const e=node('i',undefined,cls);e.style.width=(v/total*100)+'%';bar.append(e)}const k=node('span');k.append(node('i',undefined,cls),text);cap.append(k)}
+      if(goal){const g=node('i',undefined,'goal');g.style.left=Math.min(100,goal/total*100)+'%';bar.append(g)}
+      b.append(bar,cap);
+    };
+    if(feats.length){
+      // Zeit: geschätzte Dauer der gewählten Features auf dem Weg zur Zielvorgabe – was rechts frei bleibt, ist freie Zeit
+      card('Entwicklungsdauer',find(/^Umfang/),b=>{
+        const fd=featDuration(),tm=targetMinutes(),on=s.features.filter(x=>x.on),base=Math.min(fd.total,featureDuration(s.features.map(x=>({...x,on:x.core})),fd.agents)),over=!!tm&&fd.total>tm;
+        big(b,hm(fd.total),tm?'von '+hm(tm):'geschätzt');b.classList.toggle('warn',over);
+        parts(b,[['base',base,'Basis '+hm(base)],['ext',fd.total-base,'Erweiterungen '+hm(fd.total-base)],...(tm?[[over?'over':'free',0,over?hm(fd.total-tm)+' über dem Ziel':hm(tm-fd.total)+' frei']]:[])],Math.max(fd.total,tm,0.01),tm);
+        b.title='Geschätzte Entwicklungsdauer der '+on.length+' gewählten Features mit '+(fd.agents===1?'einem Agenten':fd.agents+' parallelen Agenten')+(tm?' · Zielvorgabe '+hm(tm):'');
+      }).id='estTile';
+      // Umfang: ein Punkt je Feature – Basis kräftig, Erweiterung heller, Abgewähltes nur als Umriss
+      card('Features',find(/^Umfang/),b=>{
+        const all=s.features,core=all.filter(x=>x.core).length,ext=all.filter(x=>!x.core&&x.on).length,off=all.length-core-ext,dots=node('div',undefined,'sumdots'),cap=node('div',undefined,'sumcap');
+        big(b,core+ext,core+ext===1?'Feature':'Features');
+        for(const x of all){const d=node('i',undefined,x.core?'base':x.on?'ext':'off');d.title=x.name;dots.append(d)}
+        const key=(cls,text)=>{const k=node('span');k.append(node('i',undefined,cls),text);cap.append(k)};key('base',core+' Basis');key('ext',ext+(ext===1?' Erweiterung':' Erweiterungen'));if(off)key('off',off+' abgewählt');
+        b.append(dots,cap);
+      }).id='featTile';
+    }
+    card('Anforderungen',find(/^Funktionale Anforderungen/),b=>{big(b,ids.length,ids.length===1?'Anforderung':'Anforderungen');parts(b,[['base',fr,fr+' funktional'],['ext',ids.length-fr,(ids.length-fr)+' nichtfunktional']])});
+    card('Entscheidungen',find(sum.open?/^Offene Entscheidungen/:/^Entscheidungen/)||find(/^Entscheidungen/),b=>{
+      const own=sum.decided+s.extras.length,n=own+sum.defaults+sum.open;big(b,n,n===1?'Entscheidung':'Entscheidungen');b.classList.toggle('warn',sum.open>0);
+      parts(b,[['base',own,own+' selbst festgelegt'],['ext',sum.defaults,sum.defaults+(sum.defaults===1?' Annahme':' Annahmen')],['over',sum.open,sum.open+' offen']]);
+    });
+    {const all=button(words(s.spec).toLocaleString('de-DE')+' Wörter · ganzes Dokument zeigen','link sumall',()=>go('Alles'));box.append(all)}
     (lastIntro||view.firstElementChild).after(box);
     // Die Kurzfassung ist dieselbe wie auf der Idee-Seite: Eine Wahl hier wirkt dort und auf die Fragen
     if(conceptLive()){
@@ -2360,8 +2421,8 @@ function chaptersUI(view){
     if(heads.length){
       let open=false;
       for(const el of c.els.slice(1)){
-        if(heads.includes(el)){const id=el.textContent.match(/\b(?:FR|NFR)-\d{3}\b/)[0];open=!!change||reqOpen.has(id);el.classList.add('reqhead');el.classList.toggle('open',open);el.tabIndex=0;el.setAttribute('role','button');
-          const flip=()=>{if(reqOpen.has(id))reqOpen.delete(id);else reqOpen.add(id);specUI()};el.onclick=flip;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}};items.push(id)}
+        if(heads.includes(el)){const id=el.textContent.match(/\b(?:FR|NFR)-\d{3}\b/)[0];open=!!change||reqIsOpen(id);el.classList.add('reqhead');el.classList.toggle('open',open);el.tabIndex=0;el.setAttribute('role','button');
+          const flip=()=>{reqSet(id,!reqIsOpen(id));specUI()};el.onclick=flip;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}};items.push(id)}
         else if(items.length&&!/^H[34]$/.test(el.tagName)){el.classList.add('reqbody');el.classList.toggle('shut',!open)}
       }
     }else for(const li of c.els.flatMap(el=>el.tagName==='UL'?[...el.children]:el.tagName==='P'?[el]:[])){
@@ -2370,11 +2431,11 @@ function chaptersUI(view){
       strong.remove();sm.append(...strong.childNodes);body.append(...li.childNodes);
       // Der Gedankenstrich hinter dem Titel gehört nicht in den aufgeklappten Text
       if(body.firstChild&&body.firstChild.nodeType===3)body.firstChild.nodeValue=body.firstChild.nodeValue.replace(/^\s*[–-]\s*/,'');
-      d.open=!!change||reqOpen.has(id);d.ontoggle=()=>{if(d.open)reqOpen.add(id);else reqOpen.delete(id)};d.append(sm,body);li.classList.add('req');li.append(d);items.push(id);
+      d.open=!!change||reqIsOpen(id);d.ontoggle=()=>reqSet(id,d.open);d.append(sm,body);li.classList.add('req');li.append(d);items.push(id);
     }
     if(items.length>1&&!change){
-      const bar=node('div',undefined,'reqtools'),allOpen=items.every(id=>reqOpen.has(id));
-      bar.append(button(allOpen?'Alle zuklappen':'Alle aufklappen','link',()=>{for(const id of items)if(allOpen)reqOpen.delete(id);else reqOpen.add(id);specUI()}));c.els[0].after(bar);
+      const bar=node('div',undefined,'reqtools'),allOpen=items.every(reqIsOpen);
+      bar.append(button(allOpen?'Alle zuklappen':'Alle aufklappen','link',()=>{for(const id of items)reqSet(id,!allOpen);specUI()}));c.els[0].after(bar);
     }
   }
   // Kapitelliste
@@ -2412,7 +2473,7 @@ function specUI(){
     changeUI(null);return;
   }
   $('specRail').classList.add('hidden');
-  if(s.spec.trim()){view.replaceChildren(renderMarkdown(s.spec,document));specLogo(view);keepIds(view);chaptersUI(view)}
+  if(s.spec.trim()){view.replaceChildren(renderMarkdown(specOut(s.spec),document));specLogo(view);keepIds(view);chaptersUI(view)}
   else view.replaceChildren(node('p',s.features.length?'Der Umfang steht rechts unter „Features“. Auswahl und Zielzeit prüfen, dann „Spezifikation erstellen“ – geschrieben wird erst für den festgelegten Umfang.':'Noch keine Spezifikation. „Spezifikation erstellen“ wählen oder über „Bearbeiten“ eine vorhandene Spezifikation einfügen.','placeholder'));
   changeUI(view);
 }
@@ -2820,7 +2881,7 @@ async function applyScope(){
 async function extendFeatures(){
   if(active)return;
   const target=targetMinutes(),fd=featDuration(),free=target-fd.total;if(!(free>0))return;
-  const rev=revision;lock(true,'Weitere Features werden gesucht');featNote='';
+  const rev=revision;lock(true,'Weitere Features werden gesucht');featNote='';let work=false;
   try{
     const r=await call({mode:'extend',project:s.project,idea:s.idea,spec:s.spec,features:s.features,target,free,maxAgents:fd.agents,ai:$('ai').checked});
     if(rev!==revision){featNote='Eingaben geändert. Erneut starten.';return}
@@ -2832,9 +2893,11 @@ async function extendFeatures(){
       if(featureDuration(trial,fd.agents)>target)continue;
       list=trial;added.push(f.name);known.add(f.name.toLowerCase());
     }
-    if(added.length){s.features=list;revision++;if(s.spec.trim())s.dirty=true;featNote=plural(added.length,'Feature','Features')+' ergänzt (als Erweiterung, abwählbar): '+added.join(', ')+'.'+(s.spec.trim()?' „Spezifikation aktualisieren“ arbeitet sie ein.':'');save()}
+    if(added.length){s.features=list;revision++;if(s.spec.trim())s.dirty=true;featNote=plural(added.length,'Feature','Features')+' ergänzt (als Erweiterung, abwählbar): '+added.join(', ')+'.'+(s.spec.trim()?' Sie werden jetzt in die Spezifikation eingearbeitet.':'');work=!!s.spec.trim();save()}
     else featNote=r.source==='demo'?'Weitere Features schlägt nur Claude vor (Schalter oben rechts).':'Kein weiteres Feature gefunden, das sinnvoll ist und noch in die Zielzeit passt.';
   }catch(e){featNote=e.message}finally{lock(false);renderAll()}
+  // Der Klick auf „Features ergänzen“ gilt auch für das Einarbeiten: Gibt es schon eine Spezifikation, wird sie gleich aktualisiert
+  if(work)generate();
 }
 function featuresUI(){
   // Solange es keine Spezifikation gibt, ist die Auswahl selbst der Umfang – es gibt nichts einzuarbeiten
@@ -2842,7 +2905,7 @@ function featuresUI(){
   const box=$('featBox'),list=s.features;box.replaceChildren();
   // Kopfzeile: geplante Dauer, die Zahl der Agenten, mit der sie gerechnet ist, die Zielvorgabe und der Umfang
   const fdHead=list.length?featDuration():null,tHead=targetMinutes();
-  $('featCount').textContent=list.length?hm(fdHead.total)+(tHead?' von '+hm(tHead):'')+' · '+list.filter(f=>f.core).length+' Basis · '+list.filter(f=>!f.core&&f.on).length+'/'+list.filter(f=>!f.core).length+' Erweiterungen':'';
+  $('featCount').textContent=list.length?'ca. '+hm(Math.max(1,Math.round(fdHead.total)))+(tHead?' von '+hm(tHead):'')+' · '+list.filter(f=>f.core).length+' Basis · '+list.filter(f=>!f.core&&f.on).length+'/'+list.filter(f=>!f.core).length+' Erweiterungen':'';
   if(!list.length){
     box.append(node('p',s.spec.trim()?'Für diese Spezifikation sind noch keine Features ermittelt.':'Die Features erscheinen, sobald eine Spezifikation erstellt ist.','meta'));
     if(s.spec.trim()){const get=button('✦ Features und Aufwand ermitteln','btn small nudge',deriveFeatures);get.style.marginTop='10px';get.disabled=active;box.append(get)}
@@ -2852,7 +2915,9 @@ function featuresUI(){
   // Dauer nach der Work Breakdown Structure: so viele Agenten wie gewählt, höchstens so viele, wie Pakete gleichzeitig bereitstehen
   const fd=featDuration(),total=fd.total,target=targetMinutes(),over=target>0&&total>target,sum=node('div',undefined,'featsum'+(over?' over':'')),acts=node('div',undefined,'catacts'),par=node('div',undefined,'featpar'),pick=node('div',undefined,'seg');
   // Die Kachel im Überblick der Spezifikation zeigt dieselbe Schätzung und zieht bei jeder Änderung mit
-  {const e=$('estTile');if(e){e.querySelector('b').textContent=hm(total);e.querySelector('span').textContent='geschätzte Entwicklungsdauer'+(fd.agents>1?' · '+fd.agents+' Agenten':'');e.classList.toggle('warn',over)}}
+  for(const id of ['estTile','featTile']){const e=$(id);if(e&&e._fill)e._fill()}
+  // … und ebenso die Zeile im Kapitel „Rahmen“ der angezeigten Spezifikation
+  for(const li of $('specView').querySelectorAll('li')){const b=li.firstElementChild;if(b&&b.tagName==='STRONG'&&b.textContent===estLabel&&li.firstChild===b){li.replaceChildren(b,' '+estText());break}}
   const head=node('div',undefined,'featline'),state=!target?null:node('span',over?hm(total-target)+' über dem Ziel':'passt','chip '+(over?'warn':'ok'));
   head.append(node('b',hm(total)),node('span',target?'von '+hm(target):'ohne Zielvorgabe','meta'));if(state)head.append(state);
   head.title='Geschätzte Entwicklungsdauer mit '+(fd.agents===1?'einem Agenten':fd.agents+' parallelen Agenten')+' · Arbeitsaufwand gesamt '+hm(fd.effort)+' · '+plural(fd.wbs.tasks.length,'Arbeitspaket','Arbeitspakete')+' in '+plural(fd.wbs.waves.length,'Stufe','Stufen');
@@ -3069,8 +3134,9 @@ function logoNode(svg,size){
 }
 // Das gewählte Logo steht ohne weiteres Zutun neben der Überschrift der Spezifikation – in der Ansicht und damit auch im PDF
 function specLogo(view){
-  const pick=s.logos[s.logoChosen],h=view.querySelector('h1');if(!pick||!h)return;
-  const box=node('span',undefined,'speclogo');box.append(logoNode(pick.svg,64));box.title='Logo: '+pick.name;h.before(box);
+  // Der Titel der Spezifikation ist die erste Überschrift (der Renderer setzt „#“ eine Ebene tiefer, also H2)
+  const pick=s.logos[s.logoChosen],h=view.querySelector('h1,h2');if(!pick||!h)return;
+  const box=node('span',undefined,'speclogo');box.append(logoNode(pick.svg,44));box.title='Logo: '+pick.name;h.before(box);
 }
 function logoUI(){
   // Das gewählte Logo steht in der Kopfzeile vor dem Projektnamen
@@ -3081,6 +3147,8 @@ function logoUI(){
   const box=$('logoBox'),off=!(n>0||s.logos.length),pick=s.logos[s.logoChosen];box.replaceChildren();box.classList.toggle('hidden',off);
   if(document.activeElement!==$('logoCountSpec'))$('logoCountSpec').value=n;
   $('logoMeta').textContent=off?'aus · Anzahl erhöhen':pick?pick.name:s.logos.length?plural(s.logos.length,'Entwurf','Entwürfe')+' · keiner gewählt':'noch keine Entwürfe';
+  // Das gewählte Logo steht klein in der Kopfzeile des Bereichs, neben seinem Namen
+  if(pick&&!off){const m=$('logoMeta'),mini=logoNode(pick.svg,22);mini.style.cssText='vertical-align:middle;margin-left:8px;border-radius:5px';m.append(mini)}
   const acts=$('logoActs');acts.replaceChildren();
   if(n>0){const more=button(s.logos.length?'↻ Neue Entwürfe':'✦ Logos entwerfen','btn small',()=>deriveLogos(true));more.disabled=active;acts.append(more)}
   if(pick)acts.append(button('↓ SVG','btn small',()=>download('logo.svg',cleanSvg(pick.svg))));
@@ -3595,7 +3663,7 @@ async function deriveLogos(force){
   const rev=revision;lock(true,'Logo-Entwürfe werden gezeichnet');let message='';
   try{
     const r=await call({mode:'logos',idea:s.idea,spec:s.spec,project:s.project,count:s.logoCount,tone:s.tone,ai:$('ai').checked});
-    if(rev===revision){s.logos=cleanLogos(r.logos);s.logoChosen=-1}
+    if(rev===revision){s.logos=cleanLogos(r.logos);s.logoChosen=s.logos.length===1?0:-1}
   }catch(e){message=e.message}finally{lock(false)}
   renderAll();if(message)specNote(message,true);
 }
@@ -3805,7 +3873,7 @@ $('layoutRun').onclick=async()=>{
 /* ---------- Export ---------- */
 function download(name,content){const url=URL.createObjectURL(new Blob([content],{type:'text/plain;charset=utf-8'}));const a=node('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 async function copyText(t,status,ok='Kopiert.'){try{await navigator.clipboard.writeText(t);status.textContent=ok}catch{status.textContent='Kopieren nicht möglich. Bitte manuell markieren oder herunterladen.'}}
-$('specDownload').onclick=()=>{if(s.spec)download('SPEC.md',s.spec)};
+$('specDownload').onclick=()=>{if(s.spec)download('SPEC.md',specFile())};
 // PDF: Druckvorschau des Browsers mit eigenem Drucklayout (nur die Spezifikation, A4); der Dokumenttitel wird zum Dateinamen
 const printTitle=document.title;
 $('specPdf').onclick=()=>{if(!s.spec.trim())return;if(specMode!=='view')setSpecMode('view');document.title=s.project.trim()?s.project.trim()+' – Spezifikation':'Spezifikation';window.print()};
@@ -3814,7 +3882,7 @@ $('json').onclick=()=>{if(s.plan&&!stale())download('tasks.json',JSON.stringify(
 const allText=()=>(agentsNow()===1?renderSingle:renderBacklog)(s.plan,s.planSpec,exportCtx());
 $('backlog').onclick=()=>{if(s.plan&&!stale())download(agentsNow()===1?'AUFTRAG.md':'BACKLOG.md',allText())};
 $('copyAll').onclick=()=>{if(s.plan&&!stale())copyText(allText(),$('finishHint'))};
-$('specDl2').onclick=()=>{if(s.spec)download('SPEC.md',s.spec)};
+$('specDl2').onclick=()=>{if(s.spec)download('SPEC.md',specFile())};
 // Obergrenze paralleler Agenten: laut aktuellem Plan, sonst laut Feature-Struktur; technisch höchstens sechs
 function planMax(){const p=s.plan&&!stale()?s.plan:null;return Math.max(1,Math.min(6,p?Math.max(...p.waves.map(w=>w.length)):s.features.length?featDuration().max:6))}
 const agentsNow=()=>Math.min(Math.max(1,s.featAgents||1),planMax());
