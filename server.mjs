@@ -14,7 +14,7 @@ const calibPlan=plan=>({...plan,tasks:scale(plan.tasks,factor('plan'))}),calibFe
 import { validateRun, startRun, stopRun, runStatus, killAgents, targetDir, openDir } from './runner.mjs';
 import { withSkills } from './skills.mjs';
 import { aiProfile, inferenceTimer } from './ai-performance.mjs';
-import { chapterGroups, partPrompt, joinParts, orderedChunks } from './spec-parallel.mjs';
+import { chapterGroups, partPrompt, joinParts, orderedChunks, outlinePrompt, cleanOutline } from './spec-parallel.mjs';
 import { resolveStrategy } from './spec-strategies.mjs';
 import { SpecPreloadCache } from './spec-preload.mjs';
 import { anthropicMessageBody, enabledPromptCache, promptCacheTtl } from './anthropic-cache.mjs';
@@ -639,18 +639,22 @@ http.createServer(async(req,res)=>{
     const payload={...brief(data),fixedSections:frame.tail};
     const cancel=new AbortController();
     const signal=currentAbort?.signal?AbortSignal.any([currentAbort.signal,cancel.signal]):cancel.signal;
+    // Gemeinsamer Vorlauf: ein kurzer Aufruf legt Anforderungsliste, Rollen, Anrede, Objekte und übergreifende Festlegungen fest.
+    // Scheitert er, geht es ohne ihn weiter (wie zuvor).
+    let contract=null;try{contract=cleanOutline(parseJson(await ask(outlinePrompt+startJson,payload,1800,'',signal)),data.scope)}catch(e){if(signal.aborted)throw e}
+    if(contract)payload.contract=contract;
     const ordered=orderedChunks(chapterGroups.length,t=>row({t}));
     let parts;
     try{
      parts=await Promise.all(chapterGroups.map(async(titles,i)=>{
-      const result=await askStream(withSkills('final',shared+partPrompt(frame,titles)),payload,i===1?9500:5500,t=>ordered.chunk(i,t),'',signal);
+      const result=await askStream(withSkills('final',shared+partPrompt(frame,titles,!!contract)),payload,i===1?9500:5500,t=>ordered.chunk(i,t),'',signal);
       ordered.done(i);
       return result;
      }));
     }catch(e){cancel.abort();throw e}
     const core=joinParts(parts);
     row({t:frame.tail});
-    row({done:true,source:'claude',strategy:strategy.id,parallel:true,markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
+    row({done:true,source:'claude',strategy:strategy.id,parallel:true,outline:!!contract,markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
     return;
    }
    const text=await askStream(withSkills('final',finalPrompt(data)+conceptNote(data))+corePrompt(frame),{...brief(data),fixedSections:frame.tail},16000,t=>row({t}));
