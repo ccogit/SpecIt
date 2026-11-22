@@ -137,3 +137,28 @@ Jeder Task trägt ID, Ziel, Anforderungsbezug, Abhängigkeiten, Scope und Nicht-
 ## Qualität und Datenschutz
 
 `npm test` prüft Planner, Fragenmodul (Standards, Pegel, Demo-Spezifikation) und die Stitch-Hilfsfunktionen, ohne Netzwerkzugriff. Ein Live-Test mit Claude benötigt Claude Code oder einen API-Key mit Guthaben. Server bindet an localhost, prüft Origin/Host und begrenzt Eingaben und parallele API-Anfragen. Entwürfe werden im Browser gespeichert; mit aktivierter KI werden Projektdaten an Anthropic übermittelt, mit aktivierter Layout-Erstellung an Google Stitch. Keine vertraulichen Daten nutzen. Keine öffentliche Bereitstellung ohne Authentifizierung, Zugriffskontrolle und Datenschutzkonzept. GitHub Pages kann das Node-Backend nicht ausführen. KI-Ausgaben stets fachlich prüfen.
+
+## Spezifikations-Performance messen (Experiment)
+
+Der bestehende Standard bleibt erhalten. Für einen schnellen Modellvergleich kann in der lokalen `.env`
+`SPECIT_FAST_MODE=1` gesetzt werden. Dadurch verwendet SpecIt für die Erstellung der
+Spezifikation und für die frühe Feature-Ermittlung `claude-haiku-5-5` mit `effort: low`.
+Andere KI-Phasen behalten ihre Modellwahl. Mit `SPECIT_FINAL_MODEL`,
+`SPECIT_FEATURE_MODEL` sowie `SPECIT_FINAL_EFFORT` und `SPECIT_FEATURE_EFFORT`
+sind abweichende, aufgabenbezogene Konfigurationen möglich; `SPECIT_AI_EFFORT`
+gilt als generelle Vorgabe, soweit für die Phase keine speziellere Einstellung gesetzt ist.
+Ein API-Schlüssel verwendet die Anthropic Messages API; ohne API-Schlüssel wird Claude Code
+weiterhin als lokaler CLI-Prozess aufgerufen. Die `effort`-Einstellung wird nur
+bei API-Aufrufen angewendet. Nicht jedes ältere Modell unterstützt jede Einstellung.
+
+Die Antwort der API enthält in `usage.timings` pro KI-Aufruf folgende Diagnosewerte:
+`model`, `transport` (`api` oder `cli`), `streaming`, `ok`,
+`totalMs`, bei gestreamter Ausgabe `firstTokenMs`, und bei API-Antworten,
+soweit verfügbar, `input_tokens`, `output_tokens` sowie Cache-Token-Zähler.
+Es werden **keine Eingabe- oder Ausgabetexte** in den Timing-Daten gespeichert.
+Die Werte können in den Entwicklertools in der Netzwerkanzeige betrachtet werden;
+die Browserkonsole meldet nach dem Erstellen zusätzlich die Gesamtdauer bis zur
+fertigen Spezifikation und die angefallenen Modellaufrufe. Für vergleichbare Tests
+dieselbe Projektidee, Feature-Auswahl und Zielzeit mehrfach verwenden;
+P50/P95 und fachliche Vollständigkeit getrennt auswerten. Ohne API-Zugang lassen
+sich keine belastbaren Modell-Benchmarks durchführen.
