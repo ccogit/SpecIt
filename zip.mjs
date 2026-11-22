@@ -4,7 +4,9 @@ import { deflateRawSync, crc32 } from 'node:zlib';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
-const SKIP = new Set(['.git', 'node_modules', '.venv', 'venv', '__pycache__', '.next', '.idea', '.vscode', 'coverage']);
+const SKIP = new Set(['.git', 'node_modules', 'dist', 'build', 'out', 'target', '.venv', 'venv', '__pycache__', '.next', '.idea', '.vscode', 'coverage']);
+// Sensible Laufzeit-Konfiguration nicht versehentlich als Projekt-ZIP weitergeben; Vorlagen bleiben enthalten.
+const secretEnv = name => /^\.env(?:\.(?!example$|sample$|template$)[^/]+)?$/i.test(name);
 const MAX_FILES = 5000, MAX_BYTES = 300 * 1024 * 1024;
 
 /** Dateien unter dir als [{ name (mit '/'), data, mtime }]; wirft, wenn der Ordner fehlt, leer oder zu groß ist. */
@@ -16,7 +18,7 @@ export async function collect(dir) {
       const name = rel ? rel + '/' + e.name : e.name, full = path.join(abs, e.name);
       if (e.isSymbolicLink()) continue;
       if (e.isDirectory()) { if (!SKIP.has(e.name)) await walk(full, name); continue; }
-      if (!e.isFile()) continue;
+      if (!e.isFile() || secretEnv(e.name)) continue;
       const info = await stat(full); bytes += info.size;
       if (out.length >= MAX_FILES || bytes > MAX_BYTES) throw Error('Der Zielordner ist für einen Download zu groß (mehr als ' + MAX_FILES + ' Dateien oder 300 MB). Bitte direkt im Ordner öffnen.');
       out.push({ name, data: await readFile(full), mtime: info.mtime });
