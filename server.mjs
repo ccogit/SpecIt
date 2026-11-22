@@ -395,7 +395,7 @@ function parseJson(out){
   console.error('SpecIt: kein gültiges JSON – '+t.slice(0,300).replace(/\s+/g,' '));throw e;
  }
 }
-async function claude(b){
+async function claude(b,onText){
  if(b.mode==='revise'){
   // Nur Ersetzungen anfordern statt das Dokument neu schreiben zu lassen; passt eine nicht, entscheidet der Browser (null).
   const changes=b.changed.map(i=>{const q=b.questions[i];return {topic:topics[q.topic],question:q.question,options:q.options,before:answerOf(b.previous[i])||'(offen)',after:answerOf(q)||'(offen)',assumption:q.state==='default'}});
@@ -496,7 +496,9 @@ async function claude(b){
  const style=b.mode==='questions'?stylePrompt(b.creativity,b.tone)+' Für die Fragen heißt das: Antwortoptionen und Standards passen zum Einsatzbereich; eigene Ideen erscheinen nur als zusätzliche Antwortoption, nie als Standard, sofern nicht ausdrücklich erwünscht.':'';
  const reuse=b.mode==='plan'&&b.reuse.length?' Der Nutzer hat die Open-Source-Projekte in reuse ausgewählt: Plane sie als zu prüfende Integrationskandidaten ein, mit einem vorgelagerten Audit/PoC-Task (Code, Lizenz, Wartung, Sicherheit), bevor Aufgaben darauf aufbauen. Nicht ausgewählte Projekte sind keine Vorgabe.':'';
  const featMap=b.mode==='plan'&&b.features&&b.features.length?' features = die Features der Anwendung (id, name). Nenne in jedem Task zusätzlich das Feld "features": die Kennungen aller Features, zu deren Umsetzung der Task beiträgt, z. B. ["F01","F03"]. Jedes Feature kommt in mindestens einem Task vor; Tasks ohne Bezug zu einem einzelnen Feature (Projektgerüst, Integration, Abschluss) erhalten eine leere Liste. Das Feld "features" ist Pflicht in jedem Task.':'';
- const out=await ask(withSkills(b.mode,instruction+featMap+(b.mode==='questions'?conceptNote(b):'')+(b.fill?' Vorhandene Fragen, die kein vollständiger Fragesatz sind (z. B. „Datenspeicherung?“), formulierst du zusätzlich aus, ohne Sinn oder Optionen zu ändern: im selben JSON-Objekt "rephrase":[{"from":"<vorhandene Frage wörtlich>","to":"<vollständiger Fragesatz mit Fragezeichen>"}]; leere Liste, wenn alle schon ganze Sätze sind.':'')+scope+style+reuse)+quick,decisions?{project:b.project,asked:b.questions.map(q=>q.question),spec:b.spec}:brief(b),b.mode==='questions'||decisions?3500:b.mode==='plan'?10000:16000);
+ const askArgs=[withSkills(b.mode,instruction+featMap+(b.mode==='questions'?conceptNote(b):'')+(b.fill?' Vorhandene Fragen, die kein vollständiger Fragesatz sind (z. B. „Datenspeicherung?“), formulierst du zusätzlich aus, ohne Sinn oder Optionen zu ändern: im selben JSON-Objekt "rephrase":[{"from":"<vorhandene Frage wörtlich>","to":"<vollständiger Fragesatz mit Fragezeichen>"}]; leere Liste, wenn alle schon ganze Sätze sind.':'')+scope+style+reuse)+quick,decisions?{project:b.project,asked:b.questions.map(q=>q.question),spec:b.spec}:brief(b),b.mode==='questions'||decisions?3500:b.mode==='plan'?10000:16000];
+ // Der Plan lässt sich als Strom liefern (onText), damit sein Entstehen sichtbar ist
+ const out=onText&&b.mode==='plan'?await askStream(askArgs[0],askArgs[1],askArgs[2],onText):await ask(...askArgs);
  if(b.mode==='final')return {source:'claude',markdown:withToc(out)};
  let parsed;try{parsed=parseJson(out)}catch{throw Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.')}
  // Nichts bleibt blockiert: Offenes hat der Plan selbst festgelegt (siehe Prompt).
@@ -591,7 +593,7 @@ http.createServer(async(req,res)=>{
    return res.end(file.body);
   }catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}
  }
- if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/reuse','/api/repo'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
+ if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/plan/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/reuse','/api/repo'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
  if(!['http://'+host+':'+port,'http://localhost:'+port].includes(req.headers.origin)||!String(req.headers['content-type']).startsWith('application/json'))return send(res,403,{error:'Nur lokale Anfragen erlaubt.'});
  let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>1500000)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
  if(req.url==='/api/repo'){
@@ -635,6 +637,22 @@ http.createServer(async(req,res)=>{
    },ac.signal);
    if(!res.destroyed)return send(res,200,{ready:true,elapsedMs:Math.round(performance.now()-started),usage:meter.getStore()});
   }catch(e){if(!res.destroyed)return send(res,502,{error:e.message||'Vorbereitung fehlgeschlagen.'})}
+  return;
+ }
+ if(req.url==='/api/plan/stream'){
+  // Plan als Strom: je Zeile ein JSON-Objekt – {t} für ein Stück des entstehenden JSON, am Ende {done,source,plan,trace} oder {error}.
+  let data;try{data=validate(JSON.parse(raw))}catch(e){return send(res,400,{error:e.message})}
+  if(data.mode!=='plan')return send(res,400,{error:'Der Strom steht nur für den Plan bereit.'});
+  meter.getStore().mode='plan';
+  const head=()=>res.writeHead(200,{'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+  const row=o=>{if(!res.writableEnded&&!res.destroyed)res.write(JSON.stringify(o)+'\n')};
+  if(!data.ai){head();row({done:true,...demo(data)});return res.end()}
+  if(!key&&!hasCli)return send(res,503,{error:'Kein Claude-Zugang: ANTHROPIC_API_KEY setzen oder Claude Code installieren und anmelden.'});
+  if(busy||Date.now()-lastAI<1500)return send(res,429,{error:'Analyse läuft oder wurde gerade begonnen. Bitte erneut versuchen.'});
+  sketchAbort?.abort();busy=true;lastAI=Date.now();watch(res);head();
+  try{row({done:true,...await claude(data,t=>row({t})),usage:meter.getStore()})}
+  catch(e){row({error:e.message||'Claude nicht erreichbar.'})}
+  finally{busy=false;currentAbort=null;res.end()}
   return;
  }
  if(req.url==='/api/spec/stream'){
