@@ -5,6 +5,8 @@ import { routeDiagram } from './diagram-routing.mjs';
 
 const kinds = ['start', 'step', 'decision', 'end', 'error'];
 const text = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+// Kennungen der Anforderungen, auf die ein Knoten verweist (FR-001, NFR-001 …)
+const refsOf = v => [...new Set((Array.isArray(v) ? v : []).filter(r => typeof r === 'string' && /^(?:FR|NFR)-\d{3}$/.test(r)))].slice(0, 6);
 
 /** Anweisung an die KI: den wichtigsten Kernablauf als Struktur. */
 export const flowPrompt = 'Leite aus der Spezifikation (spec) das Ablaufdiagramm des wichtigsten Kernablaufs der Anwendung ab – so, wie ihn eine Person von Anfang bis Ende erlebt. '
@@ -29,7 +31,7 @@ export function cleanFlow(raw) {
     const from = text(n.id, 24), label = text(n.label, 60);
     if (!from || !label || map.has(from)) continue;
     const id = 'n' + (nodes.length + 1); map.set(from, id);
-    nodes.push({ id, label, kind: kinds.includes(n.kind) ? n.kind : 'step', refs: [...new Set((Array.isArray(n.refs) ? n.refs : []).filter(r => typeof r === 'string' && /^(?:FR|NFR)-\d{3}$/.test(r)))].slice(0, 6) });
+    nodes.push({ id, label, kind: kinds.includes(n.kind) ? n.kind : 'step', refs: refsOf(n.refs) });
   }
   if (nodes.length < 3) return null;
   // Genau ein Einstieg: der erste als start gekennzeichnete, sonst der erste Knoten
@@ -165,13 +167,13 @@ const layerOf = kind => kind === 'external' ? 'store' : kind;
 
 /** Anweisung an die KI: Aufbau und Datenmodell als Struktur. */
 export const archPrompt = 'Leite aus der Spezifikation (spec) zwei Strukturen ab – nur Struktur, keine Zeichnung. '
-  + '1. structure – der Aufbau der Anwendung als 5 bis 10 Bausteine in Ebenen. Knoten: id (n1, n2 …), label (höchstens 28 Zeichen), note (ein Halbsatz, höchstens 60 Zeichen: wofür der Baustein da ist), '
+  + '1. structure – der Aufbau der Anwendung als 5 bis 10 Bausteine in Ebenen. Knoten: id (n1, n2 …), label (höchstens 28 Zeichen), note (ein Halbsatz, höchstens 60 Zeichen: wofür der Baustein da ist), refs = Kennungen der Anforderungen, die der Baustein vor allem umsetzt (z. B. ["FR-003"]; höchstens 4, leer bei Nutzerrollen), '
   + 'kind = actor (Nutzerrolle, höchstens 3), ui (Bereich oder Ansicht der Oberfläche), logic (fachlicher Baustein, z. B. „Auslosung“), store (Datenhaltung, z. B. „Lokaler Speicher“) oder external (Fremdsystem oder Schnittstelle nach außen). '
   + 'Verbindungen (edges): from, to in Richtung der Nutzung, label ein bis zwei Wörter (z. B. „nutzt“, „speichert“, „liest“); höchstens 14, nur die wesentlichen. '
   + '2. data – die fachlichen Objekte, die die Anwendung hält. entities: name (Einzahl, höchstens 24 Zeichen), attributes (höchstens 6 kurze Feldnamen). '
   + 'relations: from, to (Namen der Objekte), kind = "1:1", "1:n" oder "n:m" (from steht links), label ein bis zwei Wörter (z. B. „besitzt“). Höchstens 8 Objekte; leere Listen, wenn die Anwendung keine eigenen Objekte hält. '
   + 'Erfinde nichts, was die Spezifikation nicht hergibt; nenne keine Technik, die sie nicht festlegt. '
-  + 'Ausschließlich JSON ohne Markdown-Codeblock: {"structure":{"nodes":[{"id":"n1","label":"...","note":"...","kind":"ui"}],"edges":[{"from":"n1","to":"n2","label":"nutzt"}]},"data":{"entities":[{"name":"...","attributes":["..."]}],"relations":[{"from":"...","to":"...","kind":"1:n","label":"..."}]}}';
+  + 'Ausschließlich JSON ohne Markdown-Codeblock: {"structure":{"nodes":[{"id":"n1","label":"...","note":"...","kind":"ui","refs":[]}],"edges":[{"from":"n1","to":"n2","label":"nutzt"}]},"data":{"entities":[{"name":"...","attributes":["..."]}],"relations":[{"from":"...","to":"...","kind":"1:n","label":"..."}]}}';
 
 function cleanStructure(raw) {
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.nodes) || !Array.isArray(raw.edges)) return null;
@@ -181,7 +183,7 @@ function cleanStructure(raw) {
     const from = text(n.id, 24), label = text(n.label, 40);
     if (!from || !label || map.has(from)) continue;
     const id = 'n' + (nodes.length + 1); map.set(from, id);
-    nodes.push({ id, label, note: text(n.note, 80), kind: archKinds.includes(n.kind) ? n.kind : 'logic' });
+    nodes.push({ id, label, note: text(n.note, 80), kind: archKinds.includes(n.kind) ? n.kind : 'logic', refs: refsOf(n.refs) });
   }
   const seen = new Set(), edges = [];
   for (const e of raw.edges) {
