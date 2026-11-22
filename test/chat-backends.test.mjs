@@ -53,7 +53,8 @@ test('truncated, HTTP-error and empty output fail closed',async()=>{
 test('experimental provider output passes only with eight complete chapters and functional acceptance',()=>{
  const expected=chapterGroups.flat();
  const sections=expected.map(title=>'## '+title+'\n\n'+(title==='Funktionale Anforderungen'?'FR-001: Eingabe prüfen. Abnahme: ungültige Eingabe wird abgelehnt.':'Erforderlicher Inhalt.'));
- assert.equal((validateExternalCore(sections.join('\n\n')).match(/## /g)||[]).length,8);
+ assert.equal((validateExternalCore(sections.join('\n\n'),[{name:'Eingabe'}]).match(/## /g)||[]).length,8);
+ assert.throws(()=>validateExternalCore(sections.join('\n\n'),[{name:'Export'}]),/Feature nicht spezifiziert/);
  assert.throws(()=>validateExternalCore(sections.slice(1).join('\n\n')),/Kapitelstruktur/);
  const missing=sections.map(x=>x.replace('FR-001: Eingabe prüfen. Abnahme:','Keine Funktion.')).join('\n\n');
  assert.throws(()=>validateExternalCore(missing),/funktionalen Anforderungen/);
