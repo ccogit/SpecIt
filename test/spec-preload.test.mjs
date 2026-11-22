@@ -28,6 +28,7 @@ test('a changed preload cancels an outdated in-flight job, and abort is not cach
    signal.addEventListener('abort',()=>{aborts.push(payload);reject(Error('aborted'))},{once:true});
  });
  const old=c.start(key,{idea:'old'},deferred('old'));
+ await Promise.resolve(); // let the first inference attach its abort listener
  const recent=c.start(key,{idea:'new'},async()=> 'new result');
  await assert.rejects(old,/aborted/);
  assert.deepEqual(aborts,['old']);
