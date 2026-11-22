@@ -2201,3 +2201,294 @@ body:not(.showset) .specwrap .doccol>.specbar{display:none!important}
 main{padding-bottom:0!important}
 body.fitview .split>div:first-child,body.fitview .split>.side{padding-bottom:86px}
 .doccol>.btn.elaborate{bottom:74px}
+/* ================= Umsetzung aufgeräumt: eine Frage, ein Knopf – alles Weitere eingeklappt ================= */
+#implBody #planConfig{display:flex!important;flex-direction:column;align-items:stretch;gap:16px}
+#implBody #planConfig>.stephead{order:0;margin:0}
+#implBody #planConfig>.stephead h2{font-size:17px}
+#implBody #planConfig>#nextCard{order:1;display:flex;flex-direction:column;gap:14px;margin:0;padding:0;border:0;background:none}
+#implBody #planConfig>#implMore{order:2}
+#implBody #nextCard .nextrow{display:block;margin:0}
+#implBody #nextCard .nextrow .field-label{display:none}
+#implBody #nextCard .choice2{display:grid!important;grid-template-columns:1fr 1fr;gap:12px}
+#implBody #nextCard .choice{display:flex!important;flex-direction:column;gap:6px;height:auto;min-height:0;text-align:left;white-space:normal;padding:14px 16px;border:2px solid transparent;border-radius:12px;background:var(--surface-low);box-shadow:none}
+#implBody #nextCard .choice b{font:700 15px/1.25 var(--sans);color:var(--heading)}
+#implBody #nextCard .choice span{display:block!important;font:400 13px/1.4 var(--sans);color:var(--ink-soft)}
+#implBody #nextCard .choice[aria-pressed=true]{border-color:var(--go);background:color-mix(in srgb,var(--go) 12%,var(--surface-low))}
+#implBody #nextCard .runpanel:not(.hidden){display:grid;grid-template-columns:1fr;gap:12px;margin:0;padding:14px 16px;border-radius:12px;background:var(--surface-low)}
+#implBody #plan{width:100%;min-width:0;height:48px;justify-content:center;margin:0;border-radius:10px;font-size:14px;font-weight:700;background:color-mix(in srgb,var(--go) 26%,transparent);color:var(--heading);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--go) 55%,transparent)}
+#implBody #plan:hover:not(:disabled){background:color-mix(in srgb,var(--go) 40%,transparent)}
+#implBody #plan.need{background:color-mix(in srgb,var(--go) 26%,transparent);color:var(--heading)}
+/* Weitere Optionen */
+.implmore{border-radius:12px;background:none}
+.implmore>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:10px 4px;cursor:pointer;color:var(--ink-soft);font-size:13px;border-top:1px solid var(--outline-soft)}
+.implmore>summary::-webkit-details-marker{display:none}
+.implmore>summary::before{content:"▸";font:700 12px/1 var(--mono);color:var(--outline)}
+.implmore[open]>summary::before{content:"▾"}
+.implmore>summary .imt{font-weight:600;color:var(--ink)}
+.implmore>summary .meta{margin-left:auto;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.implmore>summary:hover .imt{color:var(--heading)}
+.implmorein{display:flex;flex-direction:column;gap:16px;padding:8px 0 4px}
+.implmorein>.settings{display:grid!important;grid-template-columns:1fr;gap:14px;margin:0!important}
+.implmorein #layoutSection{margin:0;box-shadow:none;background:var(--surface-low)}
+/* Schritt 2 erst mit aktuellem Plan */
+#implBody #reviewCard.noplan{display:none!important}
+#implBody #reviewCard #finish{width:100%;height:48px;justify-content:center;border-radius:10px;font-size:14px}
+@media(max-width:620px){#implBody #nextCard .choice2{grid-template-columns:1fr}}
+/* Solange eine Sperre gilt (z. B. Spezifikation nicht mehr aktuell), steht nur sie da */
+#implBody:has(#planGate:not(.hidden)) :is(#planConfig,#reviewCard){display:none!important}
+#implBody #planGate{margin:0}
+#implBody #plan,#implBody #plan.need{outline:0;border:0;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--go) 55%,transparent)!important}
+#implBody #plan:focus-visible{outline:2px solid var(--go);outline-offset:2px}
+#implBody #plan.hasplan{height:40px;background:var(--surface-low);color:var(--ink);font-weight:600;font-size:13px;box-shadow:none!important}
+#implBody #plan.hasplan:hover:not(:disabled){background:var(--surface-high)}
+.implmorein>#agentRow{order:1}.implmorein>#runAdvice{order:2}.implmorein>.settings{order:3}.implmorein>#layoutSection{order:4}
+#implBody #reviewCard{border-top:1px solid var(--outline-soft);padding-top:16px;margin-top:4px}
+#implBody #reviewCard #finish{background:color-mix(in srgb,var(--go) 26%,transparent);color:var(--heading);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--go) 55%,transparent);font-weight:700}
+#implBody #reviewCard #finish:disabled{opacity:.55}
+/* ================= Gruppen links: „Spezifikation“ und „Umsetzung“, beide aufklappbar ================= */
+body.stage0 #specGroup{display:none!important}
+#specGroup>.groupin{display:flex;flex-direction:column;gap:12px;padding:4px 0 0}
+#specGroup .groupin>details.card{box-shadow:none;background:var(--surface-low);margin:0}
+#specGroup .groupin>.toolrow{margin:0}
+/* 1) keine i-Symbole an Features und Entscheidungen */
+#featPanel>summary .info,#decPanel>summary .info{display:none!important}
+/* 2) Review und Recherche: beide gleich, ohne Rahmen */
+.toolrow .btn,.toolrow .btn:not(:disabled),.toolrow .btn.nudge{box-shadow:none!important;outline:0;border:0;background:var(--surface-low)!important;color:var(--ink)!important}
+#specGroup .toolrow .btn{background:var(--surface-low)!important}
+.toolrow .btn:hover:not(:disabled){background:var(--surface-high)!important}
+.toolrow .btn:focus-visible{outline:2px solid var(--go);outline-offset:2px}
+/* 4) Aktionen der Umsetzung */
+#implBody #nextCard>.nextrow,#implBody #nextCard>#plan:not(.hasplan){display:none!important}
+#implBody #planConfig>.stephead{display:none}
+.flowbtn{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;width:100%;padding:14px 16px;border-radius:12px;cursor:pointer;background:color-mix(in srgb,var(--go) 16%,var(--surface-low));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--go) 45%,transparent);transition:background .12s}
+.flowbtn b{font:700 15px/1.25 var(--sans);color:var(--heading)}
+.flowbtn span{font:400 13px/1.4 var(--sans);color:var(--ink-soft)}
+.flowbtn:hover:not(:disabled){background:color-mix(in srgb,var(--go) 30%,var(--surface-low))}
+.flowbtn:focus-visible{outline:2px solid var(--go);outline-offset:2px}
+.flowbtn:disabled{opacity:.5;cursor:not-allowed}
+.flowrun{display:flex;flex-direction:column;gap:12px;padding:14px 16px 16px;border-radius:12px;background:var(--surface-low)}
+.flowrun .flowbtn{background:var(--card);box-shadow:inset 0 0 0 1px var(--outline-soft)}
+.flowrun .flowbtn:hover:not(:disabled){background:color-mix(in srgb,var(--go) 14%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--go) 50%,transparent)}
+.flowcap{font:700 13px/1.2 var(--sans);color:var(--heading)}
+.flow2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#implBody .flowrun #runPanel,#implBody .flowrun #runPanel.hidden{display:grid!important;grid-template-columns:1fr;gap:10px;margin:0;padding:0;background:none}
+#flowNote{margin:0;min-height:0;font-size:13px;color:color-mix(in srgb,#e2a336 62%,var(--ink))}
+#flowNote:empty{display:none}
+#implBody #nextCard>#plan.hasplan{order:9}
+.runmodel{display:grid;gap:6px}
+@media(max-width:620px){.flow2{grid-template-columns:1fr}}
+/* Elemente in den Gruppen heben sich klar von der Gruppenkarte ab – in beiden Designs */
+#specGroup,#implPanel{--inset:color-mix(in srgb,var(--ink) 7%,var(--card));--insetline:color-mix(in srgb,var(--ink) 14%,transparent)}
+#specGroup .groupin>details.card{background:var(--inset);box-shadow:inset 0 0 0 1px var(--insetline)}
+#specGroup .toolrow .btn{background:var(--inset)!important;box-shadow:inset 0 0 0 1px var(--insetline)!important}
+#specGroup .toolrow .btn:hover:not(:disabled){background:color-mix(in srgb,var(--ink) 13%,var(--card))!important}
+#implPanel .flowrun{background:var(--inset);box-shadow:inset 0 0 0 1px var(--insetline)}
+#implPanel .flowrun .flowbtn{background:var(--card);box-shadow:inset 0 0 0 1px var(--insetline)}
+#implPanel #plan.hasplan{background:var(--inset);box-shadow:inset 0 0 0 1px var(--insetline)!important}
+#implPanel .implmorein #layoutSection{background:var(--inset);box-shadow:inset 0 0 0 1px var(--insetline)}
+#implPanel .flowrun input[type=text]{background:var(--card)}
+/* Gruppe „Spezifikation“: derselbe Innenabstand wie in „Umsetzung“ */
+#specGroup>.groupin{padding:6px 22px 22px!important;box-sizing:border-box}
+/* Idee und Zeit: Die Frage steht als Platzhalter im Feld, nicht als Überschrift darüber */
+#promptPane .rowhead{display:none!important}
+#promptPane #durPick{width:214px}
+.brandgroup:not(:has(.logotile)) #namePanel .namerow>.btn{min-width:214px}
+.brandgroup:not(:has(.logotile)) #namePanel .namerow input{flex:1 1 calc(100% - 260px)}
+/* Fester Knopf unter dem Entwurf: schwebt leicht durchscheinend über dem Dokument, ohne deckenden Kasten */
+.doccol>.btn.elaborate::before,.doccol>.btn.elaborate::after{display:none!important;content:none!important}
+.doccol>.btn.elaborate{background:color-mix(in srgb,var(--go) 30%,color-mix(in srgb,var(--surface) 82%,transparent))!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--go) 55%,transparent),0 8px 24px -8px rgba(0,0,0,.35)!important}
+.doccol>.btn.elaborate:hover:not(:disabled){background:color-mix(in srgb,var(--go) 44%,color-mix(in srgb,var(--surface) 82%,transparent))!important}
+.doccol>.btn.elaborate.nudge:not(:disabled){animation:none}
+/* Der feste Knopf sitzt knapp über der Fußzeile (der Innenabstand der Spalte hält ihn bereits über ihr) */
+.doccol>.btn.elaborate{bottom:-12px}
+/* Veralteter Entwurf: Der feste Knopf verlangt zuerst die Aktualisierung (gelb statt grün) */
+.doccol>.btn.elaborate.stale{background:color-mix(in srgb,#e2a336 34%,color-mix(in srgb,var(--surface) 82%,transparent))!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,#e2a336 65%,transparent),0 8px 24px -8px rgba(0,0,0,.35)!important}
+.doccol>.btn.elaborate.stale:hover:not(:disabled){background:color-mix(in srgb,#e2a336 48%,color-mix(in srgb,var(--surface) 82%,transparent))!important}
+/* Ein Hauptknopf unter dem Dokument: Der Knopf neben der Idee und „Neu schreiben“ entfallen */
+#promptPane #derive,#conceptRedo{display:none!important}
+#promptPane{grid-template-columns:minmax(0,1fr) auto!important}
+.doccol>.btn.elaborate:disabled{opacity:.6;cursor:not-allowed;background:color-mix(in srgb,var(--surface-low) 86%,transparent)!important;box-shadow:inset 0 0 0 1px var(--outline-soft)!important;color:var(--ink-soft)}
+.doccol>.btn.elaborate{height:46px;font-size:14px}
+#promptPane #durPick{width:214px!important;flex:none}
+#promptPane #durPick{width:152px!important;padding:0 26px 0 14px}
+/* Zeit als Zahl und Einheit in einer gemeinsamen Karte */
+#promptPane #durPick{display:none!important}
+#promptPane .durbox{grid-column:2;grid-row:2;align-self:stretch;display:flex;align-items:stretch;min-height:var(--rowh);margin:0 0 0 10px;border-radius:10px;background:var(--card);box-shadow:var(--shadow);overflow:hidden}
+#promptPane .durbox input{width:62px;box-sizing:border-box;padding:0 4px 0 14px;border:0;background:none;font:700 16px/1.2 var(--sans);color:var(--heading);text-align:right;-moz-appearance:textfield;appearance:textfield;outline:0}
+#promptPane .durbox input::-webkit-outer-spin-button,#promptPane .durbox input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#promptPane .durbox input::placeholder{color:var(--outline);font-weight:500;font-size:13px}
+#promptPane .durbox select{width:104px;box-sizing:border-box;padding:0 22px 0 8px;border:0;background-color:transparent;font:600 13px/1.2 var(--sans);color:var(--heading);cursor:pointer;outline:0}
+#promptPane .durbox option{color:var(--ink);font-weight:500}
+#promptPane .durbox.missing select{color:var(--ink-soft);font-weight:500}
+#promptPane .durbox:focus-within{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--go) 55%,transparent)}
+#promptPane .durbox.warn{box-shadow:inset 0 0 0 2px #e5484d}
+/* Mitte der Fußzeile: nächster Schritt und Kennzahlen */
+.footinfo{flex:1 1 auto;min-width:0;display:flex;align-items:center;justify-content:center;gap:22px;overflow:hidden}
+.footinfo .fnext{display:flex;flex-direction:column;gap:4px;min-width:0}
+.footinfo .fnext .eyebrow{font-size:10px!important;color:var(--ink-soft)}
+.footinfo .fnext b{font:700 14px/1.2 var(--sans);color:var(--heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.footinfo .ffacts{display:flex;align-items:center;gap:8px;flex:0 1 auto;min-width:0;overflow:hidden}
+.footinfo .ffact{flex:none;padding:6px 10px;border-radius:999px;background:color-mix(in srgb,var(--surface-low) 80%,transparent);font:500 12px/1 var(--sans);color:var(--ink);white-space:nowrap}
+.footinfo .ffact.warn{background:color-mix(in srgb,#e2a336 24%,transparent);color:color-mix(in srgb,#e2a336 60%,var(--ink))}
+.foot .working{flex:0 0 auto}
+@media(max-width:1500px){.footinfo .ffacts{display:none}}
+@media(max-width:1100px){.footinfo{display:none}}
+/* Dokument: eine einheitliche Lesebreite für alles – Text, Tabellen, Karten und Schaubilder – mittig in der Karte */
+.md :is(p,li,blockquote),.concept :is(p,li){max-width:none}
+#specView,#concept{padding-left:max(32px,calc((100% - 1040px)/2))!important;padding-right:max(32px,calc((100% - 1040px)/2))!important;box-sizing:border-box}
+/* Tabellen im Dokument: volle Breite, Spalten teilen sich den Platz nach Inhalt, Text bricht in jeder Spalte um */
+.md table{width:100%;min-width:0;table-layout:auto}
+.md td:first-child{white-space:normal}
+.md td{min-width:9ch}
+.md th{white-space:nowrap}
+/* Abnahmekriterien in aufgeklappten Anforderungen: je eine eigene Zeile */
+.md .accgap{display:block;height:8px}
+.md em.acc{font-style:normal;font-weight:700;color:color-mix(in srgb,var(--go) 65%,var(--heading))}
+/* Kopfzeile des Dokuments läuft über Dokument und Gliederung; die Gliederung beginnt bündig mit dem Dokument */
+.specwrap .doccol>.dochead{grid-column:1/-1!important}
+.specwrap>.railcol{grid-row:3/5}
+.specwrap>.railcol:has(#draftRail.blank){grid-row:3/4}
+/* Dokument und Gliederung reichen immer bis zum unteren Fensterrand (die Fußzeile liegt darüber).
+   Die Kopfzeile des Dokuments bleibt beim Rollen stehen; darunter stehen Dokument und Gliederung auf gleicher Höhe. */
+.specwrap{--doctop:134px}
+.specwrap .doccol>.dochead{position:sticky;top:0;z-index:6}
+.specwrap .doccol>.dochead::before{content:"";position:absolute;left:-2px;right:-2px;bottom:100%;height:14px;background:var(--surface)}
+.specwrap .doccol>.dochead::after{content:"";position:absolute;left:-2px;right:-2px;top:100%;height:16px;background:var(--surface)}
+body.fitview .split>div:first-child{padding-bottom:0!important}
+.specwrap .doccol>#specView,.specwrap .doccol>#conceptBox{min-height:calc(100vh - var(--doctop));min-height:calc(100dvh - var(--doctop));box-sizing:border-box;align-self:stretch}
+.specwrap .doccol>#specView{padding-bottom:110px!important}
+.specwrap .doccol>#conceptBox{padding-bottom:110px}
+.specwrap>.railcol{top:68px}
+.specwrap>.railcol>.specrail,.specwrap>.railcol>#draftRail.blank{min-height:calc(100vh - var(--doctop));min-height:calc(100dvh - var(--doctop));max-height:calc(100vh - var(--doctop));max-height:calc(100dvh - var(--doctop));padding-bottom:84px;box-sizing:border-box;flex:none!important}
+.doccol>.btn.elaborate{bottom:74px;margin-top:-120px}
+#specCount:empty{display:none!important}
+/* Der feste Knopf nimmt keine eigene Zeile unter dem Dokument ein (sonst entstünde ein Rollweg ohne Inhalt) */
+.specwrap .doccol>.btn.elaborate{margin-top:-46px}
+/* Gliederung um die Hälfte breiter (348 statt 232 Pixel); das Dokument gibt den Platz ab */
+.specwrap{grid-template-columns:minmax(0,1fr) 348px}
+.specwrap>.railcol{width:348px}
+body:not(.drafting) .specwrap:has(#specRail.hidden){grid-template-columns:minmax(0,1fr)}
+/* Kennzeile einer Anforderung: Priorität und Herkunft */
+.md p.reqmeta{margin:6px 0 8px;font:600 12px/1.4 var(--mono);color:var(--ink-soft)}
+/* Hinweis auf übernommene Änderungen: eigene Zeile unter der Kopfzeile des Dokuments, über Dokument und Gliederung */
+.specwrap{grid-template-rows:auto auto auto 1fr auto}
+.specwrap .doccol>#changeBar{grid-column:1/-1!important;grid-row:3;position:sticky;top:68px;z-index:5;box-sizing:border-box;height:44px;margin:0 0 12px;padding:0 14px;flex-wrap:nowrap;overflow:hidden;white-space:nowrap}
+.specwrap .doccol>#changeBar .what{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.specwrap .doccol>#specView,.specwrap .doccol>#conceptBox{grid-row:4}
+.specwrap .doccol>.btn.elaborate{grid-row:5}
+.specwrap>.railcol{grid-row:4/6}
+.specwrap>.railcol:has(#draftRail.blank){grid-row:4/5}
+.specwrap:has(#changeBar:not(.hidden)){--doctop:190px}
+.specwrap:has(#changeBar:not(.hidden))>.railcol{top:124px}
+/* „Spezifikation aktualisieren“ läuft über den breiten Hauptknopf; der kleine Knopf in der Kopfzeile entfällt */
+.dochead #generate{display:none!important}
+body:not(.drafting) .doccol>.btn.elaborate.specact:not(.hidden){display:flex!important}
+/* „Nicht mehr aktuell“ sagt bereits der breite gelbe Knopf; der Hinweis in der Kopfzeile entfällt */
+.dochead #specStatus.stalehint{display:none!important}
+/* Während geschrieben wird: Unter dem bisher Angekommenen zeigen pulsierende Zeilen, dass weitere Kapitel folgen (der Text trifft in Schüben ein) */
+@keyframes writepulse{0%,100%{opacity:.35}50%{opacity:.9}}
+#specView.writing::after{content:"Die weiteren Kapitel werden geschrieben – der Text erscheint in Schüben.";display:block;margin-top:34px;padding-top:108px;font:600 12px/1.4 var(--mono);color:var(--ink-soft);
+  --wl:color-mix(in srgb,var(--ink) 12%,transparent);
+  background:linear-gradient(var(--wl),var(--wl)) 0 0/38% 16px no-repeat,linear-gradient(var(--wl),var(--wl)) 0 36px/94% 12px no-repeat,linear-gradient(var(--wl),var(--wl)) 0 58px/82% 12px no-repeat,linear-gradient(var(--wl),var(--wl)) 0 80px/64% 12px no-repeat;
+  animation:writepulse 1.6s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){#specView.writing::after{animation:none;opacity:.7}}
+/* Umsetzung: eine Frage, drei gleichrangige Antworten */
+.flowhead h3{margin:0;font:700 17px/1.2 var(--sans);color:var(--heading)}
+.flowhead .meta{margin:4px 0 0;font-size:13px!important;color:var(--ink-soft)}
+.flow3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#implPanel .flow3 .flowbtn{position:relative;height:100%;padding:14px 16px 16px;gap:8px;background:var(--inset);box-shadow:inset 0 0 0 1px var(--insetline)}
+#implPanel .flow3 .flowbtn:hover:not(:disabled){background:color-mix(in srgb,var(--go) 18%,var(--inset));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--go) 60%,transparent)}
+.flowno{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:color-mix(in srgb,var(--go) 26%,transparent);color:var(--heading);font:700 12px/1 var(--mono)!important}
+.flow3 .flowbtn b{font-size:15px}
+.flow3 .flowbtn>span:not(.flowno){font-size:12.5px}
+#implPanel .flowrun{padding:12px 16px 14px;gap:10px}
+#implPanel .flowrun .flowcap{font-size:12.5px;color:var(--ink-soft);font-weight:600}
+@media(max-width:1500px){.flow3{grid-template-columns:1fr}}
+/* ================= Umsetzung nach Features (an der Stelle des Dokuments) ================= */
+.runviewbox{display:none}
+body.runview .specwrap .doccol>#specView{display:none!important}
+body.runview .specwrap .doccol>#runView{display:block;grid-column:1;grid-row:4;align-self:stretch;box-sizing:border-box;min-width:0;min-height:calc(100vh - var(--doctop));min-height:calc(100dvh - var(--doctop));padding:28px max(32px,calc((100% - 1040px)/2)) 110px;border-radius:10px;background:var(--card);box-shadow:var(--shadow)}
+#runTab[aria-pressed=true]{background:color-mix(in srgb,var(--go) 22%,transparent);color:var(--heading)}
+.dochead #runTab{order:-1}
+.rvhead h2{margin:0;font:700 24px/1.2 var(--sans);letter-spacing:-.01em;color:var(--heading)}
+.rvhead .meta{margin:6px 0 14px;font-size:13px!important}
+.rvbar{height:10px;border-radius:5px;background:color-mix(in srgb,var(--ink) 10%,transparent);overflow:hidden}
+.rvbar i{display:block;height:100%;border-radius:5px;background:var(--go);transition:width .6s ease}
+.rvnote{margin:12px 0 0;padding:10px 14px;border-radius:10px;background:color-mix(in srgb,#e2a336 14%,transparent);font-size:13px;line-height:1.45;color:var(--ink)}
+.rvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:22px}
+.rvgroup{grid-column:1/-1;margin:14px 0 0;font:700 12px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+.rvcard{--c:var(--outline);display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:12px;background:var(--surface-low);box-shadow:inset 3px 0 0 var(--c)}
+.rvcard.done{--c:var(--go)}.rvcard.running{--c:var(--src-ai)}.rvcard.partial{--c:var(--src-ai)}.rvcard.failed{--c:#e5484d}.rvcard.waiting,.rvcard.none{opacity:.72}
+.rvtop{display:flex;align-items:center;gap:10px;min-width:0}
+.rvtop b{flex:1 1 auto;min-width:0;font:700 14px/1.3 var(--sans);color:var(--heading)}
+.rvdot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--c)}
+.rvcard.running .rvdot{animation:writepulse 1.2s ease-in-out infinite}
+.rvstate{flex:none;font:600 11px/1 var(--mono);padding:4px 8px;border-radius:999px;background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--heading)}
+.rvprog{height:6px;border-radius:3px;background:color-mix(in srgb,var(--ink) 10%,transparent);overflow:hidden}
+.rvprog i{display:block;height:100%;background:var(--c);transition:width .6s ease}
+.rvcard.done .rvprog i{background:var(--go)}
+.rvsteps,.rvrest{display:flex;flex-wrap:wrap;gap:6px}
+.rvrest{grid-column:1/-1}
+.rvstep{font:600 11px/1 var(--mono);padding:4px 7px;border-radius:6px;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink-soft);cursor:default}
+.rvrest .rvstep{font:500 12px/1.3 var(--sans);padding:6px 10px}.rvrest .rvstep b{font-family:var(--mono);margin-right:2px}
+.rvstep.done{background:color-mix(in srgb,var(--go) 24%,transparent);color:var(--heading)}
+.rvstep.running{background:color-mix(in srgb,var(--src-ai) 30%,transparent);color:var(--heading)}
+.rvstep.failed,.rvstep.skipped,.rvstep.stopped{background:color-mix(in srgb,#e5484d 22%,transparent);color:var(--heading)}
+@media print{.runviewbox,#runTab{display:none!important}}
+/* Umsetzungsansicht: Vorbereitung, Features, Agenten */
+.rvhead{position:relative}
+.rvacts{float:right;display:flex;gap:8px;margin:0 0 8px 16px}
+.rvsec{margin-top:26px}
+.rvsec>.rvgroup{margin:0 0 12px}
+.rvsec .rvgrid{margin-top:0}
+.rvprep{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px 12px}
+.rvpstep{display:grid;grid-template-columns:22px auto;column-gap:10px;row-gap:2px;align-items:start;padding:10px 14px;border-radius:10px;background:var(--surface-low)}
+.rvpmark{grid-row:1/3;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:color-mix(in srgb,var(--go) 26%,transparent);color:var(--heading);font:700 12px/1 var(--mono)}
+.rvpstep.off .rvpmark{background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--ink-soft)}
+.rvpstep.running .rvpmark{background:color-mix(in srgb,var(--src-ai) 30%,transparent);animation:writepulse 1.2s ease-in-out infinite}
+.rvpstep b{font:700 13px/1.3 var(--sans);color:var(--heading)}
+.rvpstep span:last-child{grid-column:2;font-size:12.5px;line-height:1.4;color:var(--ink-soft);overflow-wrap:anywhere}
+.rvpstep.off{opacity:.75}
+.rvlist #runList{display:block!important;margin:0}
+/* Zahl der Agenten bei den Aktionen der Umsetzung – mehrere Agenten sind deutlich als Kostenfaktor markiert */
+.agentline{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:var(--card);box-shadow:inset 0 0 0 1px var(--insetline,var(--outline-soft))}
+.agentline .eyebrow{margin-right:4px}
+.agentline .agentstep{width:30px;height:30px;padding:0;justify-content:center;border-radius:8px;font-size:15px!important}
+.agentline .agentnum{min-width:26px;text-align:center;font:700 18px/1 var(--mono);color:var(--heading)}
+.agentline .agenttext{flex:1 1 auto;min-width:0;margin-left:6px;font-size:12.5px;line-height:1.4;color:var(--ink-soft)}
+.agentline .agenttext b{color:var(--heading)}
+.agentline.multi{background:color-mix(in srgb,#e2a336 14%,var(--card));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#e2a336 60%,transparent)}
+.agentline.high{background:color-mix(in srgb,#e5484d 14%,var(--card));box-shadow:inset 0 0 0 2px color-mix(in srgb,#e5484d 65%,transparent)}
+.agentline.multi .agentnum{color:color-mix(in srgb,#e2a336 70%,var(--heading))}
+.agentline.high .agentnum{color:#e5484d}
+.agentline .agentcap{display:block;margin-top:2px}
+/* Die drei Aktionen der Umsetzung als gewöhnliche, kompakte Knöpfe; die Erklärung steht im Hinweis beim Überfahren */
+#implPanel .flow3{gap:8px}
+#implPanel .flow3 .flowbtn{flex-direction:row;align-items:center;justify-content:center;height:44px;padding:0 12px;gap:0;border-radius:10px;text-align:center}
+#implPanel .flow3 .flowbtn b{font:700 13px/1.2 var(--sans);white-space:nowrap}
+.flowhead h3{font-size:15px}
+#implBody #planConfig{gap:12px}
+#implBody #planConfig>#nextCard{gap:10px}
+/* Eingabespalte: Abstand zwischen Inhalt und Rollbalken; der Platz ist immer reserviert, damit nichts springt */
+body.fitview .split>.side{scrollbar-gutter:stable;padding-right:12px;box-sizing:border-box}
+body.fitview .split>div:first-child{scrollbar-gutter:stable;padding-right:12px}
+/* Block „Umsetzung auf diesem Rechner“: eine ruhige Fläche mit drei schlichten Zeilen statt verschachtelter Kästen */
+#implPanel .flowrun{gap:12px;padding:12px 14px 14px}
+#implPanel .flowrun .flowcap{font:700 12px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+#implPanel .agentline,#implPanel .agentline.multi,#implPanel .agentline.high{padding:0;background:none;box-shadow:none;gap:8px;min-height:32px}
+#implPanel .agentline .eyebrow{flex:0 0 96px;margin:0}
+#implPanel .agentline .agentstep{width:28px;height:28px}
+#implPanel .agentline .agenttext{flex:none;margin-left:4px;font-size:13px;color:var(--ink)}
+.agentcost{flex:none;margin-left:6px;padding:5px 10px;border-radius:999px;font:700 12px/1 var(--sans);background:color-mix(in srgb,#e2a336 26%,transparent);color:color-mix(in srgb,#e2a336 55%,var(--heading))}
+.agentline.high .agentcost{background:color-mix(in srgb,#e5484d 24%,transparent);color:#e5484d}
+#implBody .flowrun #runPanel,#implBody .flowrun #runPanel.hidden{gap:10px}
+#implBody .flowrun #runPanel>div:first-child{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:center;column-gap:8px}
+#implBody .flowrun #runPanel .field-label{margin:0;font:700 12px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+#implBody .flowrun #runPanel input[type=text]{height:36px;padding:0 12px;font-size:13px}
+#implBody .flowrun #runPanel .switch{margin:0;font-size:12.5px}
+/* „Plan neu erstellen“ ist nie nötig und steht deshalb nur noch bei den weiteren Optionen */
+#implBody #nextCard>#plan{display:none!important}
+.planagain{order:9;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;margin:0}
+.planagain .meta{font-size:12px!important}
+#implBody .flowrun #runPanel,#implBody .flowrun #runPanel.hidden{background:none!important;padding:0!important;border-radius:0}
+#implBody .flowrun #runPanel .switch{font-family:var(--sans)}

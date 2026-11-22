@@ -34,7 +34,6 @@
   <div id="work" style="display:flex;flex-direction:column;gap:20px">
     
     
-    <div id="changeBar" class="changebar hidden" role="status"></div>
     <div class="split">
       <div>
         <div id="ideaPane" class="ideapane">
@@ -123,7 +122,9 @@
       <div class="actions"></div>
     </div>
         
-<div id="docHead" class="dochead"><span class="eyebrow drafttitle"><span class="draftstep on" id="step1">1 · Entwurf</span><span class="draftarrow">→</span><span class="draftstep" id="step2">2 · Ausgearbeitet</span></span><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div><button id="wishOpen" class="btn small wishopen" type="button" aria-label="Änderungswunsch äußern" title="Änderungswunsch: in eigenen Worten sagen, was anders werden soll – die KI arbeitet es ein.">✦</button><span class="actions dhright"><span class="meta" id="conceptNote"></span><button id="conceptAll" class="btn small hidden" type="button" title="Übernimmt alle Annahmen der KI als deine Festlegungen.">✓ Alles akzeptieren</button><button id="conceptRedo" class="btn small hidden" type="button" title="Schreibt das Konzept neu und berücksichtigt dabei deine Antworten im ganzen Text.">↻ Neu schreiben</button><span id="specStatus" role="status" class="status" style="min-height:0"></span><button id="generate" class="btn primary small" type="button">↻ Spezifikation aktualisieren</button><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="specPdf" class="btn small" type="button" title="Öffnet die Druckvorschau des Browsers mit der Spezifikation im A4-Format. Dort als Ziel „Als PDF speichern“ wählen.">↓ PDF / Vorschau</button></span></div>
+<div id="docHead" class="dochead"><span class="eyebrow drafttitle"><span class="draftstep on" id="step1">1 · Entwurf</span><span class="draftarrow">→</span><span class="draftstep" id="step2">2 · Ausgearbeitet</span></span><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div><button id="runTab" class="btn small hidden" type="button" aria-pressed="false">▸ Umsetzung zeigen</button><button id="wishOpen" class="btn small wishopen" type="button" aria-label="Änderungswunsch äußern" title="Änderungswunsch: in eigenen Worten sagen, was anders werden soll – die KI arbeitet es ein.">✦</button><span class="actions dhright"><span class="meta" id="conceptNote"></span><button id="conceptAll" class="btn small hidden" type="button" title="Übernimmt alle Annahmen der KI als deine Festlegungen.">✓ Alles akzeptieren</button><button id="conceptRedo" class="btn small hidden" type="button" title="Schreibt das Konzept neu und berücksichtigt dabei deine Antworten im ganzen Text.">↻ Neu schreiben</button><span id="specStatus" role="status" class="status" style="min-height:0"></span><button id="generate" class="btn primary small" type="button">↻ Spezifikation aktualisieren</button><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="specPdf" class="btn small" type="button" title="Öffnet die Druckvorschau des Browsers mit der Spezifikation im A4-Format. Dort als Ziel „Als PDF speichern“ wählen.">↓ PDF / Vorschau</button></span></div>
+<div id="changeBar" class="changebar hidden" role="status"></div>
+<div id="runView" class="runviewbox" aria-live="polite"></div>
 <div class="conceptbox" id="conceptBox">
         
         <div id="concept" class="concept" aria-live="off"></div>
@@ -185,8 +186,8 @@
         
         <div class="wishbox" id="ideaBox">
       <div id="ideaShown" class="ideashown"><span class="rowlabel">Idee</span><p id="ideaText"></p><button id="ideaPen" class="btn small ideapen" type="button" title="Idee bearbeiten" aria-label="Idee bearbeiten">✎</button></div>
-      <textarea id="idea" rows="1" maxlength="2000" aria-label="Was willst du bauen?"></textarea>
-      <div class="wishfoot"><label class="eyebrow rowhead" id="ideaHead" for="idea">Was willst du bauen?</label><label class="eyebrow rowhead" id="durHead" for="durPick">Wie viel Zeit hast du?</label><select id="durPick" class="durpick" aria-label="Wie viel Zeit hast du?" title="Wie viel Zeit soll die Umsetzung höchstens brauchen? Danach richtet sich der Umfang der Spezifikation."></select><button id="derive" class="btn primary small" type="button"><span id="deriveLabel">✦ Spezifikation entwerfen</span></button><span class="meta"><kbd>Enter</kbd></span><span class="status" id="ideaStatus" role="status" style="min-height:0"></span></div>
+      <textarea id="idea" rows="1" maxlength="2000" aria-label="Was willst du bauen?" placeholder="Was willst du bauen?"></textarea>
+      <div class="wishfoot"><label class="eyebrow rowhead" id="ideaHead" for="idea">Was willst du bauen?</label><label class="eyebrow rowhead" id="durHead" for="durPick">Wie viel Zeit hast du?</label><div id="durBox" class="durbox" title="Wie viel Zeit soll die Umsetzung höchstens brauchen? Danach richtet sich der Umfang der Spezifikation."><input id="durNum" type="number" min="1" max="999" step="1" inputmode="numeric" placeholder="Zeit" aria-label="Wie viel Zeit hast du? Zahl"><select id="durUnit" aria-label="Einheit der Zeit"><option value="min">Minuten</option><option value="h">Stunden</option><option value="d">Tage</option><option value="w">Wochen</option></select></div><select id="durPick" class="durpick" aria-label="Wie viel Zeit hast du?" title="Wie viel Zeit soll die Umsetzung höchstens brauchen? Danach richtet sich der Umfang der Spezifikation."></select><button id="derive" class="btn primary small" type="button"><span id="deriveLabel">✦ Spezifikation entwerfen</span></button><span class="meta"><kbd>Enter</kbd></span><span class="status" id="ideaStatus" role="status" style="min-height:0"></span></div>
     </div>
         
         </div>
@@ -194,6 +195,9 @@
         <!-- Features der Spezifikation: einzeln an- und abwählbar, mit Aufwand je Feature und laufender Gesamtdauer -->
         <!-- Auftritt der Anwendung als Teil des Konzepts: Name, Layout-Entwürfe und Logo -->
         
+        <details class="card catpanel specgroup" id="specGroup" open>
+          <summary><h2>Spezifikation</h2><span class="meta" id="specGroupMeta"></span></summary>
+          <div class="groupin">
         <details class="card catpanel" id="featPanel">
           <summary><h2>Features<span class="info" tabindex="0" role="note" aria-label="Basis-Features gehören zur grundsätzlichen Funktionsweise und sind fest; Erweiterungen lassen sich an- und abwählen. Der Aufwand gilt je Feature für einen einzelnen Agenten; die geschätzte Dauer passt sich sofort an."><span class="i" aria-hidden="true">i</span><span class="tip" aria-hidden="true">Basis-Features gehören zur grundsätzlichen Funktionsweise und sind fest; Erweiterungen lassen sich an- und abwählen. Der Aufwand gilt je Feature für einen einzelnen Agenten; die geschätzte Dauer passt sich sofort an.</span></span></h2><span class="meta" id="featCount"></span></summary>
           <div id="featBox"></div>
@@ -221,9 +225,11 @@
           <div id="reuseBox"></div>
         </details>
         </div>
+          </div>
+        </details>
         <div class="effortbar phasebar" id="navHint2" role="button" tabindex="0" aria-label="Umsetzung: wer was beiträgt – öffnet die Übersicht"></div>
         <details class="card catpanel hidden" id="implPanel">
-          <summary><h2>Plan und Aufträge</h2><span class="meta" id="implMeta"></span></summary>
+          <summary><h2>Plan erstellen und …</h2><span class="meta" id="implMeta"></span></summary>
           <div id="implBody">
 <div id="planGate" class="card gate hidden" role="status">
       <h2 id="gateTitle"></h2>
@@ -232,11 +238,13 @@
     </div>
 <div id="planStale" class="banner hidden" role="status">VERALTET – der Plan passt nicht mehr zu Spezifikation oder Einstellungen. Bitte neu erstellen.</div>
 <div class="card" id="planConfig">
-      <div class="stephead"><span class="stepno">1</span><div><h2>Abarbeitung festlegen</h2><p class="muted" id="formHint"></p></div></div>
+      <div class="stephead"><span class="stepno">1</span><div><h2>Wie soll es weitergehen?</h2><p class="muted" id="formHint"></p></div></div>
       <div class="choice2" role="group" aria-label="Abarbeitung">
         <button id="formSingle" type="button" class="choice"><b>Nacheinander · ein Agent</b><span>Ein Gesamtauftrag: Eine KI (ein Agent) arbeitet alle Schritte der Reihe nach ab.</span></button>
         <button id="formSplit" type="button" class="choice"><b>Parallel · mehrere Agenten</b><span>Mehrere Teilaufträge: Unabhängige Aufträge werden gleichzeitig bearbeitet, abhängige danach.</span></button>
       </div>
+      <details id="implMore" class="implmore"><summary><span class="imt">Weitere Optionen</span><span class="meta" id="implMoreMeta"></span></summary><div class="implmorein">
+      <p class="planagain hidden" id="planAgainRow"><button id="planAgain" class="link" type="button">↻ Plan neu erstellen</button><span class="meta">Nicht nötig: Der Plan ist aktuell. Ändert sich etwas, erstellen ihn die drei Knöpfe oben von selbst neu.</span></p>
       <div id="agentRow" class="parbox"><div id="agentPick"></div><span class="note" id="agentNote"></span></div>
       <div id="runAdvice" class="advice"></div>
       <div class="settings" style="margin-top:16px">
@@ -244,20 +252,7 @@
           <div class="actions repoextra"><span id="repoForm" class="actions hidden"><input type="text" id="repoName" maxlength="100" placeholder="name-des-repositorys" aria-label="Name des neuen Repositorys" style="width:240px;padding:7px 10px;font-size:14px"><select id="repoVis" aria-label="Sichtbarkeit"><option value="private">privat</option><option value="public">öffentlich</option></select><button id="repoCreate" class="btn primary small" type="button">Auf GitHub anlegen</button></span><span class="status" id="repoStatus" role="status"></span></div></div>
         <div><label class="field-label" for="agent">Zielagent</label><select id="agent"><option>Agent-neutral</option><option>Claude Code</option><option>Codex</option><option>GitHub Copilot</option><option>Cursor</option></select></div>
       </div>
-      <div id="nextCard" class="nextin"><div class="nextrow"><div><span class="field-label">Weiteres Vorgehen</span>
-      <div class="choice2" role="group" aria-label="Weiteres Vorgehen">
-        <button id="nextDownload" type="button" class="choice"><b>Zum Download bereitstellen</b><span>Spezifikation, Plan und Aufträge als Dateien – zur Übergabe an Coding-Agenten deiner Wahl.</span></button>
-        <button id="nextRun" type="button" class="choice"><b>Direkt umsetzen</b><span>Die Umsetzung startet auf diesem Rechner über Claude Code in einem Zielordner.</span></button>
-      </div></div><button id="plan" class="btn" type="button">⚙ Plan erstellen</button></div>
-      <div id="runPanel" class="hidden runpanel">
-        <div><label class="field-label" for="runDir">Zielordner (vollständiger Pfad)</label><input type="text" id="runDir" maxlength="400" placeholder="C:\Projekte\meine-app"></div>
-        <div><label class="field-label" for="runModel">Modell der Agenten</label><select id="runModel" aria-describedby="runModelCost"></select></div>
-        <p class="meta" id="runModelCost"></p>
-        <label class="switch" title="Tests, Build und Installation laufen ohne Rückfrage mit deinen Rechten. Die Agenten schreiben Dateien nur im Zielordner und verbrauchen dein Claude-Kontingent."><input type="checkbox" id="runShell"><span class="track"></span><span>Agenten dürfen Befehle ausführen – ohne Rückfrage, mit deinen Rechten</span></label>
-      </div>
-      </div>
-    </div>
-<details class="card catpanel" id="layoutSection">
+      <details class="card catpanel" id="layoutSection">
           <summary><h2 id="layoutTitle">UI-Layouts</h2><span class="meta" id="layoutMeta"></span></summary>
           <div>
       <div class="spread">
@@ -284,8 +279,34 @@
       <div class="layoutghost" id="layoutGhost" aria-hidden="true"><i></i><i></i><i></i><span class="meta">Entwürfe erscheinen hier, sobald die Layouts aktiviert sind.</span></div>
           </div>
         </details>
+      <div class="runmodel">
+        <div><label class="field-label" for="runModel">Modell der Agenten</label><select id="runModel" aria-describedby="runModelCost"></select></div>
+        <p class="meta" id="runModelCost"></p>
+      </div>
+      </div></details>
+      <div id="nextCard" class="nextin">
+            <div class="flow3">
+        <button id="goDownload" type="button" class="flowbtn" title="Spezifikation, Plan und Aufträge stehen als Dateien bereit – zur Übergabe an Coding-Agenten deiner Wahl."><b>↓ Nur herunterladen</b></button>
+        <button id="goApprove" type="button" class="flowbtn" title="Du siehst den Plan und gibst ihn frei. Erst danach starten die Agenten auf diesem Rechner."><b>✓ Prüfen, dann umsetzen</b></button>
+        <button id="goDirect" type="button" class="flowbtn" title="Die Agenten starten sofort auf diesem Rechner – ohne dass du den Plan bestätigst."><b>▸ Direkt umsetzen</b></button>
+      </div>
+      <div class="flowrun"><span class="flowcap">Umsetzung auf diesem Rechner</span><div class="agentline" id="agentLine"></div><div id="runSlot"></div></div>
+      <p id="flowNote" class="status" role="status"></p>
+      <div class="nextrow"><div><span class="field-label">Weiteres Vorgehen</span>
+      <div class="choice2" role="group" aria-label="Weiteres Vorgehen">
+        <button id="nextDownload" type="button" class="choice"><b>Zum Download bereitstellen</b><span>Spezifikation, Plan und Aufträge als Dateien – zur Übergabe an Coding-Agenten deiner Wahl.</span></button>
+        <button id="nextRun" type="button" class="choice"><b>Direkt umsetzen</b><span>Die Umsetzung startet auf diesem Rechner über Claude Code in einem Zielordner.</span></button>
+      </div></div></div>
+      <div id="runPanel" class="hidden runpanel">
+        <div><label class="field-label" for="runDir" title="Vollständiger Pfad des Ordners, in dem die Agenten arbeiten">Zielordner</label><input type="text" id="runDir" maxlength="400" placeholder="C:\Projekte\meine-app"></div>
+        <label class="switch" title="Tests, Build und Installation laufen ohne Rückfrage mit deinen Rechten. Die Agenten schreiben Dateien nur im Zielordner und verbrauchen dein Claude-Kontingent."><input type="checkbox" id="runShell"><span class="track"></span><span>Agenten dürfen Befehle ausführen – ohne Rückfrage, mit deinen Rechten</span></label>
+      </div>
+      <button id="plan" class="btn" type="button">⚙ Plan erstellen</button>
+      </div>
+    </div>
+
 <div class="card" id="reviewCard">
-      <div class="stephead"><span class="stepno">2</span><div><h2>Abschließen</h2><p class="muted">Alle Festlegungen und Ergebnisse auf einen Blick. „Ändern“ führt zur passenden Stelle. Abgeschlossen wird erst mit der Bestätigung unten rechts.</p></div></div>
+      <div class="stephead"><span class="stepno">2</span><div><h2>Prüfen und bestätigen</h2><p class="muted">Alle Festlegungen und Ergebnisse auf einen Blick. „Ändern“ führt zur passenden Stelle. Abgeschlossen wird erst mit der Bestätigung unten rechts.</p></div></div>
       <div id="review" class="review"></div>
       <p id="finishHint" class="status" role="status" style="margin-top:12px"></p>
       <button id="finish" class="btn primary" type="button"></button>
@@ -349,6 +370,7 @@
 </dialog>
 <footer class="foot" id="footBar" aria-label="Beiträge und laufende Verarbeitung"><div class="footin">
   <div class="effortbar" id="navHint" role="button" tabindex="0"></div>
+  <div id="footInfo" class="footinfo" aria-live="polite"></div>
   <div id="working" class="working hidden" role="status" aria-live="polite"><span class="pulse" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b id="workingText"></b><span id="workingHint"></span><button id="workingStop" class="btn small workstop" type="button" title="Die laufende Verarbeitung beenden; es entstehen keine weiteren Kosten.">✕ Abbrechen</button><span id="workingTime" class="timer" aria-hidden="true"></span><span class="stripe" aria-hidden="true"></span></div>
 </div></footer>
 <div id="toast" class="toast hidden" role="status"></div>

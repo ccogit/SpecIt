@@ -199,7 +199,8 @@ function validate(b){
  }
  if(b.mode==='plan'){
   if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
-  return {mode:b.mode,ai:b.ai===true,spec:b.spec,repo:String(b.repo||'').slice(0,500),agent:String(b.agent||'').slice(0,100),reuse:cleanSelections(b.reuse)};
+  const features=(Array.isArray(b.features)?b.features:[]).filter(f=>f&&typeof f==='object'&&/^F\d{2,3}$/.test(f.id)&&typeof f.name==='string').slice(0,30).map(f=>({id:f.id,name:f.name.slice(0,80)}));
+  return {mode:b.mode,ai:b.ai===true,spec:b.spec,repo:String(b.repo||'').slice(0,500),agent:String(b.agent||'').slice(0,100),reuse:cleanSelections(b.reuse),features};
  }
  if(typeof b.idea!=='string'||b.idea.length>2000)throw Error('Ungültige Idee.');
  if(!b.idea.trim())throw Error('Bitte zuerst die Idee in einem Satz beschreiben.');
@@ -494,7 +495,8 @@ async function claude(b){
  const scope=b.mode==='questions'&&b.duration?' Die Ziel-Entwicklungsdauer (targetDuration, reine Entwicklungszeit mit KI und Coding-Agenten) begrenzt den Umfang: Wähle Standards, die in dieser Zeit umsetzbar sind.':'';
  const style=b.mode==='questions'?stylePrompt(b.creativity,b.tone)+' Für die Fragen heißt das: Antwortoptionen und Standards passen zum Einsatzbereich; eigene Ideen erscheinen nur als zusätzliche Antwortoption, nie als Standard, sofern nicht ausdrücklich erwünscht.':'';
  const reuse=b.mode==='plan'&&b.reuse.length?' Der Nutzer hat die Open-Source-Projekte in reuse ausgewählt: Plane sie als zu prüfende Integrationskandidaten ein, mit einem vorgelagerten Audit/PoC-Task (Code, Lizenz, Wartung, Sicherheit), bevor Aufgaben darauf aufbauen. Nicht ausgewählte Projekte sind keine Vorgabe.':'';
- const out=await ask(withSkills(b.mode,instruction+(b.mode==='questions'?conceptNote(b):'')+(b.fill?' Vorhandene Fragen, die kein vollständiger Fragesatz sind (z. B. „Datenspeicherung?“), formulierst du zusätzlich aus, ohne Sinn oder Optionen zu ändern: im selben JSON-Objekt "rephrase":[{"from":"<vorhandene Frage wörtlich>","to":"<vollständiger Fragesatz mit Fragezeichen>"}]; leere Liste, wenn alle schon ganze Sätze sind.':'')+scope+style+reuse)+quick,decisions?{project:b.project,asked:b.questions.map(q=>q.question),spec:b.spec}:brief(b),b.mode==='questions'||decisions?3500:b.mode==='plan'?10000:16000);
+ const featMap=b.mode==='plan'&&b.features&&b.features.length?' features = die Features der Anwendung (id, name). Nenne in jedem Task zusätzlich das Feld "features": die Kennungen aller Features, zu deren Umsetzung der Task beiträgt, z. B. ["F01","F03"]. Jedes Feature kommt in mindestens einem Task vor; Tasks ohne Bezug zu einem einzelnen Feature (Projektgerüst, Integration, Abschluss) erhalten eine leere Liste.':'';
+ const out=await ask(withSkills(b.mode,instruction+featMap+(b.mode==='questions'?conceptNote(b):'')+(b.fill?' Vorhandene Fragen, die kein vollständiger Fragesatz sind (z. B. „Datenspeicherung?“), formulierst du zusätzlich aus, ohne Sinn oder Optionen zu ändern: im selben JSON-Objekt "rephrase":[{"from":"<vorhandene Frage wörtlich>","to":"<vollständiger Fragesatz mit Fragezeichen>"}]; leere Liste, wenn alle schon ganze Sätze sind.':'')+scope+style+reuse)+quick,decisions?{project:b.project,asked:b.questions.map(q=>q.question),spec:b.spec}:brief(b),b.mode==='questions'||decisions?3500:b.mode==='plan'?10000:16000);
  if(b.mode==='final')return {source:'claude',markdown:withToc(out)};
  let parsed;try{parsed=parseJson(out)}catch{throw Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.')}
  // Nichts bleibt blockiert: Offenes hat der Plan selbst festgelegt (siehe Prompt).

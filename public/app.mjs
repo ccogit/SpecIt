@@ -65,7 +65,7 @@ const toneNames=[
   ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung. Beschreibender Name, kein Humor.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({ideaTidy:null,time:{req:0,spec:0,impl:0},aiLedger:{spec:{w:0,ms:0},impl:{w:0,ms:0}},concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,proto:null,featPool:[],runOutput:null,own:{},sketch:null,logoCount:1,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:1,names:[],nameAuto:'',featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({ideaTidy:null,time:{req:0,spec:0,impl:0},aiLedger:{spec:{w:0,ms:0},impl:{w:0,ms:0}},concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,proto:null,featPool:[],runOutput:null,own:{},sketch:null,logoCount:1,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:1,names:[],nameAuto:'',featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durCustom:null,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -189,7 +189,10 @@ const plural=(n,one,many)=>n+' '+(n===1?one:many);
 function selectedReuse(){return s.reuse&&s.reuseSpec===digest(s.spec)?s.reuse.projects.filter(p=>p.included).map(p=>({url:p.url,name:p.name,license:p.license,functions:p.functions})):[]}
 function ctx(){return {repo:s.repo,agent:s.agent,reuse:selectedReuse()}}
 // Rahmen für jede Anfrage: Autonomiegrad und Ziel-Entwicklungsdauer als Text („3 Tage“)
-const duration=()=>s.durLevel?durations[s.durLevel][0]:'';
+const durUnits={min:[1,'Minute','Minuten'],h:[60,'Stunde','Stunden'],d:[480,'Tag','Tage'],w:[2400,'Woche','Wochen']};
+const durOwn=()=>{const c=s.durCustom;return s.durLevel&&c&&c.level===s.durLevel&&durUnits[c.unit]&&Number.isInteger(c.n)&&c.n>0?c:null};
+const durParts=()=>{const c=durOwn();if(c)return {n:c.n,unit:c.unit};if(!s.durLevel)return {n:0,unit:'min'};const m=durations[s.durLevel][1];for(const u of ['w','d','h'])if(m%durUnits[u][0]===0)return {n:m/durUnits[u][0],unit:u};return {n:m,unit:'min'}};
+const duration=()=>{if(!s.durLevel)return '';const p=durParts();return p.n+' '+durUnits[p.unit][p.n===1?1:2]};
 // … dazu: eigene Ideen der KI, Einsatzbereich (je 0–4) und die abgewählten Features
 const frame=()=>({autonomy:s.autonomy,duration:duration(),creativity:s.creativity,tone:s.tone,excluded:s.features.filter(f=>!f.on).map(f=>f.name)});
 // Bei 0 gibt es keine Standards: nichts ist vorausgewählt oder als Vorschlag markiert
@@ -268,9 +271,27 @@ function effortBar(){
   box.classList.toggle('wiped',wiped);
   box.setAttribute('aria-label','Wer in welcher Phase was beiträgt – öffnet die Übersicht. '+PHASES.map(([k,n])=>n+': '+compact(L.w[k])+' Wörter, '+clock(L.s[k])).join('; ')+'.');
   if($('balance').open)balanceUI();
-  fitBar();
+  fitBar();footInfo();
 }
 // Reicht der Platz neben der Marke nicht, fallen erst die Legende, dann die Zahlen weg; die Balken bleiben
+function footInfo(){
+  const box=$('footInfo');if(!box)return;
+  let next='',facts=[];
+  try{
+    const hasSpec=!!s.spec.trim(),sum=summary(s.questions),plan=s.plan&&!stale()?s.plan:null,pending=s.features.some(f=>f.on!==f.inSpec),on=s.features.filter(f=>f.on).length;
+    next=runBusy?'Die Umsetzung läuft':conceptJob?'Der Entwurf wird geschrieben':typeof streamText==='string'?'Die Spezifikation wird geschrieben':
+      !hasSpec?(!s.idea.trim()?'Idee eingeben':!s.durLevel?'Zeit angeben':draftStale()?'Entwurf aktualisieren':needConcept()?'Entwurf erstellen':sum.open?plural(sum.open,'offene Entscheidung','offene Entscheidungen')+' klären – oder direkt die Spezifikation erstellen':'Spezifikation erstellen'):
+      s.dirty?'Spezifikation aktualisieren':pending?'Feature-Auswahl in die Spezifikation übernehmen':!plan?'Umsetzung wählen: Download oder auf diesem Rechner':s.finished===finishKey()?(s.nextStep==='run'?'Umsetzung abgeschlossen oder gestartet – Ergebnis unter „Umsetzung“':'Fertig – die Dateien stehen bereit'):'Plan prüfen und bestätigen';
+    if(on){const fd=featDuration(),tm=targetMinutes();facts.push([plural(on,'Feature','Features'),'']);facts.push(['geschätzt '+hm(fd.total)+(tm?' von '+hm(tm):''),tm&&fd.total>tm?'warn':''])}
+    else if(duration())facts.push(['Ziel '+duration(),'']);
+    if(s.questions.length)facts.push([sum.open?sum.open+' offen':'alles entschieden',sum.open?'warn':'']);
+    if(hasSpec)facts.push([words(s.spec).toLocaleString('de-DE')+' Wörter','']);
+    if(plan)facts.push([plural(plan.tasks.length,'Arbeitsschritt','Arbeitsschritte'),'']);
+  }catch{}
+  const lead=node('span',undefined,'fnext');lead.append(node('span','Nächster Schritt','eyebrow'),node('b',next||'–'));
+  const row=node('span',undefined,'ffacts');for(const [text,cls] of facts)row.append(node('span',text,'ffact'+(cls?' '+cls:'')));
+  box.replaceChildren(lead,row);
+}
 function fitBar(){
 
   const box=$('navHint'),nav=document.querySelector('.top .brand');box.classList.remove('tight','tighter','gone');
@@ -397,7 +418,7 @@ function navUI(){
   effortBar();
 }
 $('implPanel').addEventListener('toggle',()=>navUI());
-function alignRows(){requestAnimationFrame(()=>{{const w=$('wishPane'),h=document.querySelector('.doccol>.dochead'),col=document.querySelector('.specwrap>.railcol');}const input=document.querySelector('#namePanel .namerow input'),group=document.querySelector('.brandgroup'),b=$('derive');if(!input||!group)return;const w=Math.round(group.getBoundingClientRect().right-input.getBoundingClientRect().right-12);const dp=$('durPick'),rest=w-(dp?Math.round(dp.getBoundingClientRect().width)+10:0);b.style.width=rest>=150?rest+'px':''})}
+function alignRows(){requestAnimationFrame(()=>{{const w=$('wishPane'),h=document.querySelector('.doccol>.dochead'),col=document.querySelector('.specwrap>.railcol');}const input=document.querySelector('#namePanel .namerow input'),group=document.querySelector('.brandgroup'),b=$('derive');if(!input||!group)return;const w=Math.round(group.getBoundingClientRect().right-input.getBoundingClientRect().right-12);const dp=$('durPick');if(dp)dp.style.width=''})}
 window.addEventListener('resize',alignRows);
 new ResizeObserver(()=>alignRows()).observe(document.querySelector('.split>.side'));
 // Name, Logo und Review klappen nicht: Sie sind feste Zeilen
@@ -420,7 +441,8 @@ $('idea').addEventListener('blur',()=>setTimeout(()=>{if(document.activeElement!
 /* ---------- Idee ---------- */
 // Das Konzept entsteht nur auf Knopfdruck. Fehlt es (oder passt es nicht mehr zu Idee und Einstellungen), ist es der nächste Schritt.
 const ideaSame=()=>s.questions.length>0&&s.idea.trim()===s.askedIdea;
-const needConcept=()=>$('ai').checked&&atIdea()&&!ideaSame()&&!(s.concept&&s.concept.key===conceptKey());
+const needConcept=()=>$('ai').checked&&atIdea()&&!(s.concept&&s.concept.key===conceptKey())&&(!ideaSame()||!!s.concept);
+const draftStale=()=>needConcept()&&!!s.concept;
 function mainUI(){
   const b=$('derive'),l=$('deriveLabel'),e=$('elaborate'),busy=!!conceptJob,ai=$('ai').checked,need=needConcept();
   const next=ideaSame()?(s.spec.trim()?'Zur Spezifikation ←':'Zu den Entscheidungen ↓'):s.autonomy===100?'✦ Spezifikation erstellen →':'✦ Spezifikation ausarbeiten →';
@@ -434,8 +456,12 @@ function mainUI(){
   b.title=busy?'':need?'Claude schreibt aus deiner Idee und den Einstellungen den Grobentwurf der Spezifikation: das Gerüst aller Kapitel mit ersten Inhalten – und den Stellen, an denen du entscheiden kannst.':nextTitle;
   // Beim Konzept: der Schritt vom Konzept zur Spezifikation
   // Sind die Entscheidungen schon abgeleitet, heißt der Schritt „Spezifikation erstellen“ (auch ohne Claude)
-  const make=ideaSame(),show=atIdea()&&!busy&&specMode!=='edit'&&(make||(ai&&!need&&conceptLive()));e.classList.toggle('hidden',!show);e.textContent=make?'✦ Spezifikation erstellen →':next;e.title=make?'Schreibt aus Entwurf, Entscheidungen und Features die vollständige Spezifikation.':nextTitle;e.disabled=active;
-  e.classList.toggle('nudge',show&&!active&&(!make||$('generate').classList.contains('nudge')));
+  const upd=!atIdea()&&typeof streamText!=='string'&&specMode!=='edit'&&!!s.spec.trim()&&!!s.dirty;
+  const make=ideaSame(),show=(atIdea()&&specMode!=='edit')||upd,old=draftStale();e.classList.toggle('hidden',!show);e.classList.toggle('specact',upd);
+  e.textContent=upd?'↻ Spezifikation aktualisieren – Eingaben oder Antworten wurden geändert':busy?'Entwurf entsteht …':old?'↻ Entwurf aktualisieren – Idee oder Einstellungen wurden geändert':need?'✦ Entwurf erstellen':make?'✦ Spezifikation erstellen →':next;
+  e.title=upd?'Die Spezifikation passt nicht mehr zu deinen Eingaben. Die geänderten Kapitel werden neu geschrieben.':busy?'':old?'Der Entwurf passt nicht mehr zu Idee oder Einstellungen. Erst wenn er aktualisiert ist, fließen die Änderungen in die Spezifikation ein.':need?(empty?'Zuerst links die Idee eingeben und die Zeit wählen.':'Claude schreibt aus deiner Idee und den Einstellungen den Grobentwurf der Spezifikation.'):make?'Schreibt aus Entwurf, Entscheidungen und Features die vollständige Spezifikation.':nextTitle;
+  e.disabled=upd?active:active||busy||(need&&empty)||(!ai&&!s.idea.trim());e.classList.toggle('stale',upd||(old&&!busy));
+  e.classList.toggle('nudge',show&&!e.disabled&&(!make||$('generate').classList.contains('nudge')));
 }
 function mainAction(){
   if(conceptJob)return;
@@ -443,12 +469,12 @@ function mainAction(){
     const miss=scaleMissing();
     if(!s.idea.trim()){$('ideaStatus').textContent='Bitte zuerst die Idee eingeben.';$('idea').focus();return}
     if(words(s.idea)<4){$('ideaStatus').textContent='Bitte die Idee etwas genauer beschreiben (mindestens vier Wörter).';$('idea').focus();return}
-    if(miss.length){$('ideaStatus').textContent=miss.includes('Zieldauer')?'Bitte noch wählen, wie viel Zeit du hast.':'Noch nicht eingestellt: '+miss.join(', ')+'.';if(miss.includes('Zieldauer')){$('durPick').classList.add('warn');$('durPick').focus()}return}
+    if(miss.length){$('ideaStatus').textContent=miss.includes('Zieldauer')?'Bitte noch wählen, wie viel Zeit du hast.':'Noch nicht eingestellt: '+miss.join(', ')+'.';if(miss.includes('Zieldauer')){$('durBox').classList.add('warn');$('durNum').focus()}return}
     $('ideaStatus').textContent='';conceptPauseUntil=0;clearTimeout(conceptIdle);runConcept(conceptKey());mainUI();ensureBrand();return;
   }
   derive(false);
 }
-$('elaborate').onclick=()=>{if(ideaSame())$('generate').click();else derive(false)};
+$('elaborate').onclick=()=>{if($('elaborate').classList.contains('specact')){$('generate').click();return}if(needConcept()){mainAction();return}if(ideaSame())$('generate').click();else derive(false)};
 // Ist das Konzept fertig, leuchten einmal die Stellen auf, die geprüft werden wollen – und „Alles akzeptieren“
 function conceptAttention(){
   const box=$('concept'),all=$('conceptAll');
@@ -1232,6 +1258,8 @@ let specChapter='Überblick';const reqOpen=new Set(),specFresh=new Set();
 const reqShut=new Set(),reqWhole=()=>specChapter==='Alles',reqIsOpen=id=>reqWhole()?!reqShut.has(id):reqOpen.has(id);
 const reqSet=(id,open)=>{const set=reqWhole()?reqShut:reqOpen,add=reqWhole()?!open:open;if(add)set.add(id);else set.delete(id)};
 function chaptersUI(view){
+  for(const p of view.querySelectorAll('p')){if(/^Priorität:\s/.test(p.textContent.trim())&&p.textContent.length<160)p.classList.add('reqmeta')}
+  for(const em of view.querySelectorAll('em')){if(!/^Akzeptanz/.test(em.textContent.trim())||!em.previousSibling||em.classList.contains('acc'))continue;em.classList.add('acc');em.before(node('span',undefined,'accgap'))}
   const rail=$('specRail'),chapters=[];let cur=null,lastIntro=null;
   for(const el of [...view.children]){
     if(el.tagName==='H3'){cur={title:el.textContent.trim(),els:[el]};chapters.push(cur)}else if(cur)cur.els.push(el);else lastIntro=el;
@@ -1619,6 +1647,7 @@ async function generate(){
   }catch(e){message=e.message}finally{if(lockId===currentLockId)streamText=null;lock(false,undefined,lockId)}
   if(lockId!==currentLockId)return;
   renderAll();if(message){note(message);return}
+  if(s.spec.trim()&&!s.dirty){$('specGroup').open=false;$('implPanel').open=true}
    if(done){const elapsedMs=Math.round(performance.now()-generatedAt),models=done.usage?.timings||[];
      s.strategyTimes[s.specStrategy]=elapsedMs;save();strategyUI();
      console.info('[SpecIt performance]',{strategy:s.specStrategy,generationMs:elapsedMs,modelCalls:models});
@@ -1928,7 +1957,7 @@ function featuresUI(){
   }
   // Zielvorgabe direkt hier ändern: Die Rechnung passt sich sofort an; die Spezifikation nennt die Vorgabe als Rahmen
   // und wird deshalb erst auf Wunsch nachgezogen.
-  const goal=node('div',undefined,'goalpick'),gHead=node('div',undefined,'spread'),gNow=node('span',durations[s.durLevel][0],'chip'),gIn=node('input');
+  const goal=node('div',undefined,'goalpick'),gHead=node('div',undefined,'spread'),gNow=node('span',duration()||durations[s.durLevel][0],'chip'),gIn=node('input');
   gHead.append(node('b','Zielvorgabe'),gNow);
   gIn.type='range';gIn.min=0;gIn.max=durations.length-1;gIn.step=1;gIn.value=s.durLevel;gIn.disabled=active;gIn.setAttribute('aria-label','Ziel-Entwicklungsdauer');gIn.setAttribute('aria-valuetext',durations[s.durLevel][0]);
   gIn.oninput=()=>{gNow.textContent=durations[Number(gIn.value)][0];gIn.setAttribute('aria-valuetext',gNow.textContent)};
@@ -2658,7 +2687,7 @@ const paramOptions={autonomy:()=>shortAutonomy.map((n,i)=>[n,levels[i][1]]),crea
     pop.append(menu);
   }
   box.remove();
-  {const dp=$('durPick');durations.forEach(([name,,why],v)=>{const o=document.createElement('option');o.value=v;o.textContent=v?name:'Bitte wählen';o.title=why;if(!v)o.disabled=true;dp.append(o)});
+  {const dp=$('durPick');durations.forEach(([name,,why],v)=>{const o=document.createElement('option');o.value=v;o.textContent=v?name:'Wie viel Zeit?';o.title=why;if(!v)o.disabled=true;dp.append(o)});
    dp.addEventListener('change',()=>{const inp=$('durLevel');inp.value=dp.value;inp.dispatchEvent(new Event('input',{bubbles:true}));dp.classList.remove('warn');$('ideaStatus').textContent='';mainUI()})}
   // Immer nur eine Kapsel offen; ein Klick daneben oder Esc schließt sie
   const all=()=>[...bar.querySelectorAll('details.param')];
@@ -2683,7 +2712,8 @@ function paramUI(){
     d.querySelector('summary').title=row.querySelector('label').textContent+': '+(text?text.textContent.trim():val)+(st==='missing'?' – fehlt noch, bitte einstellen':st==='auto'?' – voreingestellt':'');
   }
   {const dp=$('durPick'),v=String($('durLevel').value);if(dp.value!==v)dp.value=v;dp.classList.toggle('missing',v==='0')}
-  settingsSync();
+  {const p=durParts(),num=$('durNum'),unit=$('durUnit');if(document.activeElement!==num)num.value=p.n?String(p.n):'';if(unit.value!==p.unit&&(p.n||document.activeElement!==unit))unit.value=p.unit;$('durBox').classList.toggle('missing',!p.n)}
+  settingsSync();clearTimeout(paramUI.t);paramUI.t=setTimeout(()=>{mainUI();conceptUI()},0);
   const on=document.querySelector('#presets .btn[aria-pressed=true]');$('paramPresetVal').textContent=on?on.textContent:'eigene';
 }
 /* ---------- Einstellungen als Overlay mit Reglern ---------- */
@@ -2728,6 +2758,13 @@ function settingsBuild(){
   sec.append(seg,model);body.append(sec);
   settingsSync();
 }
+function durInput(){
+  const n=parseInt($('durNum').value,10),unit=$('durUnit').value,inp=$('durLevel');
+  if(!Number.isInteger(n)||n<1){s.durCustom=null;inp.value=0}
+  else{const m=Math.min(999,n)*durUnits[unit][0],level=durations.reduce((best,d,i)=>i&&Math.abs(Math.log(d[1]/m))<Math.abs(Math.log(durations[best][1]/m))?i:best,1);s.durCustom={n:Math.min(999,n),unit,level};inp.value=level}
+  inp.dispatchEvent(new Event('input',{bubbles:true}));$('durBox').classList.remove('warn');$('ideaStatus').textContent='';mainUI();
+}
+$('durNum').addEventListener('input',durInput);$('durUnit').addEventListener('change',durInput);
 function settingsOpen(){settingsBuild();const d=$('setDlg');if(!d.open)d.showModal()}
 $('setClose').onclick=()=>$('setDlg').close();$('setDlg').onclick=e=>{if(e.target===$('setDlg'))$('setDlg').close()};
 const scaleMissing=()=>scaleRows.filter(([,key])=>scaleState(key)==='missing').map(([,,name])=>name);
@@ -2854,7 +2891,7 @@ $('plan').onclick=async()=>{
   if(!s.spec.trim()||s.dirty){$('planStatus').textContent='Bitte eine aktuelle Spezifikation erzeugen oder manuell aktualisieren.';return}
   const rev=revision,context=ctx();const lockId=lock(true,'Arbeitsaufträge werden erstellt');$('planStatus').textContent='Arbeitsaufträge werden erstellt …';
   try{
-    const r=await call({mode:'plan',spec:s.spec,...context,ai:$('ai').checked});
+    const r=await call({mode:'plan',spec:s.spec,...context,features:s.features.filter(f=>f.on).map(f=>({id:f.id,name:f.name})),ai:$('ai').checked});
     if(rev!==revision){$('planStatus').textContent='Eingaben geändert. Erneut starten.';return}
     s.plan=validatePlan(r.plan);s.planSource=r.source;s.planSpec=s.spec;s.planContext=context;s.planTrace=r.trace||null;statuses();save();
   }catch(e){if(lockId===currentLockId)$('planStatus').textContent=e.message}finally{lock(false,undefined,lockId)}
@@ -3017,6 +3054,16 @@ function finishKey(){return digest(JSON.stringify([s.planSpec,s.plan?s.plan.task
 // Übersicht vor dem Abschluss: jede Festlegung mit Sprung zu der Stelle, an der sie sich ändern lässt
 function reviewUI(p,agents){
   const box=$('review'),sum=summary(s.questions),c=chosenLayout(),direct=s.nextStep==='run',single=agents===1;box.replaceChildren();
+  $('reviewCard').classList.toggle('noplan',!p);
+  {const l=$('agentLine'),n=agents,max=planMax(),want=Math.max(1,s.featAgents||1),lock=active||runBusy||runStarting;
+   const minus=button('−','btn small agentstep',()=>{s.featAgents=Math.max(1,n-1);renderAll()}),plus=button('+','btn small agentstep',()=>{s.featAgents=Math.min(max,n+1);renderAll()});
+   minus.disabled=n<=1||lock;plus.disabled=n>=max||lock;minus.setAttribute('aria-label','Einen Agenten weniger');plus.setAttribute('aria-label','Einen Agenten mehr');
+   const txt=node('span',n===1?'nacheinander':'parallel','agenttext'),cost=n>1?node('span','≈ '+n+'-fache Kosten','agentcost'):null;
+   l.className='agentline'+(n>=5?' high':n>1?' multi':'');l.title=n===1?'Ein Agent arbeitet alle Schritte nacheinander ab.':n+' Agenten arbeiten gleichzeitig – so in der Feature-Schätzung eingestellt. Jeder Agent verbraucht eigenes Kontingent: rund '+n+'-fache Kosten je Minute.'+(want>n?' Eingestellt sind '+want+'; mehr als '+n+' lassen sich bei diesem Umfang nicht gleichzeitig beschäftigen.':'');
+   l.replaceChildren(node('span','Agenten','eyebrow'),minus,node('b',String(n),'agentnum'),plus,txt,...(cost?[cost]:[]))}
+  {const busy=active||runBusy||runStarting||layoutBusy;$('goDownload').disabled=busy;$('goApprove').disabled=$('goDirect').disabled=busy||!agentsOk;if(!agentsOk)$('goApprove').title=$('goDirect').title='Claude Code wurde auf diesem Rechner nicht gefunden.';
+   const sum=summary(s.questions),on=s.features.filter(f=>f.on).length;$('specGroupMeta').textContent=s.features.length||s.questions.length?[on?plural(on,'Feature','Features'):'',s.questions.length?(sum.open?sum.open+' offen':'alle Entscheidungen getroffen'):''].filter(Boolean).join(' · '):''}$('plan').classList.toggle('hasplan',!!p);$('planAgainRow').classList.toggle('hidden',!p);$('planAgain').disabled=active||runBusy;
+  {const m=$('implMoreMeta');if(m)m.textContent=[single?'1 Agent':agents+' Agenten parallel',$('agent').value,$('repo').value.trim()?'Repository angegeben':'kein Repository','Layouts '+($('layoutOn').checked?'an':'aus')].join(' · ')}
   const jump=id=>()=>$(id).scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   const row=(label,value,go,warn)=>{const r=node('div',undefined,'reviewrow'+(warn?' warn':'')),b=button('Ändern','link',go);b.setAttribute('aria-label',label+' ändern');r.append(node('span',label,'eyebrow'),node('span',value,'val'),b);box.append(r)};
   row('Abarbeitung',single?'Nacheinander · ein Agent · ein Gesamtauftrag':'Parallel · '+agents+' Agenten · mehrere Teilaufträge',jump('planConfig'));
@@ -3024,8 +3071,8 @@ function reviewUI(p,agents){
   row('Weiteres Vorgehen',direct?'Direkt umsetzen in '+(s.runDir.trim()||'– Zielordner fehlt –')+(s.runShell?' · Befehle erlaubt':' · ohne Befehle')+(s.runModel?' · '+(agentModels.find(m=>m.id===s.runModel)?.name||s.runModel):''):'Zum Download bereitstellen',jump('nextCard'),direct&&!s.runDir.trim());
   // Abschluss: der Knopf steht direkt unter der Übersicht
   const done=!!p&&s.finished===finishKey(),ready=!!p&&!active&&!runBusy&&!layoutBusy&&(!direct||(agentsOk&&!!s.runDir.trim())),f=$('finish');
-  f.textContent=done&&!direct?'✓ Abgeschlossen':direct?'▸ Bestätigen und Umsetzung starten':'✓ Bestätigen und bereitstellen';f.disabled=!ready||(done&&!direct);
-  $('finishHint').textContent=!p?'Zum Abschließen fehlt ein aktueller Plan – „Plan erstellen“ (rot markiert).':layoutBusy?'Die Layout-Entwürfe werden noch erzeugt.':direct&&!agentsOk?'Claude Code wurde auf diesem Rechner nicht gefunden; „Direkt umsetzen“ ist nicht möglich.':direct&&!s.runDir.trim()?'Zum Abschließen fehlt der Zielordner (Abschnitt 1, rot markiert).':done?(direct?'':'Abgeschlossen. Die Dateien stehen bereit; eine Änderung der Festlegungen erfordert eine neue Bestätigung.'):'Bitte prüfen. Bestätigt wird mit dem Knopf unten rechts.';
+  f.textContent=done&&!direct?'✓ Abgeschlossen':direct?'▸ Freigeben und Umsetzung starten':'✓ Bestätigen und bereitstellen';f.disabled=!ready||(done&&!direct);
+  $('finishHint').textContent=!p?'Zum Abschließen fehlt ein aktueller Plan – „Plan erstellen“ (rot markiert).':layoutBusy?'Die Layout-Entwürfe werden noch erzeugt.':direct&&!agentsOk?'Claude Code wurde auf diesem Rechner nicht gefunden; „Direkt umsetzen“ ist nicht möglich.':direct&&!s.runDir.trim()?'Zum Abschließen fehlt der Zielordner (Abschnitt 1, rot markiert).':done?(direct?'':'Abgeschlossen. Die Dateien stehen bereit; eine Änderung der Festlegungen erfordert eine neue Bestätigung.'):'Bitte prüfen. Bestätigt wird mit dem Knopf darunter.';
   // Was zum Abschließen fehlt, ist an Ort und Stelle rot markiert; der Hinweis führt per Klick dorthin
   const lacks=!p?'plan':direct&&!agentsOk?'nextRun':direct&&!s.runDir.trim()?'runDir':'';
   for(const id of ['plan','nextRun','runDir'])$(id).classList.toggle('need',lacks===id&&!active&&!runBusy);
@@ -3035,6 +3082,28 @@ function reviewUI(p,agents){
   for(const id of ['json','backlog','copyAll'])$(id).disabled=!p;
   runUI();
 }
+// Eine Aktion statt Festlegung plus Knopf: Der Plan entsteht bei Bedarf, danach geht es je nach Aktion sofort weiter.
+// download = Plan und Dateien bereitstellen · approve = Plan, dann Freigabe durch den Nutzer · direct = Plan, dann Start der Agenten
+async function goFlow(kind){
+  if(active||runBusy||runStarting)return;
+  const note=$('flowNote'),run=kind!=='download';note.textContent='';
+  if(!s.spec.trim()||s.dirty){note.textContent='Bitte zuerst die Spezifikation aktualisieren.';return}
+  if(run&&!agentsOk){note.textContent='Claude Code wurde auf diesem Rechner nicht gefunden; die Umsetzung hier ist nicht möglich.';return}
+  if(run&&!s.runDir.trim()){note.textContent='Bitte zuerst den Zielordner angeben.';$('runDir').focus();return}
+  s.nextStep=run?'run':'download';save();renderAll();if(run)pollRun();
+  if(!(s.plan&&!stale()))await $('plan').onclick();
+  if(!(s.plan&&!stale())){note.textContent=$('planStatus').textContent||'Der Plan konnte nicht erstellt werden.';return}
+  await new Promise(r=>setTimeout(r,60));
+  if(kind==='approve'){$('reviewCard').scrollIntoView({block:'nearest'});$('finish').focus({preventScroll:true});return}
+  if($('finish').disabled){note.textContent=$('finishHint').textContent;return}
+  await $('finish').onclick();
+}
+$('planAgain').onclick=()=>$('plan').onclick();
+$('goDownload').onclick=()=>goFlow('download');$('goApprove').onclick=()=>goFlow('approve');$('goDirect').onclick=()=>goFlow('direct');
+// Zielordner und Erlaubnis für Befehle stehen bei den beiden Aktionen für diesen Rechner
+$('runSlot').replaceWith($('runPanel'));
+// Klappt in der Gruppe etwas auf, öffnet sich auch die Gruppe
+for(const id of ['featPanel','decPanel'])$(id).addEventListener('toggle',()=>{if($(id).open)$('specGroup').open=true});
 $('finish').onclick=async()=>{
   const p=s.plan&&!stale()?s.plan:null;if(!p||active||runBusy)return;
   if(s.nextStep!=='run'){s.finished=finishKey();save();renderAll();$('doneBox').scrollIntoView({block:'nearest'});return}
@@ -3079,11 +3148,83 @@ $('wish').onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDef
 // Unter einer Minute in Sekunden, bis zehn Minuten mit einer Nachkommastelle – sonst ginge die Genauigkeit kurzer Laufzeiten verloren
 const hm=min=>{if(min>0&&min<0.95)return Math.max(1,Math.round(min*60))+' s';if(min<9.95&&Math.round(min*10)%10)return (Math.round(min*10)/10).toLocaleString('de-DE')+' min';min=Math.round(min);const h=Math.floor(min/60),m=min%60;return (h?h+' h':'')+(h&&m?' ':'')+(m||!h?m+' min':'')};
 // Ziel-Entwicklungsdauer in Minuten (Stufen siehe durations)
-const targetMinutes=()=>durations[s.durLevel][1];
+const targetMinutes=()=>{const c=durOwn();return c?c.n*durUnits[c.unit][0]:durations[s.durLevel][1]};
 const dur=sec=>sec<60?sec+' s':hm(sec/60);
 const stateNames={waiting:'wartet',running:'läuft',done:'fertig',failed:'Fehler',skipped:'übersprungen',stopped:'gestoppt'};
+/* ---------- Umsetzung nach Features: steht während des Laufs an der Stelle des Dokuments ---------- */
+let runViewOn=false,runSeen='';const runListEl=$('runList'),runListHome=runListEl.parentElement;
+// Welche Arbeitsschritte zu welchem Feature gehören: aus dem Plan (features je Task); ältere Pläne ohne diese Angabe werden nach Stichworten zugeordnet
+function featTasks(){
+  const p=s.plan,map=new Map();if(!p)return {map,exact:false};
+  const exact=p.tasks.some(t=>(t.features||[]).length);
+  for(const f of s.features.filter(x=>x.on)){
+    let ids=p.tasks.filter(t=>(t.features||[]).includes(f.id)).map(t=>t.id);
+    if(!exact){const keys=f.name.toLowerCase().split(/[^a-zäöüß0-9]+/).filter(w=>w.length>=5);ids=p.tasks.filter(t=>{const hay=(t.title+' '+t.goal+' '+t.scope.join(' ')).toLowerCase();return keys.some(k=>hay.includes(k))}).map(t=>t.id)}
+    map.set(f.id,ids);
+  }
+  return {map,exact};
+}
+function runFeatureUI(){
+  const r=run,box=$('runView'),tab=$('runTab'),has=!!(r&&r.items&&r.items.length&&s.plan&&s.features.length),key=has?(r.dir||'')+'|'+r.items.length:'';
+  // Beginnt ein Lauf, wechselt die Ansicht von selbst hierher; zurück geht es über den Knopf oder die Gliederung
+  if(has&&r.active&&runSeen!==key){runSeen=key;runViewOn=true}
+  if(!has)runViewOn=false;
+  tab.classList.toggle('hidden',!has);tab.setAttribute('aria-pressed',String(runViewOn));tab.textContent=runViewOn?'▤ Dokument zeigen':'▸ Umsetzung zeigen';
+  document.body.classList.toggle('runview',runViewOn&&specMode!=='edit');
+  if(!runViewOn){if(runListEl.parentElement!==runListHome)runListHome.append(runListEl);box.replaceChildren();return}
+  const p=s.plan,single=r.items.length===1&&r.items[0].id==='Gesamt',{map,exact}=featTasks(),st=new Map(),mins=id=>{const t=p.tasks.find(x=>x.id===id);return t&&t.minutes>0?t.minutes:1};
+  if(!single)for(const it of r.items)st.set(it.id,it.state);
+  else{
+    // Ein einzelner Agent meldet keinen Zwischenstand: Der Stand je Schritt ist dann nach der bisherigen Laufzeit geschätzt
+    const it=r.items[0],order=p.waves.flat(),total=order.reduce((n,id)=>n+mins(id),0)||1;
+    if(it.state!=='running')for(const id of order)st.set(id,it.state);
+    else{const frac=Math.min(.97,(it.seconds/60)/total);let acc=0,found=false;for(const id of order){const m=mins(id)/total;if(acc+m<=frac)st.set(id,'done');else if(!found){st.set(id,'running');found=true}else st.set(id,'waiting');acc+=m}}
+  }
+  const bad=['failed','skipped','stopped'];
+  const fstate=ids=>{const a=ids.map(id=>st.get(id)||'waiting');if(!a.length)return 'none';if(a.some(x=>x==='running'))return 'running';if(a.every(x=>x==='done'))return 'done';if(a.some(x=>bad.includes(x)))return 'failed';return a.some(x=>x==='done')?'partial':'waiting'};
+  const rows=s.features.filter(f=>f.on).map(f=>{const ids=map.get(f.id)||[];return {f,ids,state:fstate(ids),done:ids.filter(id=>st.get(id)==='done').length}});
+  const nDone=rows.filter(x=>x.state==='done').length,nRun=rows.filter(x=>x.state==='running'||x.state==='partial').length,nBad=rows.filter(x=>x.state==='failed').length;
+  const head=node('div',undefined,'rvhead'),bar=node('div',undefined,'rvbar'),fill=node('i');
+  fill.style.width=(rows.length?Math.round(100*(nDone+nRun*.4)/rows.length):0)+'%';bar.append(fill);
+  head.append(node('h2',r.active?'Umsetzung läuft':r.stopped?'Umsetzung gestoppt':nBad?'Umsetzung beendet – nicht alles abgeschlossen':'Umsetzung abgeschlossen'),
+    node('p',nDone+' von '+rows.length+' Features fertig'+(nRun?' · '+nRun+' in Arbeit':'')+(nBad?' · '+nBad+' nicht abgeschlossen':'')+' · '+dur(r.seconds)+' · '+(r.agents===1?'1 Agent':r.agents+' Agenten parallel'),'meta'),bar);
+  if(single&&r.active)head.append(node('p','Ein einzelner Agent arbeitet den ganzen Auftrag am Stück ab und meldet keinen Zwischenstand. Welches Feature gerade an der Reihe ist, ist deshalb nach der bisherigen Laufzeit geschätzt.','rvnote'));
+  if(!exact)head.append(node('p','Dieser Plan ordnet seine Arbeitsschritte den Features noch nicht ausdrücklich zu; die Zuordnung ist nach Stichworten geschätzt. Ein neu erstellter Plan ordnet sie genau zu.','rvnote'));
+  const grid=node('div',undefined,'rvgrid'),label={done:'fertig',running:'in Arbeit',partial:'teilweise fertig',waiting:'wartet',failed:'nicht abgeschlossen',none:'ohne Arbeitsschritt'};
+  for(const [title,list] of [['Basis',rows.filter(x=>x.f.core)],['Erweiterungen',rows.filter(x=>!x.f.core)]]){
+    if(!list.length)continue;grid.append(node('h3',title+' · '+list.filter(x=>x.state==='done').length+' von '+list.length+' fertig','rvgroup'));
+    for(const x of list){
+      const card=node('div',undefined,'rvcard '+x.state),top=node('div',undefined,'rvtop'),pb=node('div',undefined,'rvprog'),pf=node('i');
+      top.append(node('span',undefined,'rvdot'),node('b',x.f.name),node('span',label[x.state],'rvstate'));
+      pf.style.width=(x.ids.length?Math.round(100*x.done/x.ids.length):0)+'%';pb.append(pf);card.append(top,pb);
+      if(x.ids.length){const steps=node('div',undefined,'rvsteps');for(const id of x.ids){const t=p.tasks.find(y=>y.id===id),c=node('span',id,'rvstep '+(st.get(id)||'waiting'));c.title=(t?t.title:'')+' – '+(stateNames[st.get(id)||'waiting']||'');steps.append(c)}card.append(steps)}
+      grid.append(card);
+    }
+  }
+  const used=new Set([...map.values()].flat()),rest=p.tasks.filter(t=>!used.has(t.id));
+  if(rest.length){grid.append(node('h3','Übergreifende Arbeitsschritte · '+rest.length,'rvgroup'));const wrap=node('div',undefined,'rvrest');for(const t of rest){const c=node('span',undefined,'rvstep '+(st.get(t.id)||'waiting'));c.append(node('b',t.id),' '+t.title);wrap.append(c)}grid.append(wrap)}
+  // Vorbereitung und Organisation: was vor und neben der eigentlichen Programmierung geschieht
+  const prep=node('div',undefined,'rvprep'),step=(label,text,state)=>{const x=node('div',undefined,'rvpstep '+(state||'done'));x.append(node('span',state==='off'?'–':state==='running'?'…':'✓','rvpmark'),node('b',label),node('span',text));prep.append(x)};
+  const repo=(s.repo||'').trim(),lay=typeof chosenLayout==='function'?chosenLayout():null,started=r.items.some(x=>x.state!=='waiting');
+  step('Spezifikation',words(s.planSpec||s.spec).toLocaleString('de-DE')+' Wörter als SPEC.md übergeben');
+  step('Plan',plural(p.tasks.length,'Arbeitsschritt','Arbeitsschritte')+' in '+plural(p.waves.length,'Stufe','Stufen')+(single?' · als ein Gesamtauftrag':' · als einzelne Aufträge'));
+  step('Zielordner',r.dir||s.runDir||'–');
+  step('Repository',repo?repo:'keines angegeben – gearbeitet wird nur im Zielordner',repo?'done':'off');
+  step('Logo',s.logos[s.logoChosen]?'liegt als design/logo.svg im Zielordner':'keines gewählt',s.logos[s.logoChosen]?'done':'off');
+  step('Layout-Entwurf',lay?'gewählter Entwurf liegt im Ordner design':'keiner gewählt',lay?'done':'off');
+  step('Agenten',(r.agents===1?'1 Agent, nacheinander':r.agents+' Agenten parallel')+(r.shell?' · dürfen Befehle ausführen (Tests, Build, Installation)':' · ohne Befehle'),started?'done':'running');
+  const sec=(title,el)=>{const w=node('section',undefined,'rvsec');w.append(node('h3',title,'rvgroup'),el);return w};
+  const slot=node('div',undefined,'rvlist'),acts=node('div',undefined,'rvacts');
+  if(r.active)acts.append(button('■ Umsetzung stoppen','btn small',()=>$('runStop').click()));
+  acts.append(button('▤ Dokument zeigen','btn small',()=>{runViewOn=false;runFeatureUI()}));head.prepend(acts);
+  box.replaceChildren(head,sec('Vorbereitung und Organisation',prep),sec('Features',grid),sec(r.agents>1?'Agenten und Aufträge':'Auftrag',slot));
+  slot.append(runListEl);
+}
+$('runTab').onclick=()=>{runViewOn=!runViewOn;runFeatureUI()};
+$('specRail').addEventListener('click',()=>{if(runViewOn){runViewOn=false;runFeatureUI()}},true);
 function runUI(){
-  const r=run,busyRun=!!(r&&r.active),list=$('runList');list.replaceChildren();
+  const r=run,busyRun=!!(r&&r.active),list=runListEl;list.replaceChildren();
+  try{runFeatureUI()}catch{}
   $('runStop').classList.toggle('hidden',!busyRun);
   // Übergabe: Sobald ein Lauf beendet ist (auch nach einem Neustart), lässt sich das Ergebnis laden und der Ordner öffnen
   const handover=!busyRun&&s.nextStep==='run'&&!!s.runDir.trim()&&(!!(r&&r.items.length)||s.finished===finishKey());
