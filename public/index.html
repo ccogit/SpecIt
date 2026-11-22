@@ -2995,6 +2995,7 @@ async function derive(more){
     s.questions=applyAutonomy(s.questions,s.autonomy);auto=!more&&firstOpen()<0;
     s.qSource=r.source;s.phase=2;activate(firstOpen(),false);renderAll();if(!quietScope){if(firstOpen()>=0)$('decPanel').open=true;if(!more)focusPart(2)}
   }catch(e){status.textContent=e.message;flashNote(e.message)}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   // Auch im Auto-Modus wird nur der Umfang ermittelt; geschrieben wird erst auf „Spezifikation erstellen“
   if(auto)startSpec(false);
 }
@@ -3162,6 +3163,7 @@ async function researchReuse(){
     else{s.reuse={...result,projects:(result.projects||[]).map(p=>({...p,included:false}))};s.reuseSpec=digest(spec)}
   }catch(e){message='Recherche unvollständig: '+e.message+' Daraus folgt nicht, dass neu entwickelt werden muss.'}
   finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   renderAll();if(message)specNote(message,true);
 }
 
@@ -3246,6 +3248,7 @@ async function deriveDecisions(keepChange){
       message=n?plural(n,'offene Entscheidung','offene Entscheidungen')+' mit Alternativen in den Fragen-Katalog übernommen.':'Keine weiteren offenen Entscheidungen in der Spezifikation gefunden.';
     }
   }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   renderAll();specNote(message);
 }
 // Antwort aus dem Katalog übernehmen und die Spezifikation nachziehen
@@ -3285,6 +3288,7 @@ async function commitAnswers(next,ids,label){
     if(!prev.dirty)md=(await call({...base,mode:'revise',previous:prev.questions,index:i,spec:prev.spec,ai})).markdown??null;
     if(md===null&&regen){const r=await call({...base,mode:'final',ai:prev.specSource==='claude'});md=r.markdown;source=r.source}
   }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   if(md!==null&&rev===revision){
     s.spec=md;s.specSource=source;s.dirty=false;$('spec').value=md;specMode='view';
     change={ids,...label(),prev,old:prev.spec,until:0,scroll:false};
@@ -4047,7 +4051,8 @@ async function generate(){
       // Nach einer kapitelweisen Aktualisierung: geänderte Kapitel in der Liste kennzeichnen und das erste gleich zeigen
       specFresh.clear();if(r.update){for(const x of r.changed||[])specFresh.add(x);if(specFresh.size)specChapter=[...specFresh][0]}
       save()}
-  }catch(e){message=e.message}finally{streamText=null;lock(false,undefined,lockId)}
+  }catch(e){message=e.message}finally{if(lockId===currentLockId)streamText=null;lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   renderAll();if(message){note(message);return}
    if(done){const elapsedMs=Math.round(performance.now()-generatedAt),models=done.usage?.timings||[];
      s.strategyTimes[s.specStrategy]=elapsedMs;save();strategyUI();
@@ -4083,6 +4088,7 @@ async function deriveFeatures(early){
       s.features=cleanFeatures([...fresh,...s.features.filter(f=>!f.on&&!f.inSpec&&!known.has(f.name.toLowerCase())).map(f=>({...f,id:'',dependsOn:core?[core.id]:[]}))]);s.featSource=r.source;
     }
   }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   renderAll();if(message)specNote(message,true);
 }
 // Dauer der gewählten Features: Arbeitspakete, Obergrenze der Parallelisierung und Schätzung für die gewählte Agentenzahl
@@ -4133,6 +4139,7 @@ async function applyDuration(){
   let md=null,message='';
   try{md=(await call({mode:'adjust',spec:s.spec,wish:'Die Ziel-Entwicklungsdauer (reine Laufzeit der Coding-Agenten) lautet jetzt: '+(now||'keine Vorgabe')+'. Passe die Angabe der Rahmenbedingung überall an; der Umfang bleibt unverändert.',idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:true,...frame()})).markdown??null}
   catch(e){message=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   if(md===null||rev!==revision){renderAll();specNote(message||'Die Zielvorgabe konnte nicht übernommen werden. Bitte erneut versuchen.',true);return}
   s.spec=md;s.specDuration=now;$('spec').value=md;specMode='view';
   change={ids:[],title:'Zielvorgabe übernommen:',detail:now||'keine Vorgabe',prev,old:prev.spec,until:0,scroll:false};
@@ -4163,6 +4170,7 @@ async function proposeFit(){
     const agents=Math.min(6,workPackages(feats).width),fit=suggestExtensions(feats,target,agents);
     fitProposal={summary:r.summary||'',measures:Array.isArray(r.measures)?r.measures:[],features:fit.features,agents,base:fit.base,total:fit.total,chosen:fit.chosen.length,target};
   }catch(e){message=e.message;fitProposal=localFit(list,target)}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   renderAll();if(message)specNote(message+' Stattdessen steht ein rechnerischer Vorschlag bereit.',true);
 }
 // Rechnerischer Vorschlag ohne KI: Spätere Basis-Features werden zu Erweiterungen, bis die Basis in die Zielzeit passt
@@ -4215,6 +4223,7 @@ async function acceptFit(){
   let md=null,message='';
   try{md=(await call({mode:'adjust',spec:s.spec,wish,idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()})).markdown??null}
   catch(e){message=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   if(md===null||rev!==revision){renderAll();specNote(message||'Der Vorschlag konnte nicht eingearbeitet werden. Bitte erneut versuchen.',true);return}
   s.spec=md;s.features=p.features.map(f=>({...f,inSpec:f.on}));s.featAgents=p.agents;$('spec').value=md;specMode='view';fitProposal=null;
   featNote='Vorschlag übernommen: '+hm(p.total)+' mit '+(p.agents===1?'einem Agenten':p.agents+' parallelen Agenten')+' bei einer Zielvorgabe von '+hm(p.target)+'.';
@@ -4245,6 +4254,7 @@ async function applyScope(){
   let md=null,message='',answers=[];
   try{const r=await call({mode:'scope',spec:s.spec,remove,restore,before:list.filter(f=>!f.inSpec).map(f=>f.name),idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()});md=r.markdown??null;answers=Array.isArray(r.answers)?r.answers:[]}
   catch(e){message=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   if(md===null||rev!==revision){renderAll();specNote(message||'Die Auswahl konnte nicht übernommen werden. Bitte erneut versuchen oder die Spezifikation direkt bearbeiten.',true);return}
   s.spec=md;s.features=list.map(f=>({...f,inSpec:f.on}));$('spec').value=md;specMode='view';
   // Entscheidungen, die durch den geänderten Umfang nicht mehr stimmen, mitziehen – sonst widersprächen sie der Spezifikation
@@ -4307,7 +4317,7 @@ async function extendFeatures(){
     }
     if(added.length)done(added,list);
     else{featNote=r.source==='demo'?'Weitere Features schlägt nur Claude vor (Schalter oben rechts).':'Kein weiteres Feature gefunden, das sinnvoll ist und noch in die Zielzeit passt – '+hm(free)+' bleiben frei.';poolDry=poolBase();flashNote(featNote)}
-  }catch(e){featNote=e.message}finally{lock(false,undefined,lockId);renderAll()}
+  }catch(e){featNote=e.message}finally{lock(false,undefined,lockId);if(lockId===currentLockId)renderAll()}
   // Eingearbeitet wird nicht von selbst: Meist wird mehrfach ergänzt, bis die Zielzeit ausgeschöpft ist – erst dann lohnt das Schreiben.
 }
 function featuresUI(){
@@ -4475,6 +4485,7 @@ async function runReview(){
     const x=await call({mode:'review',spec,provider:s.reviewBy,model:s.reviewModel,ai:true,...frame()});
     if(rev===revision){s.review={by:r.name,model:reviewModelName(),summary:String(x.summary||''),findings:(Array.isArray(x.findings)?x.findings:[]).map(f=>({...f,done:false})),spec:digest(spec)}}
   }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   renderAll();if(message)specNote('Review nicht möglich: '+message,true);
 }
 function specReviewUI(){
@@ -5149,6 +5160,7 @@ async function deriveLogos(force){
     const r=await call({mode:'logos',idea:s.idea,spec:s.spec,project:s.project,count:s.logoCount,tone:s.tone,ai:$('ai').checked});
     if(rev===revision){s.logos=cleanLogos(r.logos);s.logoChosen=s.logos.length===1?0:-1}
   }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   renderAll();if(message)specNote(message,true);
 }
 
@@ -5187,6 +5199,7 @@ async function deriveNames(force){
     const r=await call({mode:'names',idea:s.idea,spec:s.spec,count:s.nameCount,tone:s.tone,avoid:s.names,ai:$('ai').checked});
     if(rev===revision)s.names=cleanNames(r.names);
   }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   renderAll();if(message)specNote(message,true);
 }
 // Vorschlag übernehmen: Name setzen und in der Spezifikation nachziehen
@@ -5200,6 +5213,7 @@ async function applyName(name){
   change=null;const lockId=lock(true,'Spezifikation wird ausgearbeitet');let md=null,message='';
   try{md=(await call({mode:'adjust',spec:s.spec,wish:'Die Anwendung heißt „'+name+'“. Ersetze den bisherigen Namen oder Arbeitstitel'+(old?' („'+old+'“)':'')+' überall durch diesen Namen, auch in der Überschrift; sonst ändert sich nichts.',idea:s.idea,project:name,questions:s.questions,extras:s.extras,ai:true,...frame()})).markdown??null}
   catch(e){message=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   if(md===null||rev!==revision){s.dirty=true;renderAll();specNote(message||'Der Name ist gesetzt, die Spezifikation nennt ihn aber noch nicht. Bitte aktualisieren.',true);return}
   s.spec=md;$('spec').value=md;specMode='view';
   change={ids:[],title:'Name übernommen:',detail:name,prev,old:prev.spec,until:0,scroll:false};
@@ -5234,6 +5248,7 @@ $('plan').onclick=async()=>{
     if(rev!==revision){$('planStatus').textContent='Eingaben geändert. Erneut starten.';return}
     s.plan=validatePlan(r.plan);s.planSource=r.source;s.planSpec=s.spec;s.planContext=context;s.planTrace=r.trace||null;statuses();save();
   }catch(e){$('planStatus').textContent=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
 };
 
 /* ---------- Stitch-Layouts ---------- */
@@ -5433,6 +5448,7 @@ async function adjustSpec(){
   let md=null,message='';
   try{md=(await call({mode:'adjust',spec:s.spec,wish,idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()})).markdown??null}
   catch(e){message=e.message}finally{lock(false,undefined,lockId)}
+  if(lockId!==currentLockId)return;
   if(md===null||rev!==revision){renderAll();specNote(message||'Der Änderungswunsch konnte nicht eingearbeitet werden. Bitte anders formulieren oder die Spezifikation direkt bearbeiten.',true);return}
   // Der Wunsch bleibt als zusätzliche Anforderung erhalten, damit er ein späteres Neu-Erzeugen übersteht.
   s.spec=md;if(s.extras.length<10)s.extras=[...s.extras,wish];$('spec').value=md;$('wish').value='';specMode='view';
