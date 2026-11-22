@@ -4802,20 +4802,20 @@ function scheduleAuto(){
 }
 async function runAuto(key,pass){
   if(sketchAuto||active||!atIdea()||key!==sketchKey())return;
-  const ac=new AbortController(),job={key,ac,pass,text:'',timer:0};sketchAuto=job;sketchUI();
+  const ac=new AbortController(),epoch=workSession.generation,job={key,ac,pass,text:'',timer:0};sketchAuto=job;sketchUI();
   try{
-    const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'sketch',bg:true,pass,prev:pass>1&&s.sketch?s.sketch.svg:'',idea:s.idea.trim(),project:s.project,ai:true,...frame(),minutes:targetMinutes(),...modInput()}),signal:ac.signal});
+    const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'sketch',bg:true,pass,prev:pass>1&&s.sketch?s.sketch.svg:'',idea:s.idea.trim(),project:s.project,ai:true,...frame(),minutes:targetMinutes(),...modInput()}),signal:workSession.combine(ac.signal)});
     if(!res.ok||!res.body)throw Error('Skizze nicht möglich.');
     let fin=null;
     await readNdjson(res.body,m=>{
       if(m.error)throw Error(m.error);
       if(m.done)fin=m;
-      else if(m.t&&sketchAuto===job){job.text+=m.t;if(!job.timer)job.timer=setTimeout(()=>{job.timer=0;if(sketchAuto===job)drawStream()},80);}
+      else if(m.t&&sketchAuto===job&&workSession.isCurrent(epoch)){job.text+=m.t;if(!job.timer)job.timer=setTimeout(()=>{job.timer=0;if(sketchAuto===job&&workSession.isCurrent(epoch))drawStream()},80);}
     });
 
-    if(sketchAuto===job&&fin&&fin.svg&&key===sketchKey()){s.sketch={idea:key,svg:fin.svg,pass:fin.pass||pass};save()}
-  }catch(e){if(!ac.signal.aborted)sketchPauseUntil=Date.now()+6000}
-  finally{clearTimeout(job.timer);if(sketchAuto===job)sketchAuto=null;sketchUI()}
+    if(workSession.isCurrent(epoch)&&sketchAuto===job&&fin&&fin.svg&&key===sketchKey()){s.sketch={idea:key,svg:fin.svg,pass:fin.pass||pass};save()}
+  }catch(e){if(workSession.isCurrent(epoch)&&!ac.signal.aborted)sketchPauseUntil=Date.now()+6000}
+  finally{clearTimeout(job.timer);if(workSession.isCurrent(epoch)){if(sketchAuto===job)sketchAuto=null;sketchUI()}}
 }
 /* ---------- Live-Konzept: entsteht beim Tippen, Fragen stehen als anklickbare Stellen im Text ---------- */
 // Die Skizze ist vorerst abgeschaltet; ihr Code bleibt für später stehen.
@@ -5022,21 +5022,21 @@ async function scopeAfterDraft(){
 }
 async function runConcept(key,wish=''){
   if(conceptJob||active||!atIdea()||key!==conceptKey())return;
-  const only=wish?null:conceptOnly(),ac=new AbortController(),job={key,ac,text:'',timer:0,only,wish,prev:only||wish?s.concept.text:''};conceptJob=job;conceptAsk='';conceptUI();mainUI();
+  const only=wish?null:conceptOnly(),ac=new AbortController(),epoch=workSession.generation,job={key,ac,text:'',timer:0,only,wish,prev:only||wish?s.concept.text:''};conceptJob=job;conceptAsk='';conceptUI();mainUI();
   try{
-    const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'concept',idea:s.idea.trim(),project:s.project,ai:true,...frame(),minutes:targetMinutes(),answers:Object.entries(s.conceptAnswers).map(([q,a])=>({q,a})),wishes:s.conceptWishes,...(only?{only,prev:job.prev}:{}),...(wish?{wish,prev:job.prev}:{})}),signal:ac.signal});
+    const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'concept',idea:s.idea.trim(),project:s.project,ai:true,...frame(),minutes:targetMinutes(),answers:Object.entries(s.conceptAnswers).map(([q,a])=>({q,a})),wishes:s.conceptWishes,...(only?{only,prev:job.prev}:{}),...(wish?{wish,prev:job.prev}:{})}),signal:workSession.combine(ac.signal)});
     if(!res.ok||!res.body)throw Error('Entwurf nicht möglich.');
     let fin=null;
     await readNdjson(res.body,m=>{
       if(m.error)throw Error(m.error);
       if(m.done)fin=m;
-      else if(m.t&&conceptJob===job){job.text+=m.t;if(!job.timer)job.timer=setTimeout(()=>{job.timer=0;if(conceptJob===job)conceptUI()},80);}
+      else if(m.t&&conceptJob===job&&workSession.isCurrent(epoch)){job.text+=m.t;if(!job.timer)job.timer=setTimeout(()=>{job.timer=0;if(conceptJob===job&&workSession.isCurrent(epoch))conceptUI()},80);}
     });
 
-    if(fin&&fin.usage)addUsage('concept',fin.usage);
-    if(conceptJob===job&&fin&&fin.text&&key===conceptKey()){const text=only||wish?conceptMerge(job.prev,fin.text):fin.text;conceptAdopt(text);s.concept={key,text,parts:conceptNow()};if(wish){s.conceptWishes=[...s.conceptWishes,wish].slice(-12);$('conceptWish').value=''}save();if(conceptPush())renderAll()}
-  }catch(e){if(!ac.signal.aborted)conceptPauseUntil=Date.now()+6000}
-  finally{clearTimeout(job.timer);const fin=conceptJob===job&&!ac.signal.aborted;if(conceptJob===job)conceptJob=null;conceptUI();mainUI();stageUI();if(fin&&conceptLive())setTimeout(conceptAttention,120);if(fin&&conceptLive()&&!only&&!wish&&!s.questions.length&&!s.features.length)setTimeout(scopeAfterDraft,200)}
+    if(workSession.isCurrent(epoch)&&fin&&fin.usage)addUsage('concept',fin.usage);
+    if(workSession.isCurrent(epoch)&&conceptJob===job&&fin&&fin.text&&key===conceptKey()){const text=only||wish?conceptMerge(job.prev,fin.text):fin.text;conceptAdopt(text);s.concept={key,text,parts:conceptNow()};if(wish){s.conceptWishes=[...s.conceptWishes,wish].slice(-12);$('conceptWish').value=''}save();if(conceptPush())renderAll()}
+  }catch(e){if(workSession.isCurrent(epoch)&&!ac.signal.aborted)conceptPauseUntil=Date.now()+6000}
+  finally{clearTimeout(job.timer);if(workSession.isCurrent(epoch)){const fin=conceptJob===job&&!ac.signal.aborted;if(conceptJob===job)conceptJob=null;conceptUI();mainUI();stageUI();if(fin&&conceptLive())setTimeout(()=>{if(workSession.isCurrent(epoch))conceptAttention()},120);if(fin&&conceptLive()&&!only&&!wish&&!s.questions.length&&!s.features.length)setTimeout(()=>{if(workSession.isCurrent(epoch))scopeAfterDraft()},200)}}
 }
 // Änderungswunsch in eigenen Worten: nur bei aktuellem Konzept, sonst wird ohnehin gleich neu geschrieben
 const sendWish=()=>{const w=$('conceptWish').value.trim();if(!w||conceptJob||!s.concept)return;clearTimeout(conceptIdle);if(s.concept.key!==conceptKey()){s.conceptWishes=[...s.conceptWishes,w].slice(-12);$('conceptWish').value='';save();conceptUI();return}runConcept(conceptKey(),w)};
