@@ -82,22 +82,33 @@ function labelPosition(points,label,boxes,claimed,allLines,width,height) {
   }
   options.sort((a,b)=>a.score-b.score);const best=options[0];
   if(best){claimed.push(best.rect);return {lx:best.p.x,ly:best.p.y};}
-  // Bei sehr dichter Belegung keine Beschriftung auf einen fremden Kasten legen.
-  const p=points[Math.floor(points.length/2)]||points[0];return {lx:p.x,ly:p.y};
+  // Auch bei sehr kurzen Verbindungen einen freien Beschriftungsplatz suchen.
+  // Die Beschriftung darf niemals als Notlösung in einem fremden Kasten landen.
+  const middle=points[Math.floor(points.length/2)]||points[0];
+  let fallback=null;
+  for(let y=18;y<height-18;y+=12) for(let x=Math.ceil(half+8);x<width-half-8;x+=16){
+    const rect={x:x-half,y:y-10,w:2*half,h:20};
+    if(boxes.some(box=>rect.x<box.x+box.w+6&&rect.x+rect.w>box.x-6&&rect.y<box.y+box.h+6&&rect.y+rect.h>box.y-6))continue;
+    if(claimed.some(box=>rect.x<box.x+box.w+4&&rect.x+rect.w>box.x-4&&rect.y<box.y+box.h+4&&rect.y+rect.h>box.y-4))continue;
+    const overlaps=allLines.filter(([a,b])=>Math.min(a.x,b.x)<rect.x+rect.w&&Math.max(a.x,b.x)>rect.x&&Math.min(a.y,b.y)<rect.y+rect.h&&Math.max(a.y,b.y)>rect.y).length;
+    const score=Math.abs(x-middle.x)+Math.abs(y-middle.y)*1.2+overlaps*35;
+    if(!fallback||score<fallback.score)fallback={x,y,rect,score};
+  }
+  if(fallback){claimed.push(fallback.rect);return {lx:fallback.x,ly:fallback.y};}
+  return {lx:middle.x,ly:middle.y};
 }
 /**
  * Leitet die Verbindungen mit verteilten Ports und knotenfreien, orthogonalen Wegen.
  * Beschriftungen werden auf freie Flächen statt auf Linienkreuzungen gelegt.
  */
 export function routeDiagram(boxes, edges, {width,height,mode='data',clearance=8}={}) {
-  const byId=new Map(boxes.map(b=>[b.id,b])), uses=new Map(), endpoints=[];
+  const byId=new Map(boxes.map(b=>[b.id,b])), uses=new Map();
   edges.forEach((edge,i)=>{const a=byId.get(edge.from),b=byId.get(edge.to);if(!a||!b)return;
     const s1=sideFor(a,b,mode),s2=sideFor(b,a,mode);
     for(const [id,side,other,end] of [[a.id,s1,b,0],[b.id,s2,a,1]]){
       const k=id+'|'+side; if(!uses.has(k))uses.set(k,[]);
       uses.get(k).push({i,end,other: center(other)});
     }
-    endpoints[i]=[s1,s2];
   });
   const ports=new Map();for(const [k,items] of uses){const [id,side]=k.split('|'), box=byId.get(id);
     items.sort((a,b)=>((side==='top'||side==='bottom')? a.other.x-b.other.x : a.other.y-b.other.y)||a.i-b.i);
