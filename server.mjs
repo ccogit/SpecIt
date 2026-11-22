@@ -16,6 +16,7 @@ import { chapterGroups, partPrompt, joinParts, orderedChunks } from './spec-para
 import { resolveStrategy } from './spec-strategies.mjs';
 import { SpecPreloadCache } from './spec-preload.mjs';
 import { anthropicMessageBody, enabledPromptCache, promptCacheTtl } from './anthropic-cache.mjs';
+import { generationBackends, streamChatCompletion, validateExternalCore } from './chat-backends.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
 import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, extendPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, cleanLogos, demoLogos, logoPrompt, brandLevels, cleanSvg, sketchPrompt, conceptPrompt, conceptSections, sketchRefinePrompt, modulators, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
@@ -51,6 +52,7 @@ const cliModel=process.env.CLAUDE_CODE_MODEL||'sonnet';
 const cliOk=process.env.SPECIT_NO_CLAUDE_CODE!=='1'&&await cli(['--version'],'',15000).then(()=>true,()=>false);
 const hasCli=!key&&cliOk;
 const preloads=new SpecPreloadCache();
+const externalBackends=generationBackends(process.env);
 const startNow="\n\nSchreibe sofort los, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „#“ der Hauptüberschrift; die Gedankenarbeit geschieht beim Schreiben, Abschnitt für Abschnitt.",startJson="\n\nAntworte sofort, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „{“.";
 const meter=new AsyncLocalStorage(),wordsOf=t=>(String(t).match(/\S+/g)||[]).length;
 const profileFor=(use='')=>{
@@ -488,7 +490,7 @@ http.createServer(async(req,res)=>{
   return res.end(req.url==='/'?html:modules[req.url]);
  }
  if(req.method==='GET'&&req.url==='/api/alive')return alive(req,res);
- if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,stitch:!!stitchKey(),agents:cliOk,reviewers,models:cliOk?claudeModels:[],github:ghOk,projectsDir,pathSep:path.sep});
+ if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,gpu:!!externalBackends.gpu,diffusion:!!externalBackends.diffusion,stitch:!!stitchKey(),agents:cliOk,reviewers,models:cliOk?claudeModels:[],github:ghOk,projectsDir,pathSep:path.sep});
  if(req.method==='GET'&&req.url==='/api/run')return send(res,200,{...runStatus(),calib:calibInfo()});
  if(req.method==='GET'&&req.url.startsWith('/api/layout/file?')){
   const query=new URL(req.url,'http://'+host).searchParams,name=query.get('name');
@@ -554,11 +556,11 @@ http.createServer(async(req,res)=>{
   const head=()=>res.writeHead(200,{'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
   const row=o=>res.write(JSON.stringify(o)+'\n');
   if(!data.ai){head();row({done:true,...demo(data)});return res.end()}
-  let strategy;try{strategy=resolveStrategy(data.strategy,{hasApi:!!key,legacyParallel:process.env.SPECIT_PARALLEL_SPEC==='1'})}
+  let strategy;try{strategy=resolveStrategy(data.strategy,{hasApi:!!key,hasGpu:!!externalBackends.gpu,hasDiffusion:!!externalBackends.diffusion,legacyParallel:process.env.SPECIT_PARALLEL_SPEC==='1'})}
   catch(e){return send(res,400,{error:e.message})}
   meter.getStore().strategy=strategy.id;
   if(strategy.id==='preload'){try{preloads.key(data.preloadToken,data)}catch(e){return send(res,400,{error:e.message})}}
-  if(!key&&!hasCli)return send(res,503,{error:'Kein Claude-Zugang: ANTHROPIC_API_KEY setzen oder Claude Code installieren und anmelden.'});
+  if(!key&&!hasCli&&!['gpu','diffusion'].includes(strategy.id))return send(res,503,{error:'Kein Claude-Zugang: ANTHROPIC_API_KEY setzen oder Claude Code installieren und anmelden.'});
   if(busy||Date.now()-lastAI<1500)return send(res,429,{error:'Analyse läuft oder wurde gerade begonnen. Bitte erneut versuchen.'});
   sketchAbort?.abort();busy=true;lastAI=Date.now();watch(res);head();
   // Bausteine: Rahmen und übertragbare Abschnitte stehen ohne KI fest; Claude schreibt nur den projektspezifischen Kern dazwischen.
@@ -578,6 +580,20 @@ http.createServer(async(req,res)=>{
     return;
    }
    if(strategy.id!=='preload')row({t:frame.head});
+   // Experimental alternatives: local GPU model or hosted text-diffusion provider.
+   if(strategy.id==='gpu'||strategy.id==='diffusion'){
+    const backend=externalBackends[strategy.id];
+    const text=await streamChatCompletion({
+     backend,system,instruction:withSkills('final',finalPrompt(data)+conceptNote(data))+corePrompt(frame),
+     data:{...brief(data),fixedSections:frame.tail},maxTokens:16000,
+     onText:t=>row({t}),signal:currentAbort?.signal,store:meter.getStore()
+    });
+    const core=validateExternalCore(text.trim());
+    row({t:frame.tail});
+    row({done:true,source:strategy.id,strategy:strategy.id,model:backend.model,
+      markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
+    return;
+   }
    // Optional experiment: independent chapters are generated concurrently. API only; legacy flow stays default.
    if(strategy.parallel){
     const shared=withSkills('final',finalPrompt(data)+conceptNote(data));
