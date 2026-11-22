@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
 
 test('all generation strategies are visible in the SpecIt UI and forwarded with the request', () => {
-  for(const name of ['classic','incremental','preload','parallel','turbo'])
+  for(const name of ['classic','incremental','preload','parallel','turbo','gpu','diffusion'])
     assert.match(html,new RegExp('<option value="'+name+'">'));
   assert.match(html,/strategy:s\.specStrategy/);
   assert.match(html,/specStrategy:'incremental'/);
