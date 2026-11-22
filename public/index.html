@@ -2600,7 +2600,8 @@ async function generate(){
   if(!s.idea.trim()){note('Bitte zuerst eine Idee eingeben oder eine Spezifikation einfügen.');return}
   // Gibt es schon eine Spezifikation und ist klar, was sich geändert hat, werden nur die betroffenen Kapitel neu geschrieben
   const changes=s.spec.trim()&&s.dirty?specChanges():null,partial=!!changes;
-  const rev=revision;lock(true,partial?'Geänderte Kapitel werden neu geschrieben':'Spezifikation wird erstellt');note(partial?'Geänderte Kapitel werden neu geschrieben …':'Spezifikation wird erstellt …');
+  const generatedAt=performance.now();
+   const rev=revision;lock(true,partial?'Geänderte Kapitel werden neu geschrieben':'Spezifikation wird erstellt');note(partial?'Geänderte Kapitel werden neu geschrieben …':'Spezifikation wird erstellt …');
   let message='',done=null;
   try{
     // Die Antwort kommt als Strom und wird beim Entstehen angezeigt
@@ -2617,6 +2618,10 @@ async function generate(){
       save()}
   }catch(e){message=e.message}finally{streamText=null;lock(false)}
   renderAll();if(message){note(message);return}
+   if(done){const elapsedMs=Math.round(performance.now()-generatedAt),models=done.usage?.timings||[];
+     console.info('[SpecIt performance]',{generationMs:elapsedMs,modelCalls:models});
+     note('Spezifikation in '+(elapsedMs/1000).toFixed(1)+' s erstellt'+(models[0]?.model?' · '+models[0].model:'')+'.');
+   }
   if(done&&done.update){const n=(done.changed||[]).length;note(n?(done.entries?plural(done.entries,'Eintrag','Einträge')+' in '+plural(n,'Kapitel','Kapiteln')+' geändert: ':plural(n,'Kapitel','Kapitel')+' neu geschrieben: ')+done.changed.join(', ')+'. Alles Übrige ist unverändert.'+((done.skipped||[]).length?' Nicht einzuordnen waren Änderungen in: '+done.skipped.join(', ')+' – dafür „Bearbeiten“ nutzen oder die Idee kurz ändern und ganz neu erstellen.':''):'Kein Kapitel musste sich ändern; Rahmen und Entscheidungen sind auf dem neuen Stand.');return}
   // Was Claude in der Spezifikation offen lässt, gleich als Fragen mit Alternativen anbieten
   // (nicht im Auto-Modus: dort entscheidet Claude sie selbst und es wird nicht rückgefragt)
