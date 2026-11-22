@@ -13,7 +13,7 @@ import { flowPrompt, cleanFlow, archPrompt, cleanArch } from './diagrams.mjs';
 import { protoPrompt, protoBrief, cleanProto } from './prototype.mjs';
 // Schätzungen an gemessenen Läufen ausrichten: raw behält den Wert der KI, minutes ist der umgerechnete
 const calibPlan=plan=>({...plan,tasks:scale(plan.tasks,factor('plan'))}),calibFeatures=list=>scale(list,factor('feat'));
-import { validateRun, startRun, stopRun, runStatus, killAgents, targetDir, openDir } from './runner.mjs';
+import { validateRun, startRun, stopRun, runStatus, killAgents, canonicalTargetDir, openDir } from './runner.mjs';
 import { withSkills } from './skills.mjs';
 import { aiProfile, inferenceTimer } from './ai-performance.mjs';
 import { chapterGroups, partPrompt, joinParts, orderedChunks, outlinePrompt, cleanOutline } from './spec-parallel.mjs';
@@ -599,7 +599,7 @@ http.createServer(async(req,res)=>{
  if(req.url==='/api/run/download'){
   // Übergabe: der Zielordner einer direkten Umsetzung als ZIP-Archiv
   try{
-   const dir=targetDir(JSON.parse(raw).dir),body=zip(await collect(dir));
+   const dir=await canonicalTargetDir(JSON.parse(raw).dir),body=zip(await collect(dir));
    res.writeHead(200,{'Content-Type':'application/zip','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
    return res.end(body);
   }catch(e){return send(res,400,{error:e instanceof SyntaxError?'Ungültige Anfrage.':e.message||'Download nicht möglich.'})}
