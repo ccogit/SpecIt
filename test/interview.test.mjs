@@ -142,6 +142,22 @@ test('features form a work breakdown structure whose widest stage limits paralle
   assert.ok(demo.width >= 2 && demo.waves.length === 3, 'quality work follows the functions');
 });
 
+test('feature normalization removes multi-step cycles and base-to-extension dependencies', () => {
+  const cycle = cleanFeatures([
+    { id: 'F01', name: 'A', dependsOn: ['F02'] },
+    { id: 'F02', name: 'B', dependsOn: ['F03'] },
+    { id: 'F03', name: 'C', dependsOn: ['F01'] },
+  ]);
+  assert.deepEqual(cycle.map(x => x.dependsOn), [['F02'], ['F03'], []]);
+  assert.equal(workPackages(cycle).waves.flat().length, 3);
+
+  const core = cleanFeatures([
+    { id: 'F01', name: 'Pflichtfunktion', core: true, dependsOn: ['F02'] },
+    { id: 'F02', name: 'Erweiterung', core: false },
+  ]);
+  assert.deepEqual(core[0].dependsOn, []);
+});
+
 test('extensions are suggested only as far as the target duration allows; base features always stay', () => {
   const f = cleanFeatures([
     { id: 'F01', name: 'Gerüst', minutes: 60, core: true },
