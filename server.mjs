@@ -15,6 +15,7 @@ import { aiProfile, inferenceTimer } from './ai-performance.mjs';
 import { chapterGroups, partPrompt, joinParts, orderedChunks } from './spec-parallel.mjs';
 import { resolveStrategy } from './spec-strategies.mjs';
 import { SpecPreloadCache } from './spec-preload.mjs';
+import { anthropicMessageBody, enabledPromptCache, promptCacheTtl } from './anthropic-cache.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
 import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, extendPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, cleanLogos, demoLogos, logoPrompt, brandLevels, cleanSvg, sketchPrompt, conceptPrompt, conceptSections, sketchRefinePrompt, modulators, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
@@ -68,7 +69,7 @@ async function askRaw(instruction,data,maxTokens,use='',signal){
   if(r.is_error||typeof r.result!=='string'||!r.result.trim())throw Error('Claude Code hat keine Antwort geliefert. Anmeldung und Kontingent prüfen.');
   metric.tokens(r.usage);ok=true;return r.result;
  }
- const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:profile.model,max_tokens:maxTokens,...(profile.effort?{output_config:{effort:profile.effort}}:{}),system,messages:[{role:'user',content}]}),signal:signal?AbortSignal.any([AbortSignal.timeout(120000),signal]):within(90000)});
+ const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify(anthropicMessageBody({model:profile.model,maxTokens,effort:profile.effort,system,instruction,data,cache:enabledPromptCache(process.env),ttl:promptCacheTtl(process.env)})),signal:signal?AbortSignal.any([AbortSignal.timeout(120000),signal]):within(90000)});
  if(!response.ok)throw Error('Claude API: HTTP '+response.status+'. Schlüssel, Modell und Kontingent prüfen.');
  const r=await response.json(),out=r.content.filter(x=>x.type==='text').map(x=>x.text).join('\n');
  if(!out.trim()||r.stop_reason==='max_tokens')throw Error('Claude-Ausgabe fehlt oder wurde abgeschnitten. Bitte erneut versuchen oder Eingabe kürzen.');
@@ -235,7 +236,7 @@ function askStreamRaw(instruction,data,maxTokens,onText,use='',signal){
  });
  return (async()=>{
   let ok=false;try{
-  const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:profile.model,max_tokens:maxTokens,...(profile.effort?{output_config:{effort:profile.effort}}:{}),system,stream:true,messages:[{role:'user',content}]}),signal:signal?AbortSignal.any([AbortSignal.timeout(360000),signal]):within(360000)});
+  const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify(anthropicMessageBody({model:profile.model,maxTokens,effort:profile.effort,system,instruction,data,stream:true,cache:enabledPromptCache(process.env),ttl:promptCacheTtl(process.env)})),signal:signal?AbortSignal.any([AbortSignal.timeout(360000),signal]):within(360000)});
   if(!response.ok)throw Error('Claude API: HTTP '+response.status+'. Schlüssel, Modell und Kontingent prüfen.');
   let buffer='',text='',stop='';const decoder=new TextDecoder();
   for await(const chunk of response.body){
