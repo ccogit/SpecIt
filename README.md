@@ -170,6 +170,7 @@ Auf der Seite **Spezifikation** steht ein Dropdown mit vier Strategien:
 | Strategie | Verhalten | Voraussetzung |
 |---|---|---|
 | **Intelligent** (Voreinstellung) | Bestehender Weg: Bei einer Änderung nur betroffene Kapitel/Einträge aktualisieren; bei einer neuen Spezifikation seriell alles generieren. | Claude Code oder Anthropic API |
+| **Vorbereitet** (experimentell) | Wenn Idee, Features und Entscheidungen stabil sind, die vollständige Spezifikation bereits auf der Spezifikationsseite berechnen; beim Klick die passende gespeicherte Version übernehmen. | Anthropic API |
 | **Klassisch** | Bei jedem Klick den gesamten projektspezifischen Kern neu schreiben, immer sequentiell mit dem konfigurierten Standardmodell (kein Delta, kein schnelleres Modell). | Claude Code oder Anthropic API |
 | **Parallel** (experimentell) | Den vollständigen Kern mit drei parallelen Modellaufrufen schreiben, Ergebnis in Kapitelreihenfolge zusammenführen. | Anthropic API |
 | **Turbo** (experimentell) | Wie Parallel, aber mit Haiku 5.5 und niedrigem Denkaufwand. | Anthropic API |
@@ -207,3 +208,19 @@ nutzen echte API-Aufrufe und können Kosten verursachen. Die Strategien
 werden pro Anfrage gewählt, ein Serverneustart ist zwischen diesen Vergleichen
 nicht erforderlich. Für einen fairen Vergleich immer dieselben Eingaben und
 die gleiche Anzahl Wiederholungen verwenden.
+
+### Spekulatives Preloading
+
+Wähle **Vorbereitet**, schließe die offenen Entscheidungen ab und ermittle den
+Feature-Umfang. SpecIt startet nach einer kurzen Ruhephase einen optionalen
+separaten KI-Aufruf und hält das vollständige Ergebnis für maximal drei Minuten
+im Arbeitsspeicher des Servers. Derselbe zufällige Browser-Sitzungstoken und
+ein SHA-256-Fingerabdruck **aller validierten Generierungsparameter** müssen
+beim späteren Klick übereinstimmen. Bei Änderungen wird die laufende
+Vorbereitung abgebrochen und der vorherige Entwurf nicht wiederverwendet.
+Steht kein passender Entwurf bereit, generiert SpecIt normal im Vordergrund.
+
+Die Vorbereitung erfolgt nur mit aktivierter KI und Anthropic-API; jede
+spekulative Anfrage kann zusätzliche API-Kosten verursachen. Es werden höchstens
+zwei Einträge gespeichert; offene Vorbereitungen verschiedener Projekte
+werden abgebrochen. Ergebnisinhalte werden nicht auf die Festplatte geschrieben.
