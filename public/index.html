@@ -1268,6 +1268,16 @@ body.merged.decqa #decDerive{margin-top:12px}
       <div class="actions"><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="specPdf" class="btn small" type="button" title="Öffnet die Druckvorschau des Browsers mit der Spezifikation im A4-Format. Dort als Ziel „Als PDF speichern“ wählen.">↓ PDF / Vorschau</button><button id="generate" class="btn primary small" type="button">↻ Spezifikation aktualisieren</button><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div></div>
       <div class="actions"><span class="chip" id="specBadge"></span><span id="specStatus" role="status" class="status" style="min-height:0"></span></div>
     </div>
+    <div class="actions" style="align-items:center;gap:10px;flex-wrap:wrap">
+      <label class="field-label" for="specStrategy" style="margin:0">Generierungsstrategie</label>
+      <select id="specStrategy" aria-describedby="specStrategyHint" style="max-width:270px">
+        <option value="incremental">Intelligent · Änderungen gezielt</option>
+        <option value="classic">Klassisch · immer alles neu</option>
+        <option value="parallel">Parallel · 3 Fachgruppen</option>
+        <option value="turbo">Turbo · parallel + schnelles Modell</option>
+      </select>
+      <span class="meta" id="specStrategyHint" role="status">Strategie für die nächste Erstellung auswählen.</span>
+    </div>
     <div id="changeBar" class="changebar hidden" role="status"></div>
     <div class="split">
       <div>
@@ -1481,7 +1491,7 @@ const toneNames=[
   ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung. Beschreibender Name, kein Humor.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},runOutput:null,own:{},sketch:null,logoCount:0,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},runOutput:null,own:{},sketch:null,logoCount:0,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:3,names:[],featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -1499,6 +1509,8 @@ try{
     s.last=-1;
     if(!Number.isInteger(s.layoutCount)||s.layoutCount<1||s.layoutCount>5)s.layoutCount=3;
     if(!['DESKTOP','MOBILE','BOTH'].includes(s.layoutDevice))s.layoutDevice='DESKTOP';
+     if(!['classic','incremental','parallel','turbo'].includes(s.specStrategy))s.specStrategy='incremental';
+     if(!s.strategyTimes||typeof s.strategyTimes!=='object'||Array.isArray(s.strategyTimes))s.strategyTimes={};
     if(!['LIGHT','DARK','BOTH'].includes(s.layoutTheme))s.layoutTheme='LIGHT';
     if(s.layout&&!Array.isArray(s.layout.chosen))s.layout.chosen=typeof s.layout.chosen==='string'&&s.layout.chosen?[s.layout.chosen]:[];
     s.autonomy=Number.isFinite(s.autonomy)&&s.autonomy>=0&&s.autonomy<=100?Math.round(s.autonomy/20)*20:40;
@@ -1543,6 +1555,26 @@ let catOpen=-1,catPick=[],catCustom='',change=null;
 // Aufgeklappte Unterrubriken der beiden Felder: 'a'+Thema (beantwortet) bzw. 'o'+Thema (offen)
 const catGroups=new Set();
 
+const strategyDescription={
+ classic:'Erstellt die komplette Spezifikation jedes Mal neu, sequenziell mit dem konfigurierten Standardmodell.',
+ incremental:'Bestehender Weg: Bei Änderungen nur betroffene Kapitel neu schreiben, sonst vollständig sequenziell.',
+ parallel:'Experimentell: Erstellt die komplette Spezifikation mit drei parallelen API-Aufrufen. Qualität gesondert prüfen.',
+ turbo:'Experimentell: Parallele Neuerstellung mit Haiku und niedrigem Denkaufwand. Qualität gesondert prüfen.'
+};
+function strategyUI(){
+ const select=$('specStrategy'),hasApi=provider==='api';
+ if(statusLoaded&&!hasApi&&['parallel','turbo'].includes(s.specStrategy))s.specStrategy='incremental';
+ for(const option of select.options)if(['parallel','turbo'].includes(option.value))option.disabled=statusLoaded&&!hasApi;
+ select.value=s.specStrategy;
+ select.disabled=active;
+ const ms=s.strategyTimes?.[s.specStrategy],last=Number.isFinite(ms)&&ms>0?' Letzte gemessene Erstellung: '+(ms/1000).toFixed(1)+' s.':'';
+ $('specStrategyHint').textContent=strategyDescription[s.specStrategy]+last+(statusLoaded&&!hasApi?' Parallel und Turbo benötigen einen Anthropic-API-Schlüssel.':'');
+}
+$('specStrategy').onchange=e=>{
+ if(active)return;
+ s.specStrategy=e.target.value;
+ save();strategyUI();phasesUI();
+};
 function save(){try{localStorage.setItem('specit-v3',JSON.stringify(s))}catch{$('busy').textContent='Lokales Speichern nicht möglich.'}}
 function node(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
 function button(text,cls,onclick){const b=node('button',text,cls);b.type='button';b.onclick=onclick;return b}
@@ -1702,7 +1734,7 @@ function phasesUI(){
   [0,1,2,3].forEach(i=>$('phase'+i).classList.toggle('hidden',i!==s.phase));
   // Genau eine primäre Aktion je Ansicht
   const ready=!!s.spec.trim()&&!s.dirty,allAnswered=s.questions.length>0&&firstOpen()<0;
-  $('generate').textContent=s.spec.trim()?'↻ Spezifikation aktualisieren':'✦ Spezifikation erstellen';
+  $('generate').textContent=s.spec.trim()?(s.specStrategy==='incremental'?'↻ Spezifikation aktualisieren':'↻ Spezifikation neu erstellen'):'✦ Spezifikation erstellen';
   $('generate').classList.toggle('primary',!ready);$('toTasks').classList.toggle('primary',ready);
   $('toSpec').classList.toggle('primary',allAnswered);
   navUI();
@@ -2599,14 +2631,14 @@ async function generate(){
   const note=t=>{$('specStatus').className='status';$('specStatus').textContent=t};
   if(!s.idea.trim()){note('Bitte zuerst eine Idee eingeben oder eine Spezifikation einfügen.');return}
   // Gibt es schon eine Spezifikation und ist klar, was sich geändert hat, werden nur die betroffenen Kapitel neu geschrieben
-  const changes=s.spec.trim()&&s.dirty?specChanges():null,partial=!!changes;
+  const changes=s.specStrategy==='incremental'&&s.spec.trim()&&s.dirty?specChanges():null,partial=!!changes;
   const generatedAt=performance.now();
    const rev=revision;lock(true,partial?'Geänderte Kapitel werden neu geschrieben':'Spezifikation wird erstellt');note(partial?'Geänderte Kapitel werden neu geschrieben …':'Spezifikation wird erstellt …');
   let message='',done=null;
   try{
     // Die Antwort kommt als Strom und wird beim Entstehen angezeigt
     let r=null;streamText='';specMode='view';specUI();statuses();
-    await stream('/api/spec/stream',{mode:'final',...(partial?{update:true,spec:s.spec,changes}:{}),minutes:targetMinutes(),...(conceptPlain()?{concept:conceptPlain()}:{}),idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,features:s.features.filter(f=>f.on),ai:$('ai').checked,...frame()},m=>{
+    await stream('/api/spec/stream',{mode:'final',strategy:s.specStrategy,...(partial?{update:true,spec:s.spec,changes}:{}),minutes:targetMinutes(),...(conceptPlain()?{concept:conceptPlain()}:{}),idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,features:s.features.filter(f=>f.on),ai:$('ai').checked,...frame()},m=>{
       if(typeof m.t==='string'){streamText+=m.t;const now=performance.now();if(now-paintAt>180){paintAt=now;specUI();$('specCount').textContent=streamText.length.toLocaleString('de-DE')+' Zeichen …'}}
       else if(m.error)throw Error(m.error);else if(m.done)r=m;
     });
@@ -2619,7 +2651,8 @@ async function generate(){
   }catch(e){message=e.message}finally{streamText=null;lock(false)}
   renderAll();if(message){note(message);return}
    if(done){const elapsedMs=Math.round(performance.now()-generatedAt),models=done.usage?.timings||[];
-     console.info('[SpecIt performance]',{generationMs:elapsedMs,modelCalls:models});
+     s.strategyTimes[s.specStrategy]=elapsedMs;save();strategyUI();
+     console.info('[SpecIt performance]',{strategy:s.specStrategy,generationMs:elapsedMs,modelCalls:models});
      note('Spezifikation in '+(elapsedMs/1000).toFixed(1)+' s erstellt'+(models[0]?.model?' · '+models[0].model:'')+'.');
    }
   if(done&&done.update){const n=(done.changed||[]).length;note(n?(done.entries?plural(done.entries,'Eintrag','Einträge')+' in '+plural(n,'Kapitel','Kapiteln')+' geändert: ':plural(n,'Kapitel','Kapitel')+' neu geschrieben: ')+done.changed.join(', ')+'. Alles Übrige ist unverändert.'+((done.skipped||[]).length?' Nicht einzuordnen waren Änderungen in: '+done.skipped.join(', ')+' – dafür „Bearbeiten“ nutzen oder die Idee kurz ändern und ganz neu erstellen.':''):'Kein Kapitel musste sich ändern; Rahmen und Entscheidungen sind auf dem neuen Stand.');return}
@@ -3975,7 +4008,7 @@ $('runZip').onclick=async()=>{
 $('runOpen').onclick=async()=>{try{await post('/api/run',{action:'open',dir:(run&&run.dir)||s.runDir.trim()})}catch(e){$('runWhere').textContent=e.message}};
 $('runStop').onclick=async()=>{try{run=await post('/api/run',{action:'stop'})}catch(e){$('runStatus').textContent=e.message}pollRun()};
 
-function replaceState(next){revision++;next.autonomy=s.autonomy;next.layoutOn=s.layoutOn;next.layoutCount=s.layoutCount;next.layoutDevice=s.layoutDevice;next.layoutTheme=s.layoutTheme;s=next;pick=[];custom='';customOpen=false;change=null;catOpen=-1;renderAll()}
+function replaceState(next){revision++;next.autonomy=s.autonomy;next.specStrategy=s.specStrategy;next.layoutOn=s.layoutOn;next.layoutCount=s.layoutCount;next.layoutDevice=s.layoutDevice;next.layoutTheme=s.layoutTheme;s=next;pick=[];custom='';customOpen=false;change=null;catOpen=-1;renderAll()}
 // Zurücksetzen mit einem Klick: alle Angaben und Antworten leeren, ohne Rückfrage – dafür kurz widerrufbar.
 let undoTimer=0;
 $('reset').onclick=()=>{
@@ -3994,7 +4027,7 @@ if($('idea').value!==s.idea)$('idea').value=s.idea;
   $('creativity').value=s.creativity;$('tone').value=s.tone;
   $('autonomy').value=s.autonomy/20;$('durLevel').value=s.durLevel;
   $('repo').value=s.repo;$('agent').value=s.agent;$('layoutCount').value=s.layoutCount;$('layoutDevice').value=s.layoutDevice;$('layoutTheme').value=s.layoutTheme;
-  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();save();
+  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();strategyUI();save();
 }
 if(MERGED){
   // Die Fragenliste zieht in die linke Spalte der Spezifikations-Ansicht um; die Ansicht „Fragen“ selbst wird nicht mehr gezeigt
