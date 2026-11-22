@@ -13,7 +13,7 @@ import { validateRun, startRun, stopRun, runStatus, killAgents, targetDir, openD
 import { withSkills } from './skills.mjs';
 import { traceGaps } from './traceability.mjs';
 import { searchRepositories, parseQueries, validateReuseAnalysis, cleanSelections, proposedQueryInstruction, rankingInstruction } from './reuse.mjs';
-import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, cleanLogos, demoLogos, logoPrompt, brandLevels, cleanSvg, sketchPrompt, conceptPrompt, conceptSections, sketchRefinePrompt, modulators, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
+import { topics, cleanExtras, cleanQuestions, answerOf, demoQuestions, demoSpec, questionPrompt, decisionPrompt, applyEdits, reviseDemo, revisePrompt, framePrompt, triagePrompt, demoRelevant, adjustDemo, adjustPrompt, adjustFullPrompt, fitPrompt, extendPrompt, cleanMeasures, cleanNames, demoNames, namesPrompt, cleanFindings, reviewPrompt, cleanLogos, demoLogos, logoPrompt, brandLevels, cleanSvg, sketchPrompt, conceptPrompt, conceptSections, sketchRefinePrompt, modulators, mapAnswers, stylePrompt, toneLevels, cleanFeatures, demoFeatures, scopeDemo, featuresPrompt, scopePrompt, scopeFullPrompt } from './interview.mjs';
 import { withToc } from './markdown.mjs';
 import { specFrame, corePrompt, coreChapters, mergeSpec, updatePrompt } from './blocks.mjs';
 import { stitchKey, createProject, generateLayout, generateVariants, downloadFile, isProjectId, isScreenId, isFileName, variantCount, device } from './stitch.mjs';
@@ -73,7 +73,7 @@ function frameIn(b){
  return {autonomy,duration,creativity,tone,excluded,frame:{duration,tone:toneLevels[tone],excluded}};
 }
 function validate(b){
- if(!b||!['questions','final','plan','revise','decisions','triage','adjust','features','scope','fit','names','review','logos','sketch','concept'].includes(b.mode))throw Error('Ungültiger Modus.');
+ if(!b||!['questions','final','plan','revise','decisions','triage','adjust','features','scope','fit','extend','names','review','logos','sketch','concept'].includes(b.mode))throw Error('Ungültiger Modus.');
  if(b.mode==='adjust'){
   // Änderungswunsch in eigenen Worten; die Idee darf fehlen (eingefügte Spezifikation).
   if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
@@ -117,13 +117,14 @@ function validate(b){
   const tone=Number.isInteger(b.tone)&&b.tone>=0&&b.tone<=4?b.tone:2;
   return {mode:b.mode,ai:b.ai===true,idea,spec,tone,count:Number.isInteger(b.count)?Math.min(8,Math.max(1,b.count)):3,avoid:cleanNames(b.avoid).map(n=>n.name)};
  }
- if(b.mode==='fit'){
+ if(b.mode==='fit'||b.mode==='extend'){
   // Lösungsvorschlag, wie die Features in die Zielzeit passen; die Spezifikation darf noch fehlen (Umfang zuerst)
   if(typeof b.spec!=='string'||b.spec.length>50000)throw Error('Spezifikation fehlt oder zu lang.');
   if(!b.spec.trim()&&!String(b.idea||'').trim())throw Error('Für einen Vorschlag braucht es eine Idee oder eine Spezifikation.');
   const features=cleanFeatures(b.features),target=Number.isFinite(b.target)?Math.round(b.target):0;
   if(!features.length||target<1)throw Error('Für einen Vorschlag braucht es Features und eine Zielzeit.');
-  return {mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),spec:b.spec,features,target,maxAgents:Number.isInteger(b.maxAgents)?Math.min(6,Math.max(1,b.maxAgents)):1};
+  if(b.mode==='extend'&&!(Number.isFinite(b.free)&&b.free>0))throw Error('Es ist keine Zeit mehr frei.');
+  return {mode:b.mode,free:Number.isFinite(b.free)?b.free:0,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),spec:b.spec,features,target,maxAgents:Number.isInteger(b.maxAgents)?Math.min(6,Math.max(1,b.maxAgents)):1};
  }
  if(b.mode==='features'||b.mode==='scope'){
   // Features ermitteln (aus der Spezifikation oder, bevor es sie gibt, aus Idee und Entscheidungen) bzw. eine geänderte Auswahl einarbeiten.
@@ -173,6 +174,7 @@ function demo(b){
  if(b.mode==='decisions')return {source:'demo',questions:[]};
  // Ohne KI lässt sich der Umfang nicht sinnvoll umschneiden
  if(b.mode==='fit')return {source:'demo',features:[],measures:[],summary:''};
+ if(b.mode==='extend')return {source:'demo',features:[]};
  if(b.mode==='names')return {source:'demo',names:demoNames(b.idea||b.spec,b.count)};
  if(b.mode==='logos')return {source:'demo',logos:demoLogos(b.project||b.idea,b.count)};
  if(b.mode==='sketch')return {source:'demo',svg:''};
@@ -341,6 +343,15 @@ async function claude(b){
   const names=cleanNames(parsed.names).slice(0,b.count);
   if(!names.length)throw Error('Es kamen keine Namensvorschläge zurück. Bitte erneut versuchen.');
   return {source:'claude',names};
+ }
+ if(b.mode==='extend'){
+  // Freie Zeit nutzen: Die KI schätzt in ihrer eigenen Größenordnung; die freie Zeit wird dafür zurückgerechnet, die Antwort wie alle Schätzungen kalibriert
+  const f=factor('feat'),data={project:b.project,idea:b.idea,freeMinutes:Math.round(b.free/f*100)/100,features:b.features.filter(x=>x.on).map(x=>({id:x.id,name:x.name,note:x.note,minutes:Math.round(x.minutes/f*100)/100,core:x.core})),...(b.spec.trim()?{spec:b.spec}:{})};
+  let parsed;try{parsed=parseJson(await ask(withSkills('features',extendPrompt)+startJson,data,3000))}catch(e){throw e instanceof SyntaxError?Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.'):e}
+  const known=new Set(b.features.map(x=>x.name.toLowerCase()));
+  // Zusammen mit den vorhandenen prüfen: So bekommen die neuen fortlaufende Kennungen, und ihre Abhängigkeiten zeigen auf die richtigen Features
+  const all=cleanFeatures([...b.features,...(Array.isArray(parsed.features)?parsed.features:[]).filter(x=>x&&typeof x==='object').map(x=>({...x,id:'',core:false,own:true}))]);
+  return {source:'claude',features:calibFeatures(all.filter(x=>!known.has(x.name.toLowerCase())).slice(0,8))};
  }
  if(b.mode==='fit'){
   const data={project:b.project,idea:b.idea,targetMinutes:b.target,maxAgents:b.maxAgents,features:b.features.map(({on,inSpec,...f})=>f),spec:b.spec};
