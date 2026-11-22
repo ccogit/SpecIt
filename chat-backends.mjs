@@ -94,7 +94,7 @@ export async function streamChatCompletion({ backend, system, instruction, data,
       if(ended)break;
     }
     if (buffer.trim()) handle(buffer.trim());
-    if (!output.trim() || stop==='length') throw Error('Inferenzdienst: unvollständige oder leere Modellausgabe.');
+    if (!output.trim() || stop==='length' || (!ended && !['stop','eos'].includes(stop))) throw Error('Inferenzdienst: unvollständige oder leere Modellausgabe.');
     ok=true;return output;
   } finally {timer.finish(ok)}
 }
