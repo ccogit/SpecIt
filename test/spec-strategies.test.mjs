@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { resolveStrategy, strategyIds } from '../spec-strategies.mjs';
 
 test('four explicit strategies and existing default are distinct', () => {
-  assert.deepEqual(strategyIds, ['classic','incremental','preload','parallel','turbo','gpu','diffusion']);
+  assert.deepEqual(strategyIds, ['classic','incremental','preload','structured','parallel','turbo','gpu','diffusion']);
   assert.deepEqual(resolveStrategy(undefined), { id:'incremental',full:false,parallel:false,label:'Intelligent' });
   assert.deepEqual(resolveStrategy('classic'), { id:'classic',full:true,parallel:false,label:'Klassisch' });
   assert.deepEqual(resolveStrategy('preload',{hasApi:true}), { id:'preload',full:true,parallel:false,label:'Vorbereitet' });
+  assert.deepEqual(resolveStrategy('structured'), { id:'structured',full:true,parallel:false,label:'Strukturiert' });
   assert.deepEqual(resolveStrategy('parallel',{hasApi:true}), { id:'parallel',full:true,parallel:true,label:'Parallel' });
   assert.deepEqual(resolveStrategy('turbo',{hasApi:true}), { id:'turbo',full:true,parallel:true,label:'Turbo' });
   assert.deepEqual(resolveStrategy('gpu',{hasGpu:true}), {id:'gpu',full:true,parallel:false,label:'GPU lokal'});
