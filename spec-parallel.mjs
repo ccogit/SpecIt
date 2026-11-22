@@ -16,18 +16,31 @@ export function partPrompt(frame, titles) {
     + ' Für projektspezifische nichtfunktionale Anforderungen: NFR-001 ff., ohne Wiederholung der Standards '
     + frame.reserved.join(', ') + '; sonst „Keine über die Standards hinaus.“'
     + ' Für Risiken höchstens drei konkrete projektspezifische Risiken. Kein Dokumenttitel, kein Inhaltsverzeichnis und keine Liste der Entscheidungen.'
+    // Ohne Vorgabe schreibt jeder Teilauftrag deutlich mehr als derselbe Abschnitt in einer Spezifikation aus einem Guss –
+    // gemessen gut doppelt so viel, und damit ist der Zeitgewinn der Parallelität dahin. Deshalb ein Umfang je Gruppe.
+    + (titles.includes('Funktionale Anforderungen')
+      ? ' Umfang: knapp und dicht wie in einer Spezifikation aus einem Guss – je Anforderung höchstens 45 Wörter einschließlich Akzeptanzkriterium, keine Einleitungen oder Wiederholungen.'
+      : ' Umfang: knapp und dicht wie in einer Spezifikation aus einem Guss – alle Kapitel dieses Auftrags zusammen höchstens 350 Wörter, keine Einleitungen oder Wiederholungen.')
     + ' Beginne sofort mit „## ' + titles[0] + '“. Schreibe keine zusätzlichen Kapitel.';
 }
 
+// Titel vergleichen ohne Rücksicht auf Groß-/Kleinschreibung, Satzzeichen am Ende und Auszeichnung
+const sameTitle = (a, b) => { const n = s => String(s).replace(/[*_`#]/g, '').replace(/[\s:.–—-]+$/, '').trim().toLowerCase(); return n(a) === n(b); };
+
+/**
+ * Fügt die parallel erzeugten Teile zusammen. Maßgeblich sind die verlangten Kapitel jeder Gruppe, in ihrer Reihenfolge:
+ * Vorbemerkungen und nicht verlangte Kapitel eines Teils fallen weg (ein schnelles Modell hält sich nicht immer an die Form),
+ * ein fehlendes oder leeres verlangtes Kapitel ist dagegen ein Fehler – mit Angabe, was stattdessen kam.
+ */
 export function joinParts(parts, groups = chapterGroups) {
   if (!Array.isArray(parts) || parts.length !== groups.length) throw Error('Unvollständige Parallel-Ausgabe.');
   return parts.map((part, i) => {
-    const sections = splitChapters(part);
-    const wanted = groups[i];
-    if (sections.intro || sections.chapters.length !== wanted.length || sections.chapters.some((c, j) => c.title !== wanted[j] || !c.body)) {
-      throw Error('Parallel-Ausgabe enthält fehlende, doppelte oder unerwartete Kapitel (Gruppe ' + (i + 1) + ').');
-    }
-    return sections.chapters.map(c => '## ' + c.title + '\n\n' + c.body).join('\n\n');
+    const sections = splitChapters(part), wanted = groups[i];
+    return wanted.map(title => {
+      const hit = sections.chapters.find(c => sameTitle(c.title, title) && c.body);
+      if (!hit) throw Error('Parallel-Ausgabe: Kapitel „' + title + '“ fehlt (Gruppe ' + (i + 1) + '; geliefert: ' + (sections.chapters.map(c => c.title).join(', ') || 'keine Kapitel') + ').');
+      return '## ' + title + '\n\n' + hit.body;
+    }).join('\n\n');
   }).join('\n\n') + '\n';
 }
 

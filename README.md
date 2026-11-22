@@ -176,6 +176,10 @@ sich keine belastbaren Modell-Benchmarks durchführen.
 
 ### Generierungsstrategie auswählen
 
+**Stand der Integration (22.11.2026):** „Vorbereitet“, „Parallel“ und „Turbo“ laufen auch ohne API-Schlüssel über das angemeldete Claude Code (mehrere Aufrufe nebeneinander). Jeder parallele Teilauftrag hat eine Umfangsvorgabe; ohne sie schrieb jeder Teil gut doppelt so viel wie in einer Spezifikation aus einem Guss, und der Zeitgewinn war dahin. Beim Zusammenfügen fallen Vorbemerkungen und nicht verlangte Kapitel eines Teils weg.
+
+Gemessen über Claude Code an einem Projekt mit 14 Features (je ein bis zwei Läufe, Dauer bis zur fertigen Spezifikation): Klassisch (Sonnet) 40–42 s · Parallel (Sonnet, 3 Aufrufe) 23–24 s · Turbo (Haiku, 3 Aufrufe) 10–18 s, einmal 47 s durch einen hängenden Aufruf · Strukturiert an den drei kleinen Benchmark-Fällen 28–55 s und damit langsamer als Klassisch (29–37 s). Die fachliche Qualität der schnelleren Wege ist nicht verglichen.
+
 Auf der Seite **Spezifikation** steht ein Dropdown mit mehreren Strategien:
 
 | Strategie | Verhalten | Voraussetzung |

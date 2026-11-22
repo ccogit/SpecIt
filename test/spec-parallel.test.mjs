@@ -15,7 +15,8 @@ test('joining accepts exactly ordered, complete chapters', () => {
   assert.equal((result.match(/## /g) || []).length, 8);
   assert.throws(() => joinParts(parts.slice(1)));
   assert.throws(() => joinParts([parts[0].replace('Ziel und Nicht-Ziele', 'Falsches Kapitel'), ...parts.slice(1)]));
-  assert.throws(() => joinParts([parts[0] + '\n\n## Nicht erlaubt\n\nText', ...parts.slice(1)]));
+  // Vorbemerkungen und nicht verlangte Kapitel eines Teils fallen weg; Titel dürfen in der Schreibweise leicht abweichen
+  assert.equal(joinParts(['Hier ist der Text:\n\n' + parts[0].replace('## Ziel und Nicht-Ziele', '## Ziel und Nicht-Ziele:') + '\n\n## Nicht erlaubt\n\nText', ...parts.slice(1)]), result);
 });
 
 test('concurrent text arrives in order even when later groups finish first', () => {
