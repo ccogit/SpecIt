@@ -3,6 +3,7 @@ const descriptors = {
   classic: { full: true, parallel: false, label: 'Klassisch' },
   incremental: { full: false, parallel: false, label: 'Intelligent' },
   preload: { full: true, parallel: false, label: 'Vorbereitet' },
+  structured: { full: true, parallel: false, label: 'Strukturiert' },
   parallel: { full: true, parallel: true, label: 'Parallel' },
   turbo: { full: true, parallel: true, label: 'Turbo' },
   gpu: { full: true, parallel: false, label: 'GPU lokal' },
