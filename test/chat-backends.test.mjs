@@ -16,6 +16,10 @@ test('diffusion uses only fixed Inception endpoint and requires server key',()=>
  const backend=generationBackends({SPECIT_INCEPTION_API_KEY:'secret'}).diffusion;
  assert.equal(backend.endpoint,'https://api.inceptionlabs.ai/v1/chat/completions');
  assert.equal(backend.model,'mercury-3');
+ const router=generationBackends({SPECIT_DIFFUSION_PROVIDER:'openrouter',SPECIT_OPENROUTER_API_KEY:'another-secret'}).diffusion;
+ assert.equal(router.endpoint,'https://openrouter.ai/api/v1/chat/completions');
+ assert.equal(router.model,'inception/mercury-3');
+ assert.equal(generationBackends({SPECIT_DIFFUSION_PROVIDER:'unknown',SPECIT_INCEPTION_API_KEY:'secret'}).diffusion,null);
 });
 test('SSE chunks stream in order, count real tokens, and preserve server-side auth',async()=>{
  const backend=generationBackends({SPECIT_INCEPTION_API_KEY:'secret'}).diffusion;
