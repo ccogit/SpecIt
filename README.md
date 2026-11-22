@@ -163,35 +163,47 @@ dieselbe Projektidee, Feature-Auswahl und Zielzeit mehrfach verwenden;
 P50/P95 und fachliche Vollständigkeit getrennt auswerten. Ohne API-Zugang lassen
 sich keine belastbaren Modell-Benchmarks durchführen.
 
-### Experiment: Fachkapitel parallel erzeugen
+### Generierungsstrategie auswählen
 
-Mit `SPECIT_PARALLEL_SPEC=1` und **`ANTHROPIC_API_KEY`** werden die acht
-projektspezifischen Kapitel in drei parallel laufenden API-Aufrufen geschrieben:
-(1) Ziel, Nutzer, Kernabläufe; (2) FR-/NFR-Anforderungen; (3) UX, Daten, Risiken.
-Die Textstücke erscheinen weiterhin in der korrekten Kapitelreihenfolge. Vor der
-Übernahme überprüft SpecIt alle acht Kapitel auf Reihenfolge, eindeutige
-Überschriften und nichtleere Inhalte. Bei fehlerhafter Ausgabe schlägt die
-Generierung fehl, statt eine unvollständige Spezifikation als fertig auszugeben.
+Auf der Seite **Spezifikation** steht ein Dropdown mit vier Strategien:
 
-**Experimentell:** Die Fachkapitel können trotz lokaler Strukturprüfung inhaltlich
-widersprüchlich sein. Daher noch nicht als Standard aktivieren. Die parallele
-Variante verbraucht wegen des mehrfach übermittelten Kontexts zusätzliche
-Eingabetokens und kann bei API-Limits ausgebremst werden. Vor einer Produktiv-
-Freigabe die Akzeptanz- und Konsistenzprüfung anhand identischer Fallbeispiele
-vergleichen. Bei `SPECIT_PARALLEL_SPEC=0` bleibt der bisherige serielle
-Generierungspfad unverändert. Kapitelweise Updates nutzen in beiden Fällen den
-bestehenden Delta-Pfad.
+| Strategie | Verhalten | Voraussetzung |
+|---|---|---|
+| **Intelligent** (Voreinstellung) | Bestehender Weg: Bei einer Änderung nur betroffene Kapitel/Einträge aktualisieren; bei einer neuen Spezifikation seriell alles generieren. | Claude Code oder Anthropic API |
+| **Klassisch** | Bei jedem Klick den gesamten projektspezifischen Kern neu schreiben, immer sequentiell mit dem konfigurierten Standardmodell (kein Delta, kein schnelleres Modell). | Claude Code oder Anthropic API |
+| **Parallel** (experimentell) | Den vollständigen Kern mit drei parallelen Modellaufrufen schreiben, Ergebnis in Kapitelreihenfolge zusammenführen. | Anthropic API |
+| **Turbo** (experimentell) | Wie Parallel, aber mit Haiku 5.5 und niedrigem Denkaufwand. | Anthropic API |
 
+Die Wahl wird lokal im Browser gespeichert und bei **jeder Erstellung** an den
+Server übermittelt. Die letzte gemessene Erstellung je Strategie (in Sekunden)
+erscheint als Vergleichshilfe. Das Umschalten allein verändert die gespeicherte
+Spezifikation nicht. Ein vollständiger Neuaufbau verwendet weiterhin die
+gewählten Features und bestätigten Entscheidungen.
+
+**Technischer Hinweis:** Ohne einen expliziten Strategieparameter behalten
+ältere API-Clients den bisherigen Weg; `SPECIT_PARALLEL_SPEC=1` aktiviert
+bei solchen Alt-Clients den Parallelmodus. Eine ausdrücklich gewählte Strategie
+hat immer Vorrang. `SPECIT_FAST_MODE=1` bleibt als optionaler Server-Fast-Mode
+für sonstige/alte Aufrufe verfügbar; **Klassisch** erzwingt das Basismodell und
+**Turbo** das schnelle Modell, auch wenn die Umgebungsvariablen anders gesetzt sind.
+
+**Experimentell:** Parallele Fachkapitel können trotz Prüfung auf vollständige
+Überschriften und korrekte Reihenfolge fachlich widersprüchlich sein. Die
+Parallelausgabe ist deshalb nicht die Voreinstellung; ein Qualitätsvergleich
+gegen die klassische Spezifikation ist vor der Produktivfreigabe erforderlich.
+Parallelisierung kann zusätzliche Eingabetokens und API-Rate-Limits verursachen.
 
 ### Reproduzierbarer Live-Benchmark
 
 Mit gestartetem SpecIt-Server und eingerichtetem Claude-/Anthropic-Zugang
-`npm run bench -- 3` ausführen (3 Wiederholungen pro Testfall: Notizen,
-Teamaufgaben, Raumbuchung). Für einen anderen Port `SPECIT_BENCH_URL`
+`npm run bench -- 3 classic` ausführen (3 Wiederholungen pro Testfall: Notizen,
+Teamaufgaben, Raumbuchung). Als zweites Argument können die Strategien
+`classic`, `incremental`, `parallel` und `turbo` übergeben werden.
+Für Parallel und Turbo ist ein API-Schlüssel nötig. Für einen anderen Port `SPECIT_BENCH_URL`
 setzen. Das Skript ermittelt Dauer bis zur vollständigen Spezifikation,
 Modell-Timing, API-Tokens, Vollständigkeit der acht Kapitel und P50/P95.
 Es speichert und protokolliert keine Projektspezifikationstexte. Testläufe
-nutzen echte API-Aufrufe und können Kosten verursachen. Den Benchmark
-zunächst mit `SPECIT_FAST_MODE=0`, danach mit `SPECIT_FAST_MODE=1` und
-danach optional mit `SPECIT_PARALLEL_SPEC=1` wiederholen; zwischen
-Konfigurationswechseln den Server neu starten.
+nutzen echte API-Aufrufe und können Kosten verursachen. Die Strategien
+werden pro Anfrage gewählt, ein Serverneustart ist zwischen diesen Vergleichen
+nicht erforderlich. Für einen fairen Vergleich immer dieselben Eingaben und
+die gleiche Anzahl Wiederholungen verwenden.
