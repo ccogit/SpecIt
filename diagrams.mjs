@@ -259,7 +259,7 @@ const crosses = (a, b, c, d) => { const o = (p, q, r) => Math.sign((q[0] - p[0])
 
 /**
  * Ordnet die Objekte des Datenmodells in einem Raster an. Die Plätze werden so getauscht, dass möglichst keine Beziehung hinter
- * einem fremden Kasten durchläuft und sich möglichst wenige kreuzen; was dann noch im Weg liegt, wird im Bogen umgangen.
+ * einem fremden Kasten durchläuft und sich möglichst wenige kreuzen; anschließend werden Beziehungen orthogonal über freie Korridore geführt.
  * Liefert { width, height, entities, relations:[{…, d, lx, ly, ca, cb, pa, pb}] }.
  */
 export function layoutData(d, { w = 176, pad = 34, gapX = 120, gapY = 96, head = 28, line = 17 } = {}) {
