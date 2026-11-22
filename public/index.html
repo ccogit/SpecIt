@@ -1273,6 +1273,7 @@ body.merged.decqa #decDerive{margin-top:12px}
       <select id="specStrategy" aria-describedby="specStrategyHint" style="max-width:270px">
         <option value="incremental">Intelligent · Änderungen gezielt</option>
         <option value="preload">Vorbereitet · Entwurf im Voraus</option>
+        <option value="structured">Strukturiert · kompaktes JSON</option>
         <option value="classic">Klassisch · immer alles neu</option>
         <option value="parallel">Parallel · 3 Fachgruppen</option>
         <option value="turbo">Turbo · parallel + schnelles Modell</option>
@@ -1512,7 +1513,7 @@ try{
     s.last=-1;
     if(!Number.isInteger(s.layoutCount)||s.layoutCount<1||s.layoutCount>5)s.layoutCount=3;
     if(!['DESKTOP','MOBILE','BOTH'].includes(s.layoutDevice))s.layoutDevice='DESKTOP';
-     if(!['classic','incremental','preload','parallel','turbo','gpu','diffusion'].includes(s.specStrategy))s.specStrategy='incremental';
+     if(!['classic','incremental','preload','structured','parallel','turbo','gpu','diffusion'].includes(s.specStrategy))s.specStrategy='incremental';
      if(!s.strategyTimes||typeof s.strategyTimes!=='object'||Array.isArray(s.strategyTimes))s.strategyTimes={};
     if(!['LIGHT','DARK','BOTH'].includes(s.layoutTheme))s.layoutTheme='LIGHT';
     if(s.layout&&!Array.isArray(s.layout.chosen))s.layout.chosen=typeof s.layout.chosen==='string'&&s.layout.chosen?[s.layout.chosen]:[];
@@ -1562,6 +1563,7 @@ const strategyDescription={
  classic:'Erstellt die komplette Spezifikation jedes Mal neu, sequenziell mit dem konfigurierten Standardmodell.',
  incremental:'Bestehender Weg: Bei Änderungen nur betroffene Kapitel neu schreiben, sonst vollständig sequenziell.',
  preload:'Experimentell: Spezifikation wird nach stabilen Entscheidungen vorbereitet und beim Erstellen sofort übernommen.',
+ structured:'Experimentell: Kompakte Fachinformationen als JSON, alle acht Markdown-Kapitel werden lokal aufgebaut.',
  parallel:'Experimentell: Erstellt die komplette Spezifikation mit drei parallelen API-Aufrufen. Qualität gesondert prüfen.',
  turbo:'Experimentell: Parallele Neuerstellung mit Haiku und niedrigem Denkaufwand. Qualität gesondert prüfen.',
  gpu:'Experimentell: Vollständige Erstellung über einen lokalen OpenAI-kompatiblen GPU-Inferenzserver.',
