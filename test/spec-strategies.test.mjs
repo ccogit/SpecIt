@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveStrategy, strategyIds } from '../spec-strategies.mjs';
 
-test('four explicit strategies and existing default are distinct', () => {
+test('all explicit strategies and existing default are distinct', () => {
   assert.deepEqual(strategyIds, ['classic','incremental','preload','structured','parallel','turbo','gpu','diffusion']);
   assert.deepEqual(resolveStrategy(undefined), { id:'incremental',full:false,parallel:false,label:'Intelligent' });
   assert.deepEqual(resolveStrategy('classic'), { id:'classic',full:true,parallel:false,label:'Klassisch' });
