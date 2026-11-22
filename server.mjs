@@ -527,9 +527,9 @@ function validateLayout(b){
  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
  return {action:b.action,projectId:b.projectId,project:String(b.project||'').slice(0,100),spec:b.spec,wish:String(b.wish||'').trim().slice(0,500),tone:Number.isInteger(b.tone)&&b.tone>=0&&b.tone<=4?b.tone:2,theme:b.theme==='DARK'?'DARK':b.theme==='LIGHT'?'LIGHT':'',deviceType:device(b.deviceType),known};
 }
-async function layout(b){
- if(b.action==='project')return createProject(b.project);
- return {screens:b.action==='generate'?await generateLayout(b):await generateVariants(b)};
+async function layout(b, signal){
+ if(b.action==='project')return createProject(b.project,signal);
+ return {screens:b.action==='generate'?await generateLayout(b,signal):await generateVariants(b,signal)};
 }
 function send(res,status,data){const u=meter.getStore();if(u&&u.calls&&status===200&&data&&typeof data==='object'&&!Array.isArray(data))data={...data,usage:u};res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data))}
 let busy=false,lastAI=0,designing=false,bgRunning=0;
@@ -734,7 +734,14 @@ http.createServer(async(req,res)=>{
   let job;try{job=validateLayout(JSON.parse(raw))}catch(e){return send(res,400,{error:e.message})}
   if(!stitchKey())return send(res,503,{error:'Kein Stitch API-Schlüssel konfiguriert.'});
   if(designing)return send(res,429,{error:'Eine Layout-Erstellung läuft bereits.'});
-  designing=true;res.on('close',()=>{if(!res.writableEnded)designing=false});try{return send(res,200,await layout(job))}catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}finally{designing=false}
+  designing=true;
+  const ac=new AbortController();
+  res.on('close',()=>{if(!res.writableEnded)ac.abort()});
+  try{
+   const result=await layout(job,ac.signal);
+   if(!res.destroyed)return send(res,200,result);
+  }catch(e){if(!res.destroyed)return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}
+  finally{designing=false}
  }
  let data,background=false;try{const body=JSON.parse(raw);data=validate(body);background=body.bg===true}catch(e){return send(res,400,{error:e.message})}
  meter.getStore().mode=data.mode;
