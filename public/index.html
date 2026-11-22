@@ -2996,7 +2996,7 @@ async function derive(more){
   if(!more&&scaleMissing().length){$('ideaStatus').textContent='Noch nicht eingestellt (roter Punkt): '+scaleMissing().join(', ')+'.';return}
   if(!more&&s.questions.length&&idea===s.askedIdea){setPhase(2);return}
   if(!more&&s.questions.some(q=>q.state!=='open')&&!confirm('Die Idee wurde geändert. Vorhandene Fragen und Antworten ersetzen?'))return;
-  const rev=revision;lock(true,'Spezifikation wird ausgearbeitet');status.textContent='';
+  const rev=revision;const lockId=lock(true,'Spezifikation wird ausgearbeitet');status.textContent='';
   let auto=false;
   try{
     const base=more?[]:conceptQuestions(),concept=conceptPlain();
@@ -3022,7 +3022,7 @@ async function derive(more){
     // Je nach Modus entscheidet SpecIt einen Teil der Fragen selbst; im Auto-Modus alle, dann geht es direkt zur Spezifikation.
     s.questions=applyAutonomy(s.questions,s.autonomy);auto=!more&&firstOpen()<0;
     s.qSource=r.source;s.phase=2;activate(firstOpen(),false);renderAll();if(!quietScope){if(firstOpen()>=0)$('decPanel').open=true;if(!more)focusPart(2)}
-  }catch(e){status.textContent=e.message;flashNote(e.message)}finally{lock(false)}
+  }catch(e){status.textContent=e.message;flashNote(e.message)}finally{lock(false,undefined,lockId)}
   // Auch im Auto-Modus wird nur der Umfang ermittelt; geschrieben wird erst auf „Spezifikation erstellen“
   if(auto)startSpec(false);
 }
@@ -3182,14 +3182,14 @@ function reuseUI(){
 }
 async function researchReuse(){
   if(active||!s.spec.trim()||!$('ai').checked)return;
-  const rev=revision,spec=s.spec;lock(true,'Open-Source-Projekte werden auf GitHub recherchiert und bewertet');
+  const rev=revision,spec=s.spec;const lockId=lock(true,'Open-Source-Projekte werden auf GitHub recherchiert und bewertet');
   let message='';
   try{
     const result=await post('/api/reuse',{spec});
     if(rev!==revision||spec!==s.spec)message='Die Spezifikation wurde geändert; bitte die Recherche erneut starten.';
     else{s.reuse={...result,projects:(result.projects||[]).map(p=>({...p,included:false}))};s.reuseSpec=digest(spec)}
   }catch(e){message='Recherche unvollständig: '+e.message+' Daraus folgt nicht, dass neu entwickelt werden muss.'}
-  finally{lock(false)}
+  finally{lock(false,undefined,lockId)}
   renderAll();if(message)specNote(message,true);
 }
 
@@ -3262,7 +3262,7 @@ function specNote(t,warn){$('specStatus').className=warn?'banner':'status';$('sp
 async function deriveDecisions(keepChange){
   if(active||!$('ai').checked||!s.spec.trim())return;
   if(s.questions.length>=40){specNote('Der Fragen-Katalog ist voll (40 Fragen).');return}
-  const rev=revision;lock(true,'Spezifikation wird ausgearbeitet');catalogUI();specNote('');
+  const rev=revision;const lockId=lock(true,'Spezifikation wird ausgearbeitet');catalogUI();specNote('');
   let message='';
   try{
     const r=await call({mode:'decisions',spec:s.spec,project:s.project,questions:s.questions,ai:true});
@@ -3273,7 +3273,7 @@ async function deriveDecisions(keepChange){
       if(n&&keepChange!==true)change=null;
       message=n?plural(n,'offene Entscheidung','offene Entscheidungen')+' mit Alternativen in den Fragen-Katalog übernommen.':'Keine weiteren offenen Entscheidungen in der Spezifikation gefunden.';
     }
-  }catch(e){message=e.message}finally{lock(false)}
+  }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   renderAll();specNote(message);
 }
 // Antwort aus dem Katalog übernehmen und die Spezifikation nachziehen
@@ -3289,10 +3289,10 @@ async function decideOpen(onlyMinor){
   if(active)return;
   let ids=s.questions.map((q,i)=>i).filter(i=>s.questions[i].state==='open');if(!ids.length)return;
   if(onlyMinor){
-    lock(true,'Spezifikation wird ausgearbeitet');catalogUI();
+    const lockId=lock(true,'Spezifikation wird ausgearbeitet');catalogUI();
     try{const relevant=new Set((await call({mode:'triage',idea:s.idea,project:s.project,questions:s.questions,ai:$('ai').checked,...frame()})).relevant);ids=ids.filter(i=>!relevant.has(i))}
-    catch(e){lock(false);catalogUI();specNote(e.message,true);return}
-    lock(false);
+    catch(e){lock(false,undefined,lockId);catalogUI();specNote(e.message,true);return}
+    lock(false,undefined,lockId);
     if(!ids.length){catalogUI();specNote('Alle offenen Entscheidungen sind als relevant eingestuft – sie bleiben bei dir.');return}
   }
   const set=new Set(ids),left=s.questions.filter(q=>q.state==='open').length-ids.length;catOpen=-1;
@@ -3308,11 +3308,11 @@ async function commitAnswers(next,ids,label){
   // Vollständig neu erzeugen nur, wo das den Entwurf nicht entwertet: nie bei von Hand geschriebenen Spezifikationen.
   const regen=prev.specSource==='demo'||(prev.specSource==='claude'&&ai);
   let md=null,source=prev.specSource,message='';
-  lock(true,'Spezifikation wird ausgearbeitet');renderAll();specNote('Spezifikation wird angepasst …');
+  const lockId=lock(true,'Spezifikation wird ausgearbeitet');renderAll();specNote('Spezifikation wird angepasst …');
   try{
     if(!prev.dirty)md=(await call({...base,mode:'revise',previous:prev.questions,index:i,spec:prev.spec,ai})).markdown??null;
     if(md===null&&regen){const r=await call({...base,mode:'final',ai:prev.specSource==='claude'});md=r.markdown;source=r.source}
-  }catch(e){message=e.message}finally{lock(false)}
+  }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   if(md!==null&&rev===revision){
     s.spec=md;s.specSource=source;s.dirty=false;$('spec').value=md;specMode='view';
     change={ids,...label(),prev,old:prev.spec,until:0,scroll:false};
@@ -3961,9 +3961,17 @@ function working(text,since){
   // Erst nach einem Augenblick einblenden: Antworten ohne KI kommen sofort und sollen nicht aufblitzen.
   tick();workTimer=setInterval(tick,1000);showTimer=setTimeout(()=>{bar.classList.remove('hidden');document.title='⏳ '+who+' – '+pageTitle},250);
 }
-function lock(v,text){active=v;aborter=v?new AbortController():null;for(const id of ['derive','more','generate','plan'])$(id).disabled=v;
-  // Der Abschluss-Knopf hängt davon ab, ob gerade eine Anfrage läuft: mit jedem Wechsel neu bestimmen, sonst bleibt er nach „Plan erstellen“ gesperrt
-  reviewUI(s.plan&&!stale()?s.plan:null,agentsNow());navUI();working(v?text||'Anfrage läuft':'');if(!v&&runBusy)pollRun()}
+let currentLockId=0;
+function lock(v,text,releaseId){
+  // Späte finally-Blöcke dürfen einen nach Reset begonnenen neuen Vorgang nicht entsperren.
+  if(!v&&releaseId!==undefined&&releaseId!==currentLockId)return currentLockId;
+  if(v)currentLockId++;
+  active=v;aborter=v?new AbortController():null;
+  for(const id of ['derive','more','generate','plan'])$(id).disabled=v;
+  reviewUI(s.plan&&!stale()?s.plan:null,agentsNow());navUI();working(v?text||'Anfrage läuft':'');
+  if(!v&&runBusy)pollRun();
+  return currentLockId;
+}
 // Schließen oder Neuladen während einer laufenden Anfrage nur nach Rückfrage des Browsers
 $('workingStop').onclick=()=>{
   if(aborter)aborter.abort();else if(layoutAbort)layoutAbort.abort();else if(runBusy)$('runStop').click();
@@ -4038,7 +4046,7 @@ async function generate(){
   // Gibt es schon eine Spezifikation und ist klar, was sich geändert hat, werden nur die betroffenen Kapitel neu geschrieben
   const changes=s.specStrategy==='incremental'&&s.spec.trim()&&s.dirty?specChanges():null,partial=!!changes;
   const generatedAt=performance.now();
-   const rev=revision;lock(true,'Spezifikation wird ausgearbeitet');note(partial?'Geänderte Kapitel werden neu geschrieben …':'Spezifikation wird erstellt …');
+   const rev=revision;const lockId=lock(true,'Spezifikation wird ausgearbeitet');note(partial?'Geänderte Kapitel werden neu geschrieben …':'Spezifikation wird erstellt …');
   let message='',done=null;
   try{
     // Die Antwort kommt als Strom und wird beim Entstehen angezeigt
@@ -4053,7 +4061,7 @@ async function generate(){
       // Nach einer kapitelweisen Aktualisierung: geänderte Kapitel in der Liste kennzeichnen und das erste gleich zeigen
       specFresh.clear();if(r.update){for(const x of r.changed||[])specFresh.add(x);if(specFresh.size)specChapter=[...specFresh][0]}
       save()}
-  }catch(e){message=e.message}finally{streamText=null;lock(false)}
+  }catch(e){message=e.message}finally{streamText=null;lock(false,undefined,lockId)}
   renderAll();if(message){note(message);return}
    if(done){const elapsedMs=Math.round(performance.now()-generatedAt),models=done.usage?.timings||[];
      s.strategyTimes[s.specStrategy]=elapsedMs;save();strategyUI();
@@ -4077,7 +4085,7 @@ async function generate(){
 /* ---------- Features der Spezifikation: an-/abwählen, Aufwand je Feature, Gesamtdauer ---------- */
 async function deriveFeatures(early){
   if(active||(!s.spec.trim()&&!s.idea.trim()))return;
-  const rev=revision;lock(true,'Spezifikation wird ausgearbeitet');
+  const rev=revision;const lockId=lock(true,'Spezifikation wird ausgearbeitet');
   let message='';
   try{
     const r=await call({mode:'features',...(early&&conceptPlain()?{concept:conceptPlain()}:{}),spec:early?'':s.spec,idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()});
@@ -4088,7 +4096,7 @@ async function deriveFeatures(early){
       const core=fresh.find(f=>f.core);
       s.features=cleanFeatures([...fresh,...s.features.filter(f=>!f.on&&!f.inSpec&&!known.has(f.name.toLowerCase())).map(f=>({...f,id:'',dependsOn:core?[core.id]:[]}))]);s.featSource=r.source;
     }
-  }catch(e){message=e.message}finally{lock(false)}
+  }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   renderAll();if(message)specNote(message,true);
 }
 // Dauer der gewählten Features: Arbeitspakete, Obergrenze der Parallelisierung und Schätzung für die gewählte Agentenzahl
@@ -4135,10 +4143,10 @@ async function applyDuration(){
   if(s.specSource==='demo'){await generate();return}
   if(!$('ai').checked){s.specDuration=now;save();featuresUI();specNote('Ohne Claude wird die Spezifikation nicht umgeschrieben. Bitte die Zielvorgabe dort von Hand anpassen.');return}
   const prev={questions:s.questions,extras:s.extras,features:s.features,spec:s.spec,specSource:s.specSource,dirty:s.dirty},rev=++revision;
-  change=null;lock(true,'Spezifikation wird ausgearbeitet');specNote('Zielvorgabe wird in die Spezifikation übernommen …');
+  change=null;const lockId=lock(true,'Spezifikation wird ausgearbeitet');specNote('Zielvorgabe wird in die Spezifikation übernommen …');
   let md=null,message='';
   try{md=(await call({mode:'adjust',spec:s.spec,wish:'Die Ziel-Entwicklungsdauer (reine Laufzeit der Coding-Agenten) lautet jetzt: '+(now||'keine Vorgabe')+'. Passe die Angabe der Rahmenbedingung überall an; der Umfang bleibt unverändert.',idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:true,...frame()})).markdown??null}
-  catch(e){message=e.message}finally{lock(false)}
+  catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   if(md===null||rev!==revision){renderAll();specNote(message||'Die Zielvorgabe konnte nicht übernommen werden. Bitte erneut versuchen.',true);return}
   s.spec=md;s.specDuration=now;$('spec').value=md;specMode='view';
   change={ids:[],title:'Zielvorgabe übernommen:',detail:now||'keine Vorgabe',prev,old:prev.spec,until:0,scroll:false};
@@ -4161,14 +4169,14 @@ async function proposeFit(){
   // Sind Schlank-Fassungen vorbereitet, entsteht der Vorschlag sofort; Claude wird nur gefragt, wenn das nicht reicht
   const quick=localFit(list,target);
   if(!$('ai').checked||(list.some(f=>f.lean)&&quick.base<=target)){fitProposal=quick;renderAll();return}
-  lock(true,'Spezifikation wird ausgearbeitet');featNote='';let message='';
+  const lockId=lock(true,'Spezifikation wird ausgearbeitet');featNote='';let message='';
   try{
     const r=await call({mode:'fit',spec:s.spec,features:list,target,maxAgents:Math.min(6,max),idea:s.idea,project:s.project,ai:true});
     const feats=cleanFeatures(r.features).map(f=>({...f,on:true,inSpec:true}));
     if(!feats.length)throw Error('Claude hat keinen Vorschlag geliefert. Bitte erneut versuchen.');
     const agents=Math.min(6,workPackages(feats).width),fit=suggestExtensions(feats,target,agents);
     fitProposal={summary:r.summary||'',measures:Array.isArray(r.measures)?r.measures:[],features:fit.features,agents,base:fit.base,total:fit.total,chosen:fit.chosen.length,target};
-  }catch(e){message=e.message;fitProposal=localFit(list,target)}finally{lock(false)}
+  }catch(e){message=e.message;fitProposal=localFit(list,target)}finally{lock(false,undefined,lockId)}
   renderAll();if(message)specNote(message+' Stattdessen steht ein rechnerischer Vorschlag bereit.',true);
 }
 // Rechnerischer Vorschlag ohne KI: Spätere Basis-Features werden zu Erweiterungen, bis die Basis in die Zielzeit passt
@@ -4217,10 +4225,10 @@ async function acceptFit(){
   const prev={questions:s.questions,extras:s.extras,features:s.features,featAgents:s.featAgents,spec:s.spec,specSource:s.specSource,dirty:s.dirty},rev=++revision;
   const off=p.features.filter(f=>!f.on).map(f=>f.name);
   const wish=('Umfang an die Zielzeit von '+hm(p.target)+' anpassen. '+p.measures.map(m=>(m.feature?m.feature+': ':'')+m.text).join(' ')+(off.length?' Diese Erweiterungen gehören vorerst nicht zum Umfang und stehen nur bei den Nicht-Zielen: '+off.join(', ')+'.':'')).slice(0,1950);
-  change=null;lock(true,'Spezifikation wird ausgearbeitet');specNote('Vorschlag wird in die Spezifikation eingearbeitet …');
+  change=null;const lockId=lock(true,'Spezifikation wird ausgearbeitet');specNote('Vorschlag wird in die Spezifikation eingearbeitet …');
   let md=null,message='';
   try{md=(await call({mode:'adjust',spec:s.spec,wish,idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()})).markdown??null}
-  catch(e){message=e.message}finally{lock(false)}
+  catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   if(md===null||rev!==revision){renderAll();specNote(message||'Der Vorschlag konnte nicht eingearbeitet werden. Bitte erneut versuchen.',true);return}
   s.spec=md;s.features=p.features.map(f=>({...f,inSpec:f.on}));s.featAgents=p.agents;$('spec').value=md;specMode='view';fitProposal=null;
   featNote='Vorschlag übernommen: '+hm(p.total)+' mit '+(p.agents===1?'einem Agenten':p.agents+' parallelen Agenten')+' bei einer Zielvorgabe von '+hm(p.target)+'.';
@@ -4247,10 +4255,10 @@ async function applyScope(){
   if(!remove.length&&!restore.length)return;
   if(!s.spec.trim()){specNote('Bitte zuerst eine Spezifikation erzeugen.');return}
   const prev={questions:s.questions,extras:s.extras,features:list,spec:s.spec,specSource:s.specSource,dirty:s.dirty},rev=++revision;
-  change=null;lock(true,'Spezifikation wird ausgearbeitet');specNote('Feature-Auswahl wird in die Spezifikation übernommen …');
+  change=null;const lockId=lock(true,'Spezifikation wird ausgearbeitet');specNote('Feature-Auswahl wird in die Spezifikation übernommen …');
   let md=null,message='',answers=[];
   try{const r=await call({mode:'scope',spec:s.spec,remove,restore,before:list.filter(f=>!f.inSpec).map(f=>f.name),idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()});md=r.markdown??null;answers=Array.isArray(r.answers)?r.answers:[]}
-  catch(e){message=e.message}finally{lock(false)}
+  catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   if(md===null||rev!==revision){renderAll();specNote(message||'Die Auswahl konnte nicht übernommen werden. Bitte erneut versuchen oder die Spezifikation direkt bearbeiten.',true);return}
   s.spec=md;s.features=list.map(f=>({...f,inSpec:f.on}));$('spec').value=md;specMode='view';
   // Entscheidungen, die durch den geänderten Umfang nicht mehr stimmen, mitziehen – sonst widersprächen sie der Spezifikation
@@ -4299,7 +4307,7 @@ async function extendFeatures(){
   const fit=poolFit();
   if(fit.added.length){s.featPool=fit.rest;done(fit.added.map(f=>f.name),fit.list);renderAll();return}
   if(poolBusy){featNote='Vorschläge werden gerade geladen – gleich noch einmal klicken.';flashNote(featNote);featuresUI();return}
-  const rev=revision;lock(true,'Weitere Features werden gesucht');featNote='';
+  const rev=revision;const lockId=lock(true,'Weitere Features werden gesucht');featNote='';
   try{
     const r=await call({mode:'extend',project:s.project,idea:s.idea,spec:s.spec,features:s.features,target,free,maxAgents:fd.agents,ai:$('ai').checked});
     if(rev!==revision){featNote='Eingaben geändert. Erneut starten.';return}
@@ -4313,7 +4321,7 @@ async function extendFeatures(){
     }
     if(added.length)done(added,list);
     else{featNote=r.source==='demo'?'Weitere Features schlägt nur Claude vor (Schalter oben rechts).':'Kein weiteres Feature gefunden, das sinnvoll ist und noch in die Zielzeit passt – '+hm(free)+' bleiben frei.';poolDry=poolBase();flashNote(featNote)}
-  }catch(e){featNote=e.message}finally{lock(false);renderAll()}
+  }catch(e){featNote=e.message}finally{lock(false,undefined,lockId);renderAll()}
   // Eingearbeitet wird nicht von selbst: Meist wird mehrfach ergänzt, bis die Zielzeit ausgeschöpft ist – erst dann lohnt das Schreiben.
 }
 function featuresUI(){
@@ -4476,11 +4484,11 @@ async function runReview(){
   if(active||!s.spec.trim()||!s.reviewBy)return;
   if(!r){specNote('Der gewählte Reviewer ist auf diesem Rechner nicht eingerichtet.',true);return}
   if(!$('ai').checked){specNote('Ein Review braucht einen Agenten: bitte Claude aktivieren.');return}
-  const rev=revision,spec=s.spec;lock(true,'Review der Spezifikation durch '+r.name+(s.reviewModel?' ('+reviewModelName()+')':''));let message='';
+  const rev=revision,spec=s.spec;const lockId=lock(true,'Review der Spezifikation durch '+r.name+(s.reviewModel?' ('+reviewModelName()+')':''));let message='';
   try{
     const x=await call({mode:'review',spec,provider:s.reviewBy,model:s.reviewModel,ai:true,...frame()});
     if(rev===revision){s.review={by:r.name,model:reviewModelName(),summary:String(x.summary||''),findings:(Array.isArray(x.findings)?x.findings:[]).map(f=>({...f,done:false})),spec:digest(spec)}}
-  }catch(e){message=e.message}finally{lock(false)}
+  }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   renderAll();if(message)specNote('Review nicht möglich: '+message,true);
 }
 function specReviewUI(){
@@ -5150,11 +5158,11 @@ $('logoCount').oninput=e=>{s.logoCount=Number(e.target.value);save();logoUI();pa
 async function deriveLogos(force){
   if(active||!s.logoCount||(!force&&(s.logos.length||brandBusy.logos)))return;
   if(!s.idea.trim()&&!s.spec.trim())return;
-  const rev=revision;lock(true,'Logo-Entwürfe werden gezeichnet');let message='';
+  const rev=revision;const lockId=lock(true,'Logo-Entwürfe werden gezeichnet');let message='';
   try{
     const r=await call({mode:'logos',idea:s.idea,spec:s.spec,project:s.project,count:s.logoCount,tone:s.tone,ai:$('ai').checked});
     if(rev===revision){s.logos=cleanLogos(r.logos);s.logoChosen=s.logos.length===1?0:-1}
-  }catch(e){message=e.message}finally{lock(false)}
+  }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   renderAll();if(message)specNote(message,true);
 }
 
@@ -5188,11 +5196,11 @@ function namesUI(){
 async function deriveNames(force){
   if(active||!s.nameCount||(!force&&(s.project.trim()||s.names.length||brandBusy.names)))return;
   if(!s.idea.trim()&&!s.spec.trim())return;
-  const rev=revision;lock(true,'Namensvorschläge werden erzeugt');let message='';
+  const rev=revision;const lockId=lock(true,'Namensvorschläge werden erzeugt');let message='';
   try{
     const r=await call({mode:'names',idea:s.idea,spec:s.spec,count:s.nameCount,tone:s.tone,avoid:s.names,ai:$('ai').checked});
     if(rev===revision)s.names=cleanNames(r.names);
-  }catch(e){message=e.message}finally{lock(false)}
+  }catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   renderAll();if(message)specNote(message,true);
 }
 // Vorschlag übernehmen: Name setzen und in der Spezifikation nachziehen
@@ -5203,9 +5211,9 @@ async function applyName(name){
   if(s.specSource==='demo'){await generate();return}
   if(!$('ai').checked){s.dirty=true;renderAll();return}
   const prev={questions:s.questions,extras:s.extras,features:s.features,spec:s.spec,specSource:s.specSource,dirty:s.dirty},rev=revision;
-  change=null;lock(true,'Spezifikation wird ausgearbeitet');let md=null,message='';
+  change=null;const lockId=lock(true,'Spezifikation wird ausgearbeitet');let md=null,message='';
   try{md=(await call({mode:'adjust',spec:s.spec,wish:'Die Anwendung heißt „'+name+'“. Ersetze den bisherigen Namen oder Arbeitstitel'+(old?' („'+old+'“)':'')+' überall durch diesen Namen, auch in der Überschrift; sonst ändert sich nichts.',idea:s.idea,project:name,questions:s.questions,extras:s.extras,ai:true,...frame()})).markdown??null}
-  catch(e){message=e.message}finally{lock(false)}
+  catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   if(md===null||rev!==revision){s.dirty=true;renderAll();specNote(message||'Der Name ist gesetzt, die Spezifikation nennt ihn aber noch nicht. Bitte aktualisieren.',true);return}
   s.spec=md;$('spec').value=md;specMode='view';
   change={ids:[],title:'Name übernommen:',detail:name,prev,old:prev.spec,until:0,scroll:false};
@@ -5234,12 +5242,12 @@ for(const id of ['repo','agent'])$(id).oninput=e=>{revision++;s[id]=e.target.val
 $('plan').onclick=async()=>{
   if(active)return;
   if(!s.spec.trim()||s.dirty){$('planStatus').textContent='Bitte eine aktuelle Spezifikation erzeugen oder manuell aktualisieren.';return}
-  const rev=revision,context=ctx();lock(true,'Arbeitsaufträge werden erstellt');$('planStatus').textContent='Arbeitsaufträge werden erstellt …';
+  const rev=revision,context=ctx();const lockId=lock(true,'Arbeitsaufträge werden erstellt');$('planStatus').textContent='Arbeitsaufträge werden erstellt …';
   try{
     const r=await call({mode:'plan',spec:s.spec,...context,ai:$('ai').checked});
     if(rev!==revision){$('planStatus').textContent='Eingaben geändert. Erneut starten.';return}
     s.plan=validatePlan(r.plan);s.planSource=r.source;s.planSpec=s.spec;s.planContext=context;s.planTrace=r.trace||null;statuses();save();
-  }catch(e){$('planStatus').textContent=e.message}finally{lock(false)}
+  }catch(e){$('planStatus').textContent=e.message}finally{lock(false,undefined,lockId)}
 };
 
 /* ---------- Stitch-Layouts ---------- */
@@ -5431,10 +5439,10 @@ async function adjustSpec(){
   if(!wish){specNote('Bitte den Änderungswunsch eingeben.');$('wish').focus();return}
   if(!s.spec.trim()){specNote('Bitte zuerst eine Spezifikation erzeugen.');return}
   const prev={questions:s.questions,extras:s.extras,spec:s.spec,specSource:s.specSource,dirty:s.dirty},rev=++revision;
-  change=null;lock(true,'Spezifikation wird ausgearbeitet');specNote('Änderungswunsch wird eingearbeitet …');
+  change=null;const lockId=lock(true,'Spezifikation wird ausgearbeitet');specNote('Änderungswunsch wird eingearbeitet …');
   let md=null,message='';
   try{md=(await call({mode:'adjust',spec:s.spec,wish,idea:s.idea,project:s.project,questions:s.questions,extras:s.extras,ai:$('ai').checked,...frame()})).markdown??null}
-  catch(e){message=e.message}finally{lock(false)}
+  catch(e){message=e.message}finally{lock(false,undefined,lockId)}
   if(md===null||rev!==revision){renderAll();specNote(message||'Der Änderungswunsch konnte nicht eingearbeitet werden. Bitte anders formulieren oder die Spezifikation direkt bearbeiten.',true);return}
   // Der Wunsch bleibt als zusätzliche Anforderung erhalten, damit er ein späteres Neu-Erzeugen übersteht.
   s.spec=md;if(s.extras.length<10)s.extras=[...s.extras,wish];$('spec').value=md;$('wish').value='';specMode='view';
