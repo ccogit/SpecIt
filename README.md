@@ -173,6 +173,7 @@ Auf der Seite **Spezifikation** steht ein Dropdown mit vier Strategien:
 | **Vorbereitet** (experimentell) | Wenn Idee, Features und Entscheidungen stabil sind, die vollständige Spezifikation bereits auf der Spezifikationsseite berechnen; beim Klick die passende gespeicherte Version übernehmen. | Anthropic API |
 | **GPU lokal** (experimentell) | Vollständige Erstellung über einen lokal laufenden OpenAI-kompatiblen GPU-Inferenzserver, z. B. vLLM. | Lokales Modell + Server |
 | **Diffusion** (experimentell) | Vollständige Erstellung über ein Mercury-Diffusion-Modell. | Inception-API-Schlüssel |
+| **Strukturiert** (experimentell) | Fachliche Inhalte als kompaktes JSON erzeugen; SpecIt baut acht Kapitel, FR-/NFR-IDs und Abnahmekriterien deterministisch. | Claude Code oder Anthropic API |
 | **Klassisch** | Bei jedem Klick den gesamten projektspezifischen Kern neu schreiben, immer sequentiell mit dem konfigurierten Standardmodell (kein Delta, kein schnelleres Modell). | Claude Code oder Anthropic API |
 | **Parallel** (experimentell) | Den vollständigen Kern mit drei parallelen Modellaufrufen schreiben, Ergebnis in Kapitelreihenfolge zusammenführen. | Anthropic API |
 | **Turbo** (experimentell) | Wie Parallel, aber mit Haiku 5.5 und niedrigem Denkaufwand. | Anthropic API |
@@ -282,3 +283,21 @@ Für die vorgelagerten Claude-Funktionen (Fragen/Features) ist derzeit weiterhin
 ein Anthropic-API- oder Claude-Code-Zugang erforderlich; GPU/Diffusion allein
 ersetzen diese Vorstufen noch nicht. Für den Vergleich gilt
 `npm run bench -- 3 gpu` beziehungsweise `npm run bench -- 3 diffusion`.
+
+### Kompakte strukturierte Generierung (experimentell)
+
+Mit der Strategie **Strukturiert** wird statt des gesamten Markdown-Kerns
+eine kompakte JSON-Repräsentation mit Zielen, Rollen, Abläufen, funktionalen
+Anforderungen, Qualitätsanforderungen, UX, Daten und Risiken erzeugt.
+SpecIt validiert, dass jedes ausgewählte Feature mindestens eine
+Anforderung mit Akzeptanzkriterium besitzt, und vergibt FR-/NFR-Kennungen
+lokal. Daraus werden alle acht Fachkapitel deterministisch zusammengesetzt,
+bevor die vorhandenen statischen Dokumentbausteine angehängt werden.
+
+Die Struktur kann die Anzahl der erzeugten Tokens reduzieren, ist aber
+noch kein Ersatz für einen fachlichen Konsistenzcheck. Bei ungültigem JSON,
+fehlenden Features oder unvollständigen Kriterien meldet SpecIt einen
+Fehler statt ein lückenhaftes Dokument zu speichern. Anders als der
+Streaming-Markdown-Modus erscheint die fertige Textstruktur erst nach
+Abschluss des JSON-Aufrufs. Das Verfahren verwendet die bestehende
+Claude-Anbindung und benötigt keine zusätzliche Hardware.
