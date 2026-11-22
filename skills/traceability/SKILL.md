@@ -1,22 +1,27 @@
 ---
 name: traceability
-description: Keep domain vocabulary, source decisions, requirements, acceptance criteria and implementation tasks aligned.
+description: Erhalte Herkunft, Begriffe, Anforderungs-IDs und Abnahmebezug über SPEC.md und Aufgaben hinweg.
 source: https://github.com/urban/agent-skills-spec-pack
 upstream-license: CC0-1.0
-adaptation: SpecIt SPEC.md and task JSON
+adaptation: SpecIt single SPEC.md and task JSON
 ---
-# Traceability and contract consistency
+# Rückverfolgbarkeit und Konsistenz
 
-Adapted from **urban/agent-skills-spec-pack** (CC0-1.0), notably its contract-first artifact and traceability practices. SpecIt retains its existing portable one-file specification instead of the upstream multi-artifact pack.
+Angelehnt an **urban/agent-skills-spec-pack** (CC0-1.0); SpecIt nutzt eine SPEC.md und Task-JSON. Dieser Skill beginnt dort, wo Anforderungsbezüge vorhanden sind. **Vor** einer Spezifikation dürfen fehlende FR-/NFR-IDs nicht als Fehler behandelt oder künstlich erfunden werden.
 
-## Apply
-- Canonical domain language is defined by the approved idea and interview. Use exactly the same role names, entities, statuses and business terms throughout the specification and tasks.
-- Use requirement IDs as stable links: FR-### for behavior, NFR-### for quality. Do not invent an ID reference to a requirement that does not appear in the specification.
-- Keep source provenance: confirmed decision, adopted default (assumption), or open decision. While specifying, the decision mode given in the instruction sets how much is decided by assumption and how much stays open; follow it and mark every own decision as an assumption. While planning nothing stays open: the plan decides remaining details and lists them.
-- Carry scope and non-goals into downstream work; tasks may implement, test or clarify requirements, not expand them.
-- Map every requirement to acceptance coverage and a downstream task. Any uncovered requirement or contradictory choice is a review finding.
-- Dependencies must describe real implementation order, not invent repository structure. Reuse existing names and interface contracts across tasks.
-- If a required detail is absent, explicitly state the gap and its impact instead of inventing a fact.
+## Ablauf
 
-## Consistency gate
-Check bidirectional traceability: every task cites actual requirement IDs, every required function is represented by a task, acceptance criteria are objectively testable, and every decision the plan made is listed with its reason.
+1. **Begriffe vereinheitlichen.** Namen für Rollen, Objekte, Status und fachliche Handlungen aus der bestätigten Idee bzw. SPEC.md übernehmen. Synonyme vermeiden, wenn sie neue Entitäten vortäuschen.
+2. **Provenienz zuordnen.** Aussagen als Nutzerentscheidung, angenommener Standard, KI-Vorschlag oder offen unterscheiden. Änderungen an dieser Einordnung dürfen nicht stillschweigend erfolgen.
+3. **IDs stabil halten.** Funktionale `FR-###`, projektspezifische `NFR-001` ff. und feste Standard-`NFR-901` ff. voneinander unterscheiden. Keine nicht existierenden Referenzen erzeugen; gelöschte Anforderungen nicht unter einer alten ID mit neuer Bedeutung wiederverwenden.
+4. **Ketten schrittweise prüfen.** Bei SPEC.md: Feature → Anforderung → Akzeptanzkriterium. Beim Plan: Anforderung → mindestens ein Task → Task-Akzeptanz/Test. Bei partiellen Änderungen betroffene Verweise nachführen, nicht blind alle Anforderungen neu schreiben.
+5. **Planabweichungen auflisten.** Unbekannte IDs, ungedeckte Anforderungen, Tasks ohne Referenz, widersprechende Nicht-Ziele, Abhängigkeits- oder Schnittstellenkonflikte benennen. Fehlende Information ist ein Befund, keine Erlaubnis zu Tatsachenerfindung.
+6. **Phasengrenzen wahren.** Der Plan stellt laut SpecIt keine Rückfragen: verbliebene Implementierungsdetails als eigene `decisions` mit Begründung dokumentieren, `blockedBy` leer lassen. Bei der Spezifikation bestimmt dagegen der Entscheidungsmodus den Umgang mit Unklarheit.
+
+## Ergebnis
+
+Nur die im aufrufenden Prompt vorgesehenen Markdown-Abschnitte oder JSON-Felder. Keine eigenmächtige zusätzliche Traceability-Tabelle in einem Format, das sie nicht erlaubt. Beispiel einer Kette: `FR-007 → T03 → Test: ungültige Eingabe wird abgewiesen` (illustrativ, kein realer Projektbezug).
+
+## Qualitätsprüfung
+
+Existiert jede referenzierte ID tatsächlich? Ist im Plan jede spezifizierte Anforderung mindestens einmal abgedeckt? Stimmen Begriffe und Provenienz überein? Sind Abnahme und Tests beobachtbar, und haben Scope-Änderungen keine verwaisten Verweise erzeugt? Bei importierten Spezifikationen ohne IDs nur fachliche Rückverfolgbarkeit verlangen, keine fiktiven Kennungen.

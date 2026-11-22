@@ -118,21 +118,29 @@ Helles und dunkles Thema sind über die Kopfzeile umschaltbar (Standard: Systeme
 
 ## Skills
 
-Die Anweisungen an Claude werden um versionierte Richtlinien aus `skills/` ergänzt (`skills.mjs` ordnet sie den Phasen zu; die Liste ist fest, Projekteingaben können keine Skills wählen):
+SpecIt lädt die versionierten Arbeitsanleitungen aus `skills/*/SKILL.md` über die feste Phasenzuordnung in `skills.mjs`. Ein Skill ist keine frei wählbare Rolle, sondern eine **verbindliche Methode mit Ablauf, Ausgabegrenzen und Qualitätsprüfung**. Projekteingaben dürfen keine zusätzlichen Skill-Dateien auswählen. Die Vorgaben des jeweiligen JSON-/Markdown-Vertrags und ausdrücklich getroffene Nutzerentscheidungen haben Vorrang.
 
-| Skill | Wofür | Grundlage |
+| Skill | Eingesetzt bei | Aufgabe |
 |---|---|---|
-| `discovery` | Fragen, offene Entscheidungen, Einstufung | angelehnt an `requirements-analysis` aus Emmraan/agent-skills (MIT) |
-| `specification` | Spezifikation erzeugen, anpassen, Umfang ändern | angelehnt an GitHub Spec Kit (MIT) |
-| `execution` | Plan und Aufträge | angelehnt an GitHub Spec Kit (MIT) |
-| `traceability` | durchgängige Begriffe und Anforderungs-IDs, in allen Phasen | angelehnt an urban/agent-skills-spec-pack (CC0-1.0) |
-| `reuse-discovery` | Open-Source-Recherche | eigene Erweiterung des Spec-first-Ansatzes |
+| `concept` | Konzept-Stream | Sieben-Abschnitt-Konzept und interaktive Annahme-Markierungen |
+| `discovery` | Fragen, Entscheidungen, Triage | Relevante, widerspruchsfreie Fragen und Standards |
+| `feature-scoping` | Features, Zeit-Anpassung, Erweiterung | Priorisierung, Abhängigkeiten, nachvollziehbarer Zuschnitt |
+| `specification` | SPEC.md, Revision, Wunsch, Scope-Änderung | Stabile FR-/NFR-IDs, prüfbare Anforderungen und feste Kapitel |
+| `traceability` | Spezifikation, Review, Planung | Herkunft, Begriffe und Anforderungsbezüge über Phasen |
+| `spec-review` | Claude-/Codex-Review | Unabhängige, belegte und direkt einarbeitbare Befunde |
+| `reuse-discovery` | GitHub-Suche und Ranking | Nur tatsächliche Treffer bewerten, Auswahl trennen |
+| `execution` | Task-Plan-JSON | Abhängige Arbeitspakete mit Abnahme und Tests |
+| `implementation` | Exportierter Auftrag und direkte Claude-Code-Umsetzung | Arbeitsbereich prüfen, sicher ändern, Tests belegen, Übergabe berichten |
 
-Die Skills sind an SpecIt angepasst, keine unveränderten Kopien. Abweichend von den Vorlagen gilt: Wie viel bei der Spezifikation offen bleibt, bestimmt der Modus; der Plan stellt keine Rückfragen und blockiert keine Aufgaben, sondern legt Offenes selbst fest und weist es aus.
+Die ursprünglich vorhandenen Skills `discovery`, `specification`, `traceability`, `reuse-discovery` und `execution` bleiben erhalten und wurden methodisch vertieft. Quellen und Lizenzhinweise stehen im jeweiligen Frontmatter. Vor SPEC.md wird `traceability` nicht eingeblendet, da dort noch keine Anforderungs-IDs existieren. `reuse-discovery` gilt ausschließlich der echten Recherche und nicht dem anschließenden Planen.
+
+**Wichtig:** Die Coding-Agenten bekommen jetzt den `implementation`-Skill direkt im ausführbaren Prompt. Er ist in Einzelaufträgen, im Gesamtauftrag und im BACKLOG einmal übergeordnet enthalten; bei der direkten Umsetzung wird derselbe `renderTask`-/`renderSingle`-Text benutzt. Tests dürfen diese Agenten nur bei aktivierter Befehlsfreigabe tatsächlich ausführen; ohne Freigabe müssen sie nicht geprüfte Ergebnisse ausdrücklich kennzeichnen. Konzept-, Review- und Recherche-Skills bleiben reine Analyse-/Generierungsanweisungen ohne Projektdateizugriff.
+
+Die phasenbezogene Beurteilung mit Befunden, Skill-Begründung, Abhilfen und Prüfnachweisen steht in [docs/skills-gutachten.md](docs/skills-gutachten.md). Mit `npm test` werden unter anderem Phasenzuordnung und Einbettung des Implementierungs-Skills geprüft.
 
 ## Arbeitsauftrag
 
-Jeder Task trägt ID, Ziel, Anforderungsbezug, Abhängigkeiten, Scope und Nicht-Scope, Schnittstellen, Liefergegenstände, Akzeptanzkriterien, Tests und blockierende Entscheidungen. Der Server validiert das JSON und prüft die Abhängigkeiten auf Zyklen, unbekannte IDs und doppelte IDs. Blockierte Entscheidungen propagieren zu abhängigen Tasks. Abhängigkeitsstufen sind nur potenzielle Parallelisierung, keine Garantie für Schreibkonfliktfreiheit. Der Mensch muss gemeinsame Dateibereiche und Verträge bestätigen und tatsächliche Fertigstellung der Vorgänger prüfen. Keine automatische Agent-Ausführung, GitHub-Änderungen oder Deployments. Zielagent ist ein Kontextfeld; alle Aufträge bleiben portabel.
+Jeder Task trägt ID, Ziel, Anforderungsbezug, Abhängigkeiten, Scope und Nicht-Scope, Schnittstellen, Liefergegenstände, Akzeptanzkriterien, Tests und blockierende Entscheidungen. Der Server validiert das JSON und prüft die Abhängigkeiten auf Zyklen, unbekannte IDs und doppelte IDs. Blockierte Entscheidungen propagieren zu abhängigen Tasks. Abhängigkeitsstufen sind nur potenzielle Parallelisierung, keine Garantie für Schreibkonfliktfreiheit. Der Mensch muss gemeinsame Dateibereiche und Verträge bestätigen und tatsächliche Fertigstellung der Vorgänger prüfen. Die direkte Agent-Ausführung ist nach Abschlussbestätigung optional; exportierte Aufträge können ebenfalls extern ausgeführt werden. Agenten führen keine eigenmächtigen GitHub-Änderungen oder Deployments aus. Die Zielagent-Bezeichnung bleibt ein Kontextfeld; die Aufträge sind portabel.
 
 ## Qualität und Datenschutz
 
