@@ -181,3 +181,17 @@ Freigabe die Akzeptanz- und Konsistenzprüfung anhand identischer Fallbeispiele
 vergleichen. Bei `SPECIT_PARALLEL_SPEC=0` bleibt der bisherige serielle
 Generierungspfad unverändert. Kapitelweise Updates nutzen in beiden Fällen den
 bestehenden Delta-Pfad.
+
+
+### Reproduzierbarer Live-Benchmark
+
+Mit gestartetem SpecIt-Server und eingerichtetem Claude-/Anthropic-Zugang
+`npm run bench -- 3` ausführen (3 Wiederholungen pro Testfall: Notizen,
+Teamaufgaben, Raumbuchung). Für einen anderen Port `SPECIT_BENCH_URL`
+setzen. Das Skript ermittelt Dauer bis zur vollständigen Spezifikation,
+Modell-Timing, API-Tokens, Vollständigkeit der acht Kapitel und P50/P95.
+Es speichert und protokolliert keine Projektspezifikationstexte. Testläufe
+nutzen echte API-Aufrufe und können Kosten verursachen. Den Benchmark
+zunächst mit `SPECIT_FAST_MODE=0`, danach mit `SPECIT_FAST_MODE=1` und
+danach optional mit `SPECIT_PARALLEL_SPEC=1` wiederholen; zwischen
+Konfigurationswechseln den Server neu starten.
