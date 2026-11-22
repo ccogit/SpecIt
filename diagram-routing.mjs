@@ -59,7 +59,12 @@ function findPath(start, end, boxes, routed, width, height, clearance) {
       if(nc < dist[ns]-0.001){dist[ns]=nc;prev[ns]=state;heap.push([nc+length(b,end),nc,ns]);}
     }
   }
-  if(last<0)return [start,end];
+  if(last<0){
+    // Selbst bei stark beengtem Platz keine diagonale Notverbindung zeichnen.
+    const a={x:start.x,y:end.y},b={x:end.x,y:start.y};
+    const score=p=>+blocked(start,p,boxes,clearance) + +blocked(p,end,boxes,clearance);
+    return score(a)<=score(b)?[start,a,end]:[start,b,end];
+  }
   const pts=[];for(let s=last;s>=0;s=prev[s]){const v=Math.floor(s/3);pts.push({x:xs[v%nx],y:ys[Math.floor(v/nx)]});if(s===from)break;}
   pts.reverse();
   const compact=[];for(const p of pts){if(compact.length>1){const a=compact.at(-2),b=compact.at(-1);if((a.x===b.x && b.x===p.x)||(a.y===b.y && b.y===p.y)){compact.pop();}}compact.push(p);}
@@ -112,7 +117,9 @@ export function routeDiagram(boxes, edges, {width,height,mode='data',clearance=8
   });
   const ports=new Map();for(const [k,items] of uses){const [id,side]=k.split('|'), box=byId.get(id);
     items.sort((a,b)=>((side==='top'||side==='bottom')? a.other.x-b.other.x : a.other.y-b.other.y)||a.i-b.i);
-    items.forEach((it,j)=>ports.set(it.i+'|'+it.end,{side,p:port(box,side,0.17+0.66*(j+0.5)/items.length)}));
+    // Kennungs-Badges der Aufbau-Knoten sitzen links oben; Anschlüsse bleiben auf der rechten Hälfte.
+    const refs=mode==='structure'&&box.refs?.length&&side==='top';
+    items.forEach((it,j)=>ports.set(it.i+'|'+it.end,{side,p:port(box,side,refs ? 0.42+0.5*(j+0.5)/items.length : 0.17+0.66*(j+0.5)/items.length)}));
   }
   const routed=[], claimed=[], results=new Array(edges.length);
   const indices=edges.map((e,i)=>({i,len:length(center(byId.get(e.from)),center(byId.get(e.to)))})).sort((a,b)=>a.len-b.len||a.i-b.i);
