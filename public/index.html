@@ -2091,38 +2091,8 @@ body:not(.showset) .specwrap .doccol>.specbar{display:none!important}
 .top .bar>#navHint,.top #navHint .ph{height:34px}
 .top #navHint .pnum{font-size:11px}
 .link,.md h3 .meta,.concept h3,.concept h4{font-size:12px}
-/* Responsive Ausarbeitung: bei schmalen Fenstern nur eine Dokumentenspalte.
-   Verhindert, dass die Desktop-Grid-Positionierung Gliederung und Dokument überlagert. */
-@media (max-width:1180px) {
-  .split>*{min-width:0}
-  .specwrap{display:flex!important;flex-direction:column;gap:12px;min-width:0}
-  .specwrap>.doccol,.specwrap>.railcol{display:flex!important;position:static;align-self:stretch;width:100%;min-width:0;gap:10px}
-  .specwrap>.doccol{order:1}
-  .specwrap>.railcol{order:2}
-  .specwrap>.doccol>*{grid-column:auto!important;grid-row:auto!important;min-width:0}
-  .specwrap>.railcol>#railBrand{display:none!important}
-  .specwrap>.railcol>.specrail{position:static;display:flex;flex-direction:row;flex-wrap:nowrap;flex:0 0 auto;gap:4px;max-height:none;overflow-x:auto;overflow-y:hidden;padding:7px;scrollbar-width:thin}
-  .specwrap>.railcol>.specrail>button{flex:0 0 auto;width:auto;max-width:240px}
-  .specwrap .doccol>.specbar{height:auto;min-height:38px}
-  .split>.side{min-width:0}
-}
-@media (max-width:760px) {
-  .top .bar{grid-template-columns:minmax(0,1fr) auto!important;gap:8px}
-  .top .bar>.brand{grid-column:1}
-  .top .bar>.tools{grid-column:2!important;gap:4px;justify-content:flex-end;min-width:0}
-  .top .bar>.working{grid-column:1/-1;grid-row:2}
-  .toolrow{grid-template-columns:minmax(0,1fr)}
-  .toolrow #reviewGo,.toolrow #reuseBox>.btn{grid-column:1;grid-row:auto}
-  .md details.req>summary,.md .reqhead{padding-right:12px}
-  .md details.req>summary::after,.md .reqhead::after{display:none}
-  .specwrap>.railcol>.specrail>button{max-width:175px}
-}
-@media (max-width:480px) {
-  #setToggle{font-size:0!important;min-width:38px;justify-content:center}
-  #setToggle::before{content:"⚙";font-size:17px;line-height:1}
-  .top .bar>.tools{gap:2px}
-}
 </style>
+<link rel="stylesheet" href="/responsive.css">
 </head>
 <body>
 <header class="top">
@@ -2135,9 +2105,9 @@ body:not(.showset) .specwrap .doccol>.specbar{display:none!important}
     <div class="tools">
       <span id="mode" class="pill hidden" role="status">Demo-Modus</span>
       <label class="switch" id="aiSwitch"><input type="checkbox" id="ai"><span class="track"></span><span>Claude</span></label>
-      <button id="setToggle" class="btn ghost" type="button" aria-pressed="false" title="Einstellungen ein- oder ausblenden: Strategie, Modell, Voreinstellung, Modus, Kreativität, Einsatz">⚙ Einstellungen</button>
+      <button id="setToggle" class="btn ghost" type="button" aria-label="Einstellungen anzeigen oder ausblenden" aria-pressed="false" title="Einstellungen ein- oder ausblenden: Strategie, Modell, Voreinstellung, Modus, Kreativität, Einsatz">⚙ Einstellungen</button>
       <button id="theme" class="btn ghost" type="button" aria-pressed="false">Dunkel</button>
-      <button id="reset" class="btn ghost" type="button" title="Idee, Modus, Dauer, alle Antworten, Spezifikation und Aufträge leeren">↺ Zurücksetzen</button>
+      <button id="reset" class="btn ghost" type="button" aria-label="Zurücksetzen – Idee, Antworten, Spezifikation und Aufträge leeren" title="Idee, Modus, Dauer, alle Antworten, Spezifikation und Aufträge leeren">↺ Zurücksetzen</button>
     </div>
   </div>
 </header>
