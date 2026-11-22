@@ -1991,6 +1991,106 @@ body.stage0 .split>.side>#navHint{display:flex!important}
 .split>.side>#navHint .pbar{flex:none;gap:4px}
 .split>.side>#navHint .prow{height:10px}
 .split>.side>#navHint .pname{font-size:9px;line-height:10px}
+/* Feature-Liste: Der Knopf zum Übernehmen steht ganz oben und bleibt beim Rollen der Liste sichtbar */
+.featapply{position:sticky;top:0;z-index:3;width:100%;height:44px;justify-content:center;margin:0 0 14px;border-radius:10px;background:color-mix(in srgb,var(--go) 26%,var(--card))!important;color:var(--heading)!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--go) 50%,transparent),0 8px 14px -8px var(--card)!important;font-weight:700}
+/* Arbeitsanzeige minimal: ruhiger Text ohne Kapsel, Schein und Farbwechsel – die Bewegung liegt allein im Lauflicht an der Unterkante der Kopfzeile */
+.top .working{background:none!important;border:0!important;box-shadow:none!important;animation:none!important;padding:0;gap:14px;width:auto;max-width:100%;height:auto}
+.top .working::before{display:none!important}
+.top .working .pulse{display:none!important}
+.top .working b{background:none!important;-webkit-background-clip:border-box;background-clip:border-box;color:var(--heading)!important;animation:none!important;font-weight:600}
+.top .working #workingHint{flex:0 1 auto}
+.top .working .timer{background:none;padding:0;color:var(--ink-soft);font-weight:500}
+.top .working .workstop{height:auto;padding:2px 0;border-radius:0;background:none!important;box-shadow:none!important;color:var(--ink-soft)}
+.top .working .workstop:hover{color:var(--heading);text-decoration:underline}
+.top:has(#working:not(.hidden))::after{width:22%;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,var(--go));box-shadow:0 0 10px 0 color-mix(in srgb,var(--go) 60%,transparent);animation:wsweep 1.8s cubic-bezier(.45,.05,.55,.95) infinite}
+.top:has(#working:not(.hidden))::before{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:color-mix(in srgb,var(--go) 14%,transparent);pointer-events:none}
+/* Gliederung: feste Breite der Spalte, unabhängig vom Inhalt */
+.specwrap>.railcol{align-items:stretch;width:248px;box-sizing:border-box}
+.specwrap>.railcol>.specrail,.specwrap>.railcol>#railBrand{width:100%;min-width:0;max-width:none;box-sizing:border-box;align-self:stretch}
+.specwrap>.railcol>.specrail>button{width:100%;box-sizing:border-box}
+/* Aufklappbare Anforderungen deutlich als Schalter: grüner Pfeil in einer Marke, grüne Kante, Reaktion beim Überfahren, „Details“ am rechten Rand */
+.md details.req>summary,.md .reqhead{position:relative;display:flex;align-items:center;gap:10px;padding:9px 96px 9px 10px;border-radius:8px;cursor:pointer;background:color-mix(in srgb,var(--go) 7%,var(--surface-low));box-shadow:inset 3px 0 0 color-mix(in srgb,var(--go) 55%,transparent);transition:background .12s}
+.md details.req>summary:hover,.md .reqhead:hover{background:color-mix(in srgb,var(--go) 16%,var(--surface-low))}
+.md details.req>summary::before,.md .reqhead::before{content:"▸";flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:color-mix(in srgb,var(--go) 24%,transparent);color:color-mix(in srgb,var(--go) 75%,var(--heading));font:700 13px/1 var(--mono)}
+.md details.req[open]>summary::before,.md .reqhead.open::before{content:"▾";background:var(--go);color:var(--card)}
+.md details.req>summary::after,.md .reqhead::after{content:"Details zeigen";position:absolute;right:12px;top:50%;transform:translateY(-50%);font:600 11px/1 var(--mono);color:color-mix(in srgb,var(--go) 70%,var(--heading));white-space:nowrap}
+.md details.req[open]>summary::after,.md .reqhead.open::after{content:"zuklappen";color:var(--ink-soft)}
+.md details.req[open]>summary,.md .reqhead.open{background:color-mix(in srgb,var(--go) 14%,var(--surface-low))}
+.md .reqhead:focus-visible,.md details.req>summary:focus-visible{outline:2px solid var(--go);outline-offset:2px}
+@media print{.md details.req>summary::after,.md .reqhead::after{display:none}}
+/* ---- Zwei Abschnitte rechts: jeder Phasen-Block ist die Überschrift seines Abschnitts ---- */
+.split>.side>#navHint2{display:flex!important;flex-direction:row;align-items:stretch;width:auto!important;height:96px;min-height:0;margin:14px 0 -4px;padding:0;box-sizing:border-box;overflow:visible;visibility:visible!important;cursor:pointer;flex:none}
+.split>.side>#navHint2 .ph{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:10px;box-sizing:border-box;padding:12px 16px;border-radius:10px;background:var(--card);box-shadow:var(--shadow)}
+.split>.side>#navHint2 .pcap{display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:10px;min-width:0}
+.split>.side>#navHint2 .pcap b{font:700 14px/1 var(--sans);color:var(--heading);white-space:nowrap}
+.split>.side>#navHint2 .pnum{display:block!important;font:500 11px/1 var(--mono);color:var(--ink-soft);white-space:nowrap}
+.split>.side>#navHint2 .pbar{flex:none;display:flex;flex-direction:column;gap:4px;min-width:0}
+.split>.side>#navHint2 .prow{height:10px}
+.split>.side>#navHint2 .pname{font-size:9px;line-height:10px}
+.split>.side>#navHint2 .ph.tick{animation:phtick .8s ease-out}
+/* Noch nicht begonnen: nur eine schmale, blasse Zeile */
+.split>.side>#navHint2:has(.ph.empty){height:44px}
+.split>.side>#navHint2 .ph.empty{background:var(--surface-low);box-shadow:none;padding:0 16px}
+.split>.side>#navHint2 .ph.empty .pbar{display:none}
+.split>.side>#navHint2 .ph.empty .pcap{align-items:center}
+.split>.side>#navHint2 .ph.empty .pcap b{color:var(--ink-soft)}
+@media print{.split>.side>#navHint2{display:none!important}}
+/* ================= Neue Aufteilung: Eingaben links · Dokument in der Mitte · Gliederung rechts ================= */
+@media(min-width:1181px){
+  .split{grid-template-columns:minmax(480px,30%) minmax(0,1fr)!important}
+  .split>.side{order:-1}
+}
+/* Dokument und Gliederung: Dokument links, Gliederung als Inhaltsverzeichnis rechts */
+.specwrap{grid-template-columns:minmax(0,1fr) 232px;row-gap:0}
+.specwrap>.railcol{grid-column:2;width:232px}
+.specwrap .doccol>*{grid-column:1!important}
+.specwrap>.railcol>#railBrand{display:none!important}
+.specwrap .doccol>.specbar{margin-bottom:6px}
+.specwrap .doccol>.dochead{margin-bottom:16px}
+.specwrap .doccol>.btn.elaborate{margin-top:16px}
+/* 3) Einstellungen nur auf Wunsch */
+body:not(.showset) .specwrap .doccol>.specbar{display:none!important}
+#setToggle[aria-pressed=true]{color:var(--heading);background:color-mix(in srgb,var(--go) 18%,transparent)}
+/* Kein zweiter Phasen-Block in der Spalte */
+#navHint2{display:none!important}
+/* 2) Phasen-Blöcke klein in der Kopfzeile */
+.top .bar{grid-template-columns:auto auto minmax(0,1fr) auto!important;column-gap:20px}
+.top .bar>.brand{grid-column:1}
+.top .bar>#navHint{grid-column:2;display:flex!important;flex-direction:row;align-items:center;gap:8px;height:36px;margin:0;padding:0;overflow:visible;visibility:visible;width:auto;cursor:pointer}
+.top .bar>.working{grid-column:3}
+.top .bar>.tools{grid-column:4!important}
+.top #navHint .arr{display:inline;color:var(--outline);font-size:13px}
+.top #navHint .ph{display:flex;flex-direction:row;align-items:center;gap:10px;height:36px;box-sizing:border-box;padding:0 12px;border-radius:8px;background:var(--surface-low);min-width:0}
+.top #navHint .ph.empty{background:none;box-shadow:inset 0 0 0 1px var(--outline-soft)}
+.top #navHint .pcap{display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.top #navHint .pcap b{font:700 12px/1 var(--sans);color:var(--heading);white-space:nowrap}
+.top #navHint .pnum{display:block!important;font:500 10.5px/1 var(--mono);color:var(--ink-soft);white-space:nowrap}
+.top #navHint .ph.empty .pnum,.top #navHint .ph.empty .pbar{display:none!important}
+.top #navHint .ph.empty .pcap b{color:var(--ink-soft)}
+.top #navHint .pbar{display:flex;flex-direction:column;gap:2px;width:96px}
+.top #navHint .prow{height:6px;display:flex;align-items:center}
+.top #navHint .pname{display:none}
+.top #navHint .ph.tick{animation:tickreset .8s ease-out}
+@media(max-width:1100px){.top #navHint .pbar{display:none}}
+@media(max-width:760px){.top .bar>#navHint{display:none!important}}
+/* Lesbarkeit: Fließtext höchstens etwa 90 Zeichen breit */
+.md :is(p,li,blockquote),.concept :is(p,li){max-width:90ch}
+.md :is(li.req,p.req),.md .reqhead{max-width:none}
+/* Lesbarkeit: keine Schrift unter 12 Pixel in Bedienelementen und Hinweisen */
+.btn.small,.split>.side details.fixrow .btn.small,.brandgroup #namePanel .namerow>.btn,.brandgroup>#logoActs .btn{font-size:12px!important}
+.meta,.eyebrow,.chip,.dochead .draftstep,.dochead .seg button,.specsum .eyebrow,.specsum .sumcap,.specsum .sumline span,.sumall,.specrail .eyebrow,.specrail .n,.md .reqhead::after,.md details.req>summary::after,#paramBar summary,.stratpick .eyebrow,.stratpick select,#specModel,.pmopt span,.diagtabs button,.concept .eyebrow{font-size:12px!important}
+.specrail button{font-size:13px}
+/* Nacharbeiten zur neuen Aufteilung */
+.specwrap{grid-template-rows:auto auto 1fr auto}
+.split>.side>#navHint2{display:none!important}
+#promptPane .rowhead{font-size:16px!important}
+@media(min-width:1181px){.split{grid-template-columns:minmax(520px,32%) minmax(0,1fr)!important}}
+#promptPane #durPick{width:176px}
+.brandgroup:not(:has(.logotile)) #namePanel .namerow>.btn{min-width:176px}
+.brandgroup:not(:has(.logotile)) #namePanel .namerow input{flex:1 1 calc(100% - 222px)}
+.top .bar>#navHint,.top #navHint .ph{height:34px}
+.top #navHint .pnum{font-size:11px}
+.link,.md h3 .meta,.concept h3,.concept h4{font-size:12px}
 </style>
 </head>
 <body>
@@ -1999,10 +2099,12 @@ body.stage0 .split>.side>#navHint{display:flex!important}
     <div class="brand">
       <span class="wordmark">Spec<span>It.</span></span>
     </div>
+    <div class="effortbar" id="navHint" role="button" tabindex="0"></div>
     <div id="working" class="working hidden" role="status" aria-live="polite"><span class="pulse" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b id="workingText"></b><span id="workingHint"></span><button id="workingStop" class="btn small workstop" type="button" title="Die laufende Verarbeitung beenden; es entstehen keine weiteren Kosten.">✕ Abbrechen</button><span id="workingTime" class="timer" aria-hidden="true"></span><span class="stripe" aria-hidden="true"></span></div>
     <div class="tools">
       <span id="mode" class="pill hidden" role="status">Demo-Modus</span>
       <label class="switch" id="aiSwitch"><input type="checkbox" id="ai"><span class="track"></span><span>Claude</span></label>
+      <button id="setToggle" class="btn ghost" type="button" aria-pressed="false" title="Einstellungen ein- oder ausblenden: Strategie, Modell, Voreinstellung, Modus, Kreativität, Einsatz">⚙ Einstellungen</button>
       <button id="theme" class="btn ghost" type="button" aria-pressed="false">Dunkel</button>
       <button id="reset" class="btn ghost" type="button" title="Idee, Modus, Dauer, alle Antworten, Spezifikation und Aufträge leeren">↺ Zurücksetzen</button>
     </div>
@@ -2165,7 +2267,6 @@ body.stage0 .split>.side>#navHint{display:flex!important}
         
         
         </div>
-        <div class="effortbar" id="navHint" role="button" tabindex="0"></div>
         <div id="promptPane" class="promptpane">
         
         <div class="wishbox" id="ideaBox">
@@ -2206,8 +2307,9 @@ body.stage0 .split>.side>#navHint{display:flex!important}
           <div id="reuseBox"></div>
         </details>
         </div>
+        <div class="effortbar phasebar" id="navHint2" role="button" tabindex="0" aria-label="Umsetzung: wer was beiträgt – öffnet die Übersicht"></div>
         <details class="card catpanel hidden" id="implPanel">
-          <summary><h2>Umsetzung</h2><span class="meta" id="implMeta"></span></summary>
+          <summary><h2>Plan und Aufträge</h2><span class="meta" id="implMeta"></span></summary>
           <div id="implBody">
 <div id="planGate" class="card gate hidden" role="status">
       <h2 id="gateTitle"></h2>
@@ -2335,6 +2437,7 @@ body.stage0 .split>.side>#navHint{display:flex!important}
 let theme=null;try{theme=localStorage.getItem('specit-theme')}catch{}
 if(theme!=='dark'&&theme!=='light')theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
 function applyTheme(){document.documentElement.dataset.theme=theme;const b=document.getElementById('theme');b.textContent=theme==='dark'?'☼':'☾';b.title=theme==='dark'?'Helles Thema':'Dunkles Thema';b.setAttribute('aria-pressed',String(theme==='dark'));b.setAttribute('aria-label','Zum '+(theme==='dark'?'hellen':'dunklen')+' Thema wechseln')}
+{let on=false;try{on=localStorage.getItem('specit-settings')==='1'}catch{}const b=document.getElementById('setToggle'),put=()=>{document.body.classList.toggle('showset',on);b.setAttribute('aria-pressed',String(on))};put();b.onclick=()=>{on=!on;try{localStorage.setItem('specit-settings',on?'1':'0')}catch{}put();window.dispatchEvent(new Event('resize'))}}
 applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('specit-theme',theme)}catch{}applyTheme()};
 
 import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate,setAgentSkill} from '/planner.mjs';
@@ -2586,7 +2689,7 @@ function effortBar(){
     const g=node('span',undefined,'ph'+(L.w[k]?'':' empty')),bar=node('span',undefined,'pbar'),tot=L.w[k]||1;
     // Länge nach der Wurzel des Anteils am größten Beitrag der Phase: So bleibt auch ein kleiner Beitrag neben einem tausendfach größeren sichtbar
     {const top=Math.max(1,...ACTORS.map(([a])=>L.m[a][k].w));for(const [a,n] of ACTORS){const v=L.m[a][k].w,row=node('span',undefined,'prow '+a+(v?'':' zero')),track=node('span',undefined,'ptrack'),fill=node('i');fill.style.width=(v>0?Math.max(5,Math.round(100*Math.sqrt(v/top))):0)+'%';row.title=n+': '+compact(v)+' Wörter'+(L.m[a][k].s>=1?' in '+clock(L.m[a][k].s):'');track.append(fill);row.append(node('span',n,'pname'),track);bar.append(row)}}
-    const cap=node('span',undefined,'pcap');cap.append(node('b',name),node('span',L.w[k]?compact(L.w[k])+' W · '+clock(L.s[k]):'–','pnum'));
+    const cap=node('span',undefined,'pcap');cap.append(node('b',name),node('span',L.w[k]?compact(L.w[k])+' W · '+clock(L.s[k]):'noch nicht begonnen','pnum'));
     g.append(cap,bar);
     g.title=name+': '+ACTORS.map(([a,n])=>n+' '+compact(L.m[a][k].w)+' Wörter'+(L.m[a][k].s>=1?' in '+clock(L.m[a][k].s):'')).join(' · ');
     if(effortPrev&&(L.w[k]>(effortPrev['w'+k]||0)||wiped))g.classList.add('tick');
@@ -2655,6 +2758,7 @@ $('navHint').onclick=()=>{balanceUI();if(!$('balance').open)$('balance').showMod
 {let last=0,drawn=0;const beat=()=>{const now=Date.now();if(last){const d=now-last;if(d>400)s.time[curPhase()]+=Math.min(d,30000)/1000}last=now;if(now-drawn>4000){drawn=now;save();effortBar()}};
  for(const ev of ['pointerdown','keydown','input','wheel'])document.addEventListener(ev,beat,{passive:true,capture:true})}
 $('navHint').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('navHint').click()}};
+$('navHint2').onclick=()=>$('navHint').click();$('navHint2').onkeydown=$('navHint').onkeydown;
 $('balanceClose').onclick=()=>$('balance').close();$('balance').onclick=e=>{if(e.target===$('balance'))$('balance').close()};
 const effortNow=()=>{effortBar();clearTimeout(effortSave);effortSave=setTimeout(save,800)};
 document.addEventListener('click',e=>{
@@ -2725,7 +2829,7 @@ function navUI(){
   effortBar();
 }
 $('implPanel').addEventListener('toggle',()=>navUI());
-function alignRows(){requestAnimationFrame(()=>{{const w=$('wishPane'),h=document.querySelector('.doccol>.dochead'),col=document.querySelector('.specwrap>.railcol');{const bar=document.querySelector('.doccol>.specbar'),nav=$('navHint');if(h&&bar&&nav&&h.offsetParent&&bar.offsetParent)nav.style.height=Math.round(h.getBoundingClientRect().bottom-bar.getBoundingClientRect().top)+'px'}}const input=document.querySelector('#namePanel .namerow input'),group=document.querySelector('.brandgroup'),b=$('derive');if(!input||!group)return;const w=Math.round(group.getBoundingClientRect().right-input.getBoundingClientRect().right-12);const dp=$('durPick'),rest=w-(dp?Math.round(dp.getBoundingClientRect().width)+10:0);b.style.width=rest>=150?rest+'px':''})}
+function alignRows(){requestAnimationFrame(()=>{{const w=$('wishPane'),h=document.querySelector('.doccol>.dochead'),col=document.querySelector('.specwrap>.railcol');}const input=document.querySelector('#namePanel .namerow input'),group=document.querySelector('.brandgroup'),b=$('derive');if(!input||!group)return;const w=Math.round(group.getBoundingClientRect().right-input.getBoundingClientRect().right-12);const dp=$('durPick'),rest=w-(dp?Math.round(dp.getBoundingClientRect().width)+10:0);b.style.width=rest>=150?rest+'px':''})}
 window.addEventListener('resize',alignRows);
 new ResizeObserver(()=>alignRows()).observe(document.querySelector('.split>.side'));
 // Name, Logo und Review klappen nicht: Sie sind feste Zeilen
@@ -3481,9 +3585,9 @@ async function startSpec(write=true){
     s.featBasis=basis;save();
     if(overTarget())await proposeFit();
     await deriveNames(false);
-    if(overTarget()||fitProposal){renderAll();specNote('Features und Zielzeit rechts prüfen, dann „Spezifikation erstellen“.');return}
+    if(overTarget()||fitProposal){renderAll();specNote('Features und Zielzeit links prüfen, dann „Spezifikation erstellen“.');return}
   }
-  if(!write){renderAll();if(!s.spec.trim())specNote('Features rechts prüfen, dann „Spezifikation erstellen“.');return}
+  if(!write){renderAll();if(!s.spec.trim())specNote('Features links prüfen, dann „Spezifikation erstellen“.');return}
   ensureFits(generate);
 }
 function ensureDecided(next){
@@ -3623,8 +3727,9 @@ function chaptersUI(view){
       const id=strong.textContent.match(/\b(?:FR|NFR)-\d{3}\b/)[0],d=node('details',undefined,'req'),sm=node('summary'),body=node('div');
       strong.remove();sm.append(...strong.childNodes);body.append(...li.childNodes);
       // Der Gedankenstrich hinter dem Titel gehört nicht in den aufgeklappten Text
-      if(body.firstChild&&body.firstChild.nodeType===3)body.firstChild.nodeValue=body.firstChild.nodeValue.replace(/^\s*[–-]\s*/,'');
+      if(body.firstChild&&body.firstChild.nodeType===3)body.firstChild.nodeValue=body.firstChild.nodeValue.replace(/^\s*[–·-]\s*/,'');
       d.open=!!change||reqIsOpen(id);d.ontoggle=()=>reqSet(id,d.open);d.append(sm,body);li.classList.add('req');li.append(d);items.push(id);
+      if(li.tagName==='P'){let nx;while((nx=li.nextElementSibling)&&!/^H[3-6]$/.test(nx.tagName)&&!(nx.tagName==='P'&&nx.firstElementChild&&nx.firstElementChild.tagName==='STRONG')&&!nx.classList.contains('reqtools'))body.append(nx)}
     }
     if(items.length>1&&!change){
       const bar=node('div',undefined,'reqtools'),allOpen=items.every(reqIsOpen);
@@ -3670,7 +3775,7 @@ function specUI(){
   if(s.spec.trim()){view.replaceChildren(renderMarkdown(specOut(s.spec),document));specLogo(view);keepIds(view);specDiagrams(view);chaptersUI(view);
     // Fehlt das Schaubild zum aktuellen Stand, wird es im Hintergrund abgeleitet (einmal je Stand)
     if(!s.dirty&&!active)setTimeout(()=>{deriveDiagram('flow',false);deriveDiagram('arch',false)},0)}
-  else view.replaceChildren(node('p',s.features.length?'Die Features stehen rechts. Auswahl und Zielzeit prüfen, dann „Spezifikation erstellen“.':'Noch keine Spezifikation. „Spezifikation erstellen“ wählen oder über „Bearbeiten“ eine vorhandene Spezifikation einfügen.','placeholder'));
+  else view.replaceChildren(node('p',s.features.length?'Die Features stehen links. Auswahl und Zielzeit prüfen, dann „Spezifikation erstellen“.':'Noch keine Spezifikation. „Spezifikation erstellen“ wählen oder über „Bearbeiten“ eine vorhandene Spezifikation einfügen.','placeholder'));
   changeUI(view);
 }
 function setSpecMode(mode,focus){specMode=mode;specUI();if(mode==='view')ensureFeatures();if(focus)(mode==='edit'?$('spec'):$('modeEdit')).focus()}
@@ -4272,7 +4377,7 @@ function featuresUI(){
     row.append(input,node('span',undefined,'track'),body,node('span','≈ '+hm(f.minutes),'chip mins'));box.append(row);
   });
   if(list.some(f=>f.on!==f.inSpec)){
-    const apply=button('✓ Auswahl in die Spezifikation übernehmen','btn primary',applyScope);apply.style.cssText='margin-top:12px;width:100%;justify-content:center';apply.disabled=active;box.append(apply);
+    const apply=button('✓ Auswahl in die Spezifikation übernehmen','btn primary',applyScope);apply.className+=' featapply';apply.disabled=active;apply.title='Du hast Features an- oder abgewählt; die Spezifikation enthält die Änderung noch nicht.';box.prepend(apply);
   }
   const foot=node('p',(s.featSource==='claude'?'Aufwand von Claude geschätzt':'Aufwand: feste Demo-Annahmen')+'; die tatsächliche Dauer kann deutlich abweichen. ','meta'),again=button('Neu ermitteln','link',deriveFeatures);
   foot.style.marginTop='12px';again.disabled=active;foot.append(again);box.append(foot);
@@ -4832,7 +4937,7 @@ function conceptUI(){
   }
   // Noch nichts geschrieben: Das Blatt ist leer
   out.classList.add('idle');
-  out.replaceChildren(node('p',!on?'Hier steht die Spezifikation. Mit Claude (Schalter oben rechts) entsteht zuerst ihr Grobentwurf; ohne Claude setzt SpecIt sie aus deinen Antworten zusammen.':'Hier entsteht die Spezifikation: rechts die Idee eingeben und „Entwurf erstellen“ klicken. Zuerst erscheint der Entwurf mit den Stellen, an denen du entscheidest.','drafthint'));
+  out.replaceChildren(node('p',!on?'Hier steht die Spezifikation. Mit Claude (Schalter oben rechts) entsteht zuerst ihr Grobentwurf; ohne Claude setzt SpecIt sie aus deinen Antworten zusammen.':'Hier entsteht die Spezifikation: links die Idee eingeben und „Entwurf erstellen“ klicken. Zuerst erscheint der Entwurf mit den Stellen, an denen du entscheidest.','drafthint'));
   note.textContent='';
 }
 // Navigation des Entwurfs: dieselben Kapitel wie später im Dokument; was noch nicht geschrieben ist, steht blass da
