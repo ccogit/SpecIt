@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { tmpdir, homedir } from 'node:os';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { validatePlan, demoPlan } from './planner.mjs';
+import { MAX_SPEC_CHARS } from './limits.mjs';
 import { agentSkill } from './agentskill.mjs';
 import { factor, scale, info as calibInfo } from './calibration.mjs';
 import { zip, collect } from './zip.mjs';
@@ -115,14 +116,14 @@ function validate(b){
  if(!b||!['questions','final','plan','revise','decisions','triage','adjust','features','scope','fit','extend','names','tidy','review','logos','sketch','concept','flow','arch','proto'].includes(b.mode))throw Error('Ungültiger Modus.');
  if(b.mode==='adjust'){
   // Änderungswunsch in eigenen Worten; die Idee darf fehlen (eingefügte Spezifikation).
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
   const wish=String(b.wish||'').trim().replace(/\s+/g,' ').slice(0,2000);
   if(!wish)throw Error('Bitte den Änderungswunsch eingeben.');
   return {mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),questions:cleanQuestions(b.questions||[]),extras:cleanExtras(b.extras),...frameIn(b),spec:b.spec,wish};
  }
  if(b.mode==='review'){
   // Review der Spezifikation durch einen gewählten Agenten
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
   const provider=b.provider==='codex'?'codex':'claude',wanted=String(b.model||'');
   return {mode:b.mode,ai:b.ai===true,spec:b.spec,provider,model:(reviewers.find(r=>r.id===provider)?.models||[]).some(m=>m.id===wanted)?wanted:'',duration:frameIn(b).duration};
  }
@@ -145,17 +146,17 @@ function validate(b){
  }
  if(b.mode==='proto'){
   // Klickbarer Prototyp aus der fertigen Spezifikation
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
   return {mode:b.mode,ai:b.ai===true,spec:b.spec,project:String(b.project||'').trim().slice(0,100)};
  }
  if(b.mode==='flow'||b.mode==='arch'){
   // Schaubilder (Ablauf bzw. Aufbau und Datenmodell) als Struktur, abgeleitet aus der fertigen Spezifikation
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
   return {mode:b.mode,ai:b.ai===true,spec:b.spec};
  }
  if(b.mode==='logos'){
   // Logo-Entwürfe als SVG
-  const idea=String(b.idea||'').trim().slice(0,2000),spec=typeof b.spec==='string'?b.spec.slice(0,150000):'';
+  const idea=String(b.idea||'').trim().slice(0,2000),spec=typeof b.spec==='string'?b.spec.slice(0,MAX_SPEC_CHARS):'';
   if(!idea&&!spec.trim())throw Error('Für Logo-Entwürfe braucht es eine Idee oder eine Spezifikation.');
   return {mode:b.mode,ai:b.ai===true,idea,spec,project:String(b.project||'').trim().slice(0,100),tone:Number.isInteger(b.tone)&&b.tone>=0&&b.tone<=4?b.tone:2,count:Number.isInteger(b.count)?Math.min(5,Math.max(1,b.count)):3};
  }
@@ -166,14 +167,14 @@ function validate(b){
  }
  if(b.mode==='names'){
   // Namensvorschläge aus Idee und – falls vorhanden – Spezifikation
-  const idea=String(b.idea||'').trim().slice(0,2000),spec=typeof b.spec==='string'?b.spec.slice(0,150000):'';
+  const idea=String(b.idea||'').trim().slice(0,2000),spec=typeof b.spec==='string'?b.spec.slice(0,MAX_SPEC_CHARS):'';
   if(!idea&&!spec.trim())throw Error('Für Namensvorschläge braucht es eine Idee oder eine Spezifikation.');
   const tone=Number.isInteger(b.tone)&&b.tone>=0&&b.tone<=4?b.tone:2;
   return {mode:b.mode,ai:b.ai===true,idea,spec,tone,count:Number.isInteger(b.count)?Math.min(8,Math.max(1,b.count)):3,avoid:cleanNames(b.avoid).map(n=>n.name)};
  }
  if(b.mode==='fit'||b.mode==='extend'){
   // Lösungsvorschlag, wie die Features in die Zielzeit passen; die Spezifikation darf noch fehlen (Umfang zuerst)
-  if(typeof b.spec!=='string'||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
   if(!b.spec.trim()&&!String(b.idea||'').trim())throw Error('Für einen Vorschlag braucht es eine Idee oder eine Spezifikation.');
   const features=cleanFeatures(b.features),target=Number.isFinite(b.target)?Math.round(b.target):0;
   if(!features.length||target<1)throw Error('Für einen Vorschlag braucht es Features und eine Zielzeit.');
@@ -182,7 +183,7 @@ function validate(b){
  }
  if(b.mode==='features'||b.mode==='scope'){
   // Features ermitteln (aus der Spezifikation oder, bevor es sie gibt, aus Idee und Entscheidungen) bzw. eine geänderte Auswahl einarbeiten.
-  if(typeof b.spec!=='string'||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
   if(!b.spec.trim()&&(b.mode==='scope'||!String(b.idea||'').trim()))throw Error(b.mode==='scope'?'Spezifikation fehlt oder zu lang.':'Für die Features braucht es eine Idee oder eine Spezifikation.');
   const concept=typeof b.concept==='string'?b.concept.trim().slice(0,6000):'';
   const base={concept,mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),questions:cleanQuestions(b.questions||[]),extras:cleanExtras(b.extras),...frameIn(b),spec:b.spec};
@@ -193,11 +194,11 @@ function validate(b){
  }
  if(b.mode==='triage')return {mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),idea:String(b.idea||'').trim().slice(0,2000),questions:cleanQuestions(b.questions||[])};
  if(b.mode==='decisions'){
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
   return {mode:b.mode,ai:b.ai===true,project:String(b.project||'').slice(0,100),spec:b.spec,questions:cleanQuestions(b.questions||[])};
  }
  if(b.mode==='plan'){
-  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
+  if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
   return {mode:b.mode,ai:b.ai===true,spec:b.spec,repo:String(b.repo||'').slice(0,500),agent:String(b.agent||'').slice(0,100),reuse:cleanSelections(b.reuse)};
  }
  if(typeof b.idea!=='string'||b.idea.length>2000)throw Error('Ungültige Idee.');
@@ -206,7 +207,7 @@ function validate(b){
  // Festgelegter Umfang: Die Spezifikation wird für genau diese Features geschrieben
  if(typeof b.concept==='string'&&b.concept.trim())data.concept=b.concept.trim().slice(0,6000);
   if(b.mode==='questions')data.fill=b.fill===true&&data.questions.length>0;
-  if(b.mode==='final'&&b.update===true&&typeof b.spec==='string'&&b.spec.trim()&&b.spec.length<=150000){
+  if(b.mode==='final'&&b.update===true&&typeof b.spec==='string'&&b.spec.trim()&&b.spec.length<=MAX_SPEC_CHARS){
    // Kapitelweise Aktualisierung: bisherige Spezifikation und was sich seit ihrem Stand geändert hat
    data.update=true;data.previous=b.spec;data.changes=(Array.isArray(b.changes)?b.changes:[]).filter(x=>typeof x==='string'&&x.trim()).slice(0,40).map(x=>x.trim().replace(/\s+/g,' ').slice(0,400));
   }
@@ -216,7 +217,7 @@ function validate(b){
   if(b.mode==='final')data.scope=cleanFeatures(b.features||[]).map(f=>({name:f.name,note:f.note,basis:!!f.core}));
  if(b.mode!=='revise')return data;
  // Eine Antwort wurde geändert: Spezifikation, Stand davor und Index der geänderten Frage.
- if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
+ if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
  const previous=cleanQuestions(b.previous||[]),index=b.index;
  // index = die eine geänderte Frage, -1 bei mehreren zugleich; maßgeblich ist der Vergleich beider Stände.
  if(!Number.isInteger(index)||index<-1||index>=data.questions.length||previous.length!==data.questions.length||previous.some((p,i)=>p.question!==data.questions[i].question))throw Error('Ungültige Änderung.');
@@ -405,7 +406,7 @@ async function claude(b){
   // Erst gezielte Ersetzungen; greifen sie nicht, die Spezifikation einmal vollständig überarbeiten lassen.
   const scope=b.mode==='scope',data={project:b.project,idea:b.idea,...(b.duration?{targetDuration:b.duration}:{}),...(scope?{remove:b.remove,restore:b.restore,decisions:decisionsOf(b.questions)}:{wish:b.wish}),spec:b.spec};
   let md=null,answers=[];try{const parsed=parseJson(await ask(withSkills(b.mode,scope?scopePrompt:adjustPrompt),data,8000));md=applyEdits(b.spec,parsed.edits);if(scope&&md!==null)answers=mapAnswers(b.questions,parsed.answers)}catch(e){if(!(e instanceof SyntaxError)&&!/JSON/.test(String(e.message)))throw e}
-  if(md===null){const full=(await ask(withSkills(b.mode,scope?scopeFullPrompt:adjustFullPrompt),data,16000)).trim().replace(/^```(?:markdown|md)?\s*/i,'').replace(/\s*```$/,'');md=full&&full.length<=150000?full:null}
+  if(md===null){const full=(await ask(withSkills(b.mode,scope?scopeFullPrompt:adjustFullPrompt),data,16000)).trim().replace(/^```(?:markdown|md)?\s*/i,'').replace(/\s*```$/,'');md=full&&full.length<=MAX_SPEC_CHARS?full:null}
   return {markdown:md===null?null:withToc(md),answers};
  }
  if(b.mode==='review'){
@@ -523,7 +524,7 @@ function validateLayout(b){
   if(!isScreenId(b.screenId))throw Error('Ungültiger Stitch-Screen.');
   return {action:b.action,projectId:b.projectId,screenId:b.screenId,count:variantCount(b.count),deviceType:device(b.deviceType),known};
  }
- if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Spezifikation fehlt oder zu lang.');
+ if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>MAX_SPEC_CHARS)throw Error('Spezifikation fehlt oder zu lang.');
  return {action:b.action,projectId:b.projectId,project:String(b.project||'').slice(0,100),spec:b.spec,wish:String(b.wish||'').trim().slice(0,500),tone:Number.isInteger(b.tone)&&b.tone>=0&&b.tone<=4?b.tone:2,theme:b.theme==='DARK'?'DARK':b.theme==='LIGHT'?'LIGHT':'',deviceType:device(b.deviceType),known};
 }
 async function layout(b){
@@ -724,7 +725,7 @@ http.createServer(async(req,res)=>{
   return;
  }
  if(req.url==='/api/reuse'){
-  let spec;try{const b=JSON.parse(raw);if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>150000)throw Error('Gültige Spezifikation erforderlich.');spec=b.spec}catch(e){return send(res,400,{error:e.message})}
+  let spec;try{const b=JSON.parse(raw);if(typeof b.spec!=='string'||!b.spec.trim()||b.spec.length>MAX_SPEC_CHARS)throw Error('Gültige Spezifikation erforderlich.');spec=b.spec}catch(e){return send(res,400,{error:e.message})}
   if(!key&&!hasCli)return send(res,503,{error:'Die Recherche benötigt Claude Code oder einen Anthropic-API-Schlüssel.'});
   if(busy)return send(res,429,{error:'Eine KI-Analyse läuft bereits.'});
   sketchAbort?.abort();busy=true;lastAI=Date.now();watch(res);try{return send(res,200,await discoverReuse({spec}))}catch(e){return send(res,502,{error:e instanceof SyntaxError?'Claude hat eine unlesbare Antwort geliefert. Bitte erneut versuchen.':e.message||'Recherche fehlgeschlagen.'})}finally{busy=false;currentAbort=null}
