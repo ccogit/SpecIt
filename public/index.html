@@ -122,7 +122,7 @@
       <div class="actions"></div>
     </div>
         
-<div id="docHead" class="dochead"><span class="eyebrow drafttitle"><span class="draftstep on" id="step1">1 · Entwurf</span><span class="draftarrow">→</span><span class="draftstep" id="step2">2 · Ausgearbeitet</span></span><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div><button id="runTab" class="btn small hidden" type="button" aria-pressed="false">▸ Umsetzung zeigen</button><button id="wishOpen" class="btn small wishopen" type="button" aria-label="Änderungswunsch äußern" title="Änderungswunsch: in eigenen Worten sagen, was anders werden soll – die KI arbeitet es ein.">✦</button><span class="actions dhright"><span class="meta" id="conceptNote"></span><button id="conceptAll" class="btn small hidden" type="button" title="Übernimmt alle Annahmen der KI als deine Festlegungen.">✓ Alles akzeptieren</button><button id="conceptRedo" class="btn small hidden" type="button" title="Schreibt das Konzept neu und berücksichtigt dabei deine Antworten im ganzen Text.">↻ Neu schreiben</button><span id="specStatus" role="status" class="status" style="min-height:0"></span><button id="generate" class="btn primary small" type="button">↻ Spezifikation aktualisieren</button><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="specPdf" class="btn small" type="button" title="Öffnet die Druckvorschau des Browsers mit der Spezifikation im A4-Format. Dort als Ziel „Als PDF speichern“ wählen.">↓ PDF / Vorschau</button></span></div>
+<div id="docHead" class="dochead"><span class="eyebrow drafttitle"><span class="draftstep on" id="step1">1 · Entwurf</span><span class="draftarrow">→</span><span class="draftstep" id="step2">2 · Ausgearbeitet</span></span><div class="seg" role="group" aria-label="Ansicht: Spezifikation oder Umsetzung"><button id="modeView" type="button" aria-pressed="true">◉ Spezifikation</button><button id="runTab" class="hidden" type="button" aria-pressed="false">▸ Umsetzung</button></div><button id="modeEdit" class="btn small" type="button" aria-pressed="false" title="Die Spezifikation als Markdown bearbeiten">✎ Bearbeiten</button><button id="wishOpen" class="btn small wishopen" type="button" aria-label="Änderungswunsch äußern" title="Änderungswunsch: in eigenen Worten sagen, was anders werden soll – die KI arbeitet es ein.">✦</button><span class="actions dhright"><span class="meta" id="conceptNote"></span><button id="conceptAll" class="btn small hidden" type="button" title="Übernimmt alle Annahmen der KI als deine Festlegungen.">✓ Alles akzeptieren</button><button id="conceptRedo" class="btn small hidden" type="button" title="Schreibt das Konzept neu und berücksichtigt dabei deine Antworten im ganzen Text.">↻ Neu schreiben</button><span id="specStatus" role="status" class="status" style="min-height:0"></span><button id="generate" class="btn primary small" type="button">↻ Spezifikation aktualisieren</button><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="specPdf" class="btn small" type="button" title="Öffnet die Druckvorschau des Browsers mit der Spezifikation im A4-Format. Dort als Ziel „Als PDF speichern“ wählen.">↓ PDF / Vorschau</button></span></div>
 <div id="changeBar" class="changebar hidden" role="status"></div>
 <div id="runView" class="runviewbox" aria-live="polite"></div>
 <div class="conceptbox" id="conceptBox">
@@ -248,9 +248,8 @@
       <div id="agentRow" class="parbox"><div id="agentPick"></div><span class="note" id="agentNote"></span></div>
       <div id="runAdvice" class="advice"></div>
       <div class="settings" style="margin-top:16px">
-        <div><label class="field-label" for="repo">Repository / technische Vorgaben (optional)</label><div class="reporow"><input type="text" id="repo" maxlength="500" placeholder="URL, Stack, Konventionen"><button id="repoNew" class="btn small" type="button" aria-expanded="false">＋ Neues Repository anlegen</button></div>
-          <div class="actions repoextra"><span id="repoForm" class="actions hidden"><input type="text" id="repoName" maxlength="100" placeholder="name-des-repositorys" aria-label="Name des neuen Repositorys" style="width:240px;padding:7px 10px;font-size:14px"><select id="repoVis" aria-label="Sichtbarkeit"><option value="private">privat</option><option value="public">öffentlich</option></select><button id="repoCreate" class="btn primary small" type="button">Auf GitHub anlegen</button></span><span class="status" id="repoStatus" role="status"></span></div></div>
         <div><label class="field-label" for="agent">Zielagent</label><select id="agent"><option>Agent-neutral</option><option>Claude Code</option><option>Codex</option><option>GitHub Copilot</option><option>Cursor</option></select></div>
+        <div><label class="field-label" for="repoName">Neues Repository auf GitHub</label><div class="reporow"><input type="text" id="repoName" maxlength="100" placeholder="name-des-repositorys" aria-label="Name des neuen Repositorys"><select id="repoVis" aria-label="Sichtbarkeit"><option value="private">privat</option><option value="public">öffentlich</option></select><button id="repoCreate" class="btn small" type="button">Jetzt anlegen</button></div><p class="status" id="repoStatus" role="status"></p></div>
       </div>
       <details class="card catpanel" id="layoutSection">
           <summary><h2 id="layoutTitle">UI-Layouts</h2><span class="meta" id="layoutMeta"></span></summary>
@@ -279,10 +278,6 @@
       <div class="layoutghost" id="layoutGhost" aria-hidden="true"><i></i><i></i><i></i><span class="meta">Entwürfe erscheinen hier, sobald die Layouts aktiviert sind.</span></div>
           </div>
         </details>
-      <div class="runmodel">
-        <div><label class="field-label" for="runModel" title="Modell, mit dem die Agenten auf diesem Rechner arbeiten">Modell</label><select id="runModel" aria-describedby="runModelCost"></select></div>
-        <p class="meta" id="runModelCost"></p>
-      </div>
       </div></details>
       <div id="nextCard" class="nextin">
             <div class="flow3">
@@ -290,17 +285,18 @@
         <button id="goApprove" type="button" class="flowbtn" title="Du siehst den Plan und gibst ihn frei. Erst danach starten die Agenten auf diesem Rechner."><b>✓ Prüfen, dann umsetzen</b></button>
         <button id="goDirect" type="button" class="flowbtn" title="Die Agenten starten sofort auf diesem Rechner – ohne dass du den Plan bestätigst."><b>▸ Direkt umsetzen</b></button>
       </div>
-      <div class="flowrun"><span class="flowcap">Umsetzung auf diesem Rechner</span><div class="agentline" id="agentLine"></div><div id="runSlot"></div></div>
+      <div class="flowrun"><span class="flowcap">Umsetzung auf diesem Rechner</span><div class="agentline" id="agentLine"></div><div id="runPanel" class="hidden runpanel">
+        <div class="runmodel"><div><label class="field-label" for="runModel" title="Modell, mit dem die Agenten auf diesem Rechner arbeiten – bestimmt Kosten und Laufzeit">Modell</label><select id="runModel" aria-describedby="runModelCost"></select></div><p class="meta" id="runModelCost"></p></div>
+        <div class="runrow"><label class="field-label" for="runDir" title="Vollständiger Pfad des Ordners, in dem die Agenten arbeiten">Zielordner</label><input type="text" id="runDir" maxlength="400" placeholder="C:\Projekte\meine-app"></div>
+        <div class="runrow"><label class="field-label" for="repo" title="Repository für das Ergebnis. Leer und eingeschaltet: Beim Start wird ein neues Repository auf GitHub angelegt (Name und Sichtbarkeit unter „Weitere Optionen“). Stattdessen lässt sich die URL eines vorhandenen Repositorys eintragen, auch mit Hinweisen zu Stack und Konventionen.">Repository</label><div class="repoline"><label class="switch" title="Repository verwenden"><input type="checkbox" id="repoOn" aria-label="Repository verwenden"><span class="track"></span></label><input type="text" id="repo" maxlength="500"></div></div>
+        <label class="switch" title="Tests, Build und Installation laufen ohne Rückfrage mit deinen Rechten. Die Agenten schreiben Dateien nur im Zielordner und verbrauchen dein Claude-Kontingent."><input type="checkbox" id="runShell"><span class="track"></span><span>Agenten dürfen Befehle ausführen – ohne Rückfrage, mit deinen Rechten</span></label>
+      </div></div>
       <p id="flowNote" class="status" role="status"></p>
       <div class="nextrow"><div><span class="field-label">Weiteres Vorgehen</span>
       <div class="choice2" role="group" aria-label="Weiteres Vorgehen">
         <button id="nextDownload" type="button" class="choice"><b>Zum Download bereitstellen</b><span>Spezifikation, Plan und Aufträge als Dateien – zur Übergabe an Coding-Agenten deiner Wahl.</span></button>
         <button id="nextRun" type="button" class="choice"><b>Direkt umsetzen</b><span>Die Umsetzung startet auf diesem Rechner über Claude Code in einem Zielordner.</span></button>
       </div></div></div>
-      <div id="runPanel" class="hidden runpanel">
-        <div><label class="field-label" for="runDir" title="Vollständiger Pfad des Ordners, in dem die Agenten arbeiten">Zielordner</label><input type="text" id="runDir" maxlength="400" placeholder="C:\Projekte\meine-app"></div>
-        <label class="switch" title="Tests, Build und Installation laufen ohne Rückfrage mit deinen Rechten. Die Agenten schreiben Dateien nur im Zielordner und verbrauchen dein Claude-Kontingent."><input type="checkbox" id="runShell"><span class="track"></span><span>Agenten dürfen Befehle ausführen – ohne Rückfrage, mit deinen Rechten</span></label>
-      </div>
       <button id="plan" class="btn" type="button">⚙ Plan erstellen</button>
       </div>
     </div>
