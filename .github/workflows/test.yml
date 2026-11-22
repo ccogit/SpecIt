@@ -1,7 +1,7 @@
 name: Tests
 on:
   push:
-    branches: [main, perf/spec-generation-phase1-20261122]
+    branches: [main, 'perf/**']
   pull_request:
 permissions:
   contents: read
