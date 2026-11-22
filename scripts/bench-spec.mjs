@@ -7,7 +7,7 @@ import { chapterGroups } from '../spec-parallel.mjs';
 const base = process.env.SPECIT_BENCH_URL || 'http://127.0.0.1:3000';
 const repeats = Number(process.argv[2] || 2);
 const strategy = process.argv[3] || process.env.SPECIT_BENCH_STRATEGY || 'incremental';
-if (!['classic','incremental','preload','structured','parallel','turbo','gpu','diffusion'].includes(strategy)) throw Error('Unbekannte Strategie: '+strategy);
+if (!['classic','incremental','preload','structured','parallel','turbo','gpu'].includes(strategy)) throw Error('Unbekannte Strategie: '+strategy);
 if (!Number.isInteger(repeats) || repeats < 1 || repeats > 10) throw Error('Aufrufe pro Fall: 1 bis 10.');
 const cases = [
   { name: 'Notizen', idea: 'Eine lokale Notizen-App mit Listen, Bearbeiten und Suche.', features: [{ name: 'Notizen', note: 'anlegen, bearbeiten, löschen', core: true }, { name: 'Suche', note: 'nach Text', core: false }] },

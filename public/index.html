@@ -155,6 +155,12 @@ main{flex:1;width:100%;max-width:var(--page);margin:0 auto;padding:16px 24px;dis
 @media(max-width:1180px){.specbar{grid-template-columns:1fr}}
 .specbar .actions{display:flex;align-items:center}
 .specbar #generate{order:-1}
+/* Generierungsstrategie: kompakt in der Werkzeugleiste, Erklärung im Tooltip */
+.stratpick{display:inline-flex;align-items:center;gap:8px;margin-left:6px;order:4}.stratpick .eyebrow{font-size:10px}
+.stratpick select{font:600 12px/1 var(--mono);padding:7px 26px 7px 10px;border:0;border-radius:6px;background-color:var(--surface-low);color:var(--ink);max-width:150px;cursor:pointer}
+.stratpick .chip{font-size:11px}
+.modelchip{order:5;display:inline-flex;align-items:baseline;gap:6px;font:500 11px/1.3 var(--mono);color:var(--muted);padding:5px 9px;border-radius:6px;background:var(--surface-low);max-width:100%;flex-wrap:wrap}
+.modelchip b{font-weight:700;color:var(--ink)}.modelchip .soft{opacity:.75}
 .specbar #specDownload{order:5;margin-left:auto}
 .specbar #specPdf{order:6}
 /* Leere Platzhalter zählen im Abstand zwischen den Karten nicht mit */
@@ -271,7 +277,7 @@ main{flex:1;width:100%;max-width:var(--page);margin:0 auto;padding:16px 24px;dis
 .taskhead.fold{cursor:pointer}.taskhead.fold::before{content:'▾';color:var(--muted);font-size:12px;width:10px}
 .task.closed .taskhead.fold::before{content:'▸'}
 .task.closed .taskmain>:not(.taskhead),.task.closed .taskacts{display:none}
-#phase3 .task.closed{padding:7px 14px}
+:is(#implBody,#implOut) .task.closed{padding:7px 14px}
 .wavehead{display:flex;align-items:center;gap:10px;padding-bottom:6px;border-bottom:1px solid var(--outline-soft)}
 .wavegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:8px;align-items:start}
 .toolbar{background:var(--surface-low);border-radius:8px;padding:10px 12px}
@@ -279,7 +285,7 @@ main{flex:1;width:100%;max-width:var(--page);margin:0 auto;padding:16px 24px;dis
 .settings{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px}
 /* Auftrag: links Kennung, Titel, Vorgänger und Ziel, rechts die Knöpfe übereinander; der volle Auftrag klappt darunter auf */
 .task{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:start}
-#phase3 .task{padding:10px 14px}
+:is(#implBody,#implOut) .task{padding:10px 14px}
 .taskmain{display:flex;flex-direction:column;gap:3px;min-width:0}
 .taskhead{display:flex;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
 .taskhead h3{font-size:14px;line-height:20px}
@@ -294,15 +300,15 @@ main{flex:1;width:100%;max-width:var(--page);margin:0 auto;padding:16px 24px;dis
 .planfacts>details{margin:0;padding:8px 14px;flex:1 1 280px}
 .planfacts>details[open]{flex-basis:100%}
 .planfacts>details>p{margin-top:8px;font-size:13px}
-#phase3 #planStatus:empty{display:none}
-#phase3 .nextrow{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
-#phase3 .runpanel{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:10px 16px;align-items:end}
-#phase3 .runpanel.hidden{display:none}
-#phase3 .runpanel>.switch{grid-column:1/-1}
-#phase3 #runModelCost{display:none}
-#phase3 #planConfig .advice{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
-#phase3 #planConfig .advice .opts{margin-top:0}
-@media(max-width:760px){#phase3 .runpanel{grid-template-columns:1fr}}
+:is(#implBody,#implOut) #planStatus:empty{display:none}
+:is(#implBody,#implOut) .nextrow{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+:is(#implBody,#implOut) .runpanel{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:10px 16px;align-items:end}
+:is(#implBody,#implOut) .runpanel.hidden{display:none}
+:is(#implBody,#implOut) .runpanel>.switch{grid-column:1/-1}
+:is(#implBody,#implOut) #runModelCost{display:none}
+:is(#implBody,#implOut) #planConfig .advice{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+:is(#implBody,#implOut) #planConfig .advice .opts{margin-top:0}
+@media(max-width:760px){:is(#implBody,#implOut) .runpanel{grid-template-columns:1fr}}
 .task .id{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--secondary)}
 .task pre{margin:10px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface-low);padding:14px;border-radius:6px;font:12px/1.65 var(--mono);max-height:420px;overflow:auto}
 summary{cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--secondary)}
@@ -763,11 +769,14 @@ body{padding-bottom:62px}
 .balhead i{width:9px;height:9px;border-radius:50%;background:var(--src)}
 .balnums{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--ink-soft)}
 .balfact b{font-family:var(--mono);font-size:15px;color:var(--heading);font-variant-numeric:tabular-nums}
-.balshare{display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--surface-high)}
+.balshare{display:flex;height:14px;border-radius:6px;overflow:hidden;background:var(--surface-high)}
 .balshare i{font-style:normal;font-family:var(--mono);font-size:11px;line-height:22px;text-align:center;color:#fff;white-space:nowrap;overflow:hidden}
 .balshare i.user{background:var(--src-user);color:var(--on-go)}.balshare i.std{background:var(--src-std)}.balshare i.ai{background:var(--src-ai)}
 .balgroups{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:13px}
 .balgroups li{display:flex;justify-content:space-between;gap:12px}
+.ballegend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--ink-soft)}.ballegend span{display:inline-flex;align-items:center;gap:6px}.ballegend i{width:10px;height:10px;border-radius:3px;flex-shrink:0}.ballegend b{color:var(--ink)}.ballegend i.user{background:var(--src-user)}.ballegend i.std{background:var(--src-std)}.ballegend i.ai{background:var(--src-ai)}
+.balmeter{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13px;color:var(--ink-soft)}.balmeter .track{flex:1;max-width:160px;height:8px;border-radius:4px;background:var(--surface-high);overflow:hidden}.balmeter i{display:block;height:100%;border-radius:4px}.balmeter b{color:var(--ink);font-variant-numeric:tabular-nums}
+.balmeter.user i{background:var(--src-user)}.balmeter.std i{background:var(--src-std)}.balmeter.ai i{background:var(--src-ai)}
 .balsum{grid-column:1/-1;padding-top:12px;border-top:1px solid var(--outline-soft);font-size:14px}
 @media(max-width:900px){.balbody{grid-template-columns:1fr}.balarrow{display:none}}
 /* Füllstände in der Kopfzeile: Balken für die Festlegungen, sechs Felder für die Themen, Farbe nach Stand */
@@ -948,6 +957,10 @@ body{padding-bottom:62px}
 .splitbar.tall{height:30px;border-radius:8px}.splitbar.tall .base{border-radius:8px 0 0 8px}
 .splitbar .free{border:0;border-radius:0 8px 8px 0;background:var(--hl);color:var(--heading);font:600 12px/1 var(--mono);letter-spacing:.02em;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px;min-width:0;transition:background .15s}
 .splitbar .free:hover:not(:disabled),.splitbar .free:focus-visible{background:var(--hl2)}
+.splitbar .free.loading{background-image:linear-gradient(90deg,transparent,var(--hl2),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:poolload 1.6s linear infinite}
+@keyframes poolload{from{background-position:-40% 0}to{background-position:140% 0}}
+@media(prefers-reduced-motion:reduce){.splitbar .free.loading{animation:none}}
+.splitbar .free.dry{background:none;color:var(--ink-soft);font-weight:400;box-shadow:inset 0 0 0 1px var(--outline-soft)}
 .splitbar .free:disabled{cursor:default;background:none;color:var(--ink-soft)}
 .featsum.over{border-left-color:var(--warn-line);background:var(--error-container)}
 .featsum.over b,.featsum.over .meta,.featsum.over .eyebrow{color:var(--on-error-container)}
@@ -1016,19 +1029,19 @@ body{padding-bottom:62px}
 .implmain>*,.implside>*{flex-shrink:0}
 @media(max-width:1180px){.impl{grid-template-columns:1fr}}
 #phase3{gap:14px!important}
-#phase3 .card{padding:16px 20px}
-#phase3 .stephead{margin-bottom:10px;align-items:center}
-#phase3 .stephead p{display:none}
-#phase3 .stephead h2,#layoutSection h2{font-size:16px}
-#phase3 .stepno{width:26px;height:26px;font-size:13px}
+:is(#implBody,#implOut) .card{padding:16px 20px}
+:is(#implBody,#implOut) .stephead{margin-bottom:10px;align-items:center}
+:is(#implBody,#implOut) .stephead p{display:none}
+:is(#implBody,#implOut) .stephead h2,#layoutSection h2{font-size:16px}
+:is(#implBody,#implOut) .stepno{width:26px;height:26px;font-size:13px}
 /* Die beiden Kacheln „nacheinander/parallel“ sagen dasselbe wie der Regler darunter */
-#phase3 #planConfig>.choice2{display:none}
-#phase3 .choice{flex-direction:row;align-items:center;padding:10px 14px}
-#phase3 .choice span{display:none}
-#phase3 #agentNote{display:none}
-#phase3 .parbox{padding:0}
-#phase3 .advice{margin-top:10px;padding:10px 14px;font-size:13px}
-#phase3 #planConfig .settings{margin-top:12px!important}
+:is(#implBody,#implOut) #planConfig>.choice2{display:none}
+:is(#implBody,#implOut) .choice{flex-direction:row;align-items:center;padding:10px 14px}
+:is(#implBody,#implOut) .choice span{display:none}
+:is(#implBody,#implOut) #agentNote{display:none}
+:is(#implBody,#implOut) .parbox{padding:0}
+:is(#implBody,#implOut) .advice{margin-top:10px;padding:10px 14px;font-size:13px}
+:is(#implBody,#implOut) #planConfig .settings{margin-top:12px!important}
 /* Gestaltung: UI-Layouts und Logo stehen an derselben Stelle nebeneinander */
 .brandgroup{display:flex;flex-direction:column;gap:8px}
 .brandgroup>.eyebrow{padding:0 4px}
@@ -1051,43 +1064,43 @@ body{padding-bottom:62px}
 #logoPanel .logoidea{flex-basis:100%;margin:0}
 #logoPanel .namebox{margin:14px 0 0;padding:0;background:none;box-shadow:none;border-left:0;border-radius:0}
 /* „Weiteres Vorgehen“: Auswahl in der Größe der übrigen Knöpfe */
-#phase3 .nextin .choice2{display:flex;flex-wrap:wrap;gap:8px}
-#phase3 .nextin .choice{padding:8px 14px;border-width:1px;border-radius:6px}
-#phase3 .nextin .choice b{font-family:var(--mono);font-size:12px;font-weight:600}
+:is(#implBody,#implOut) .nextin .choice2{display:flex;flex-wrap:wrap;gap:8px}
+:is(#implBody,#implOut) .nextin .choice{padding:8px 14px;border-width:1px;border-radius:6px}
+:is(#implBody,#implOut) .nextin .choice b{font-family:var(--mono);font-size:12px;font-weight:600}
 /* Abarbeitung: Regler links in halber Breite, daneben die Schätzung; darunter Repository und Zielagent, der Knopf schließt rechts ab */
-#phase3 #planConfig{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px 28px;align-items:center}
-#phase3 #planConfig>.stephead,#phase3 #planConfig>.settings,#phase3 #planConfig>.actions,#phase3 #planConfig>.nextin{grid-column:1/-1}
-#phase3 .nextin .field-label{display:block;margin-bottom:6px}
-#phase3 #planConfig>.stephead{margin-bottom:0}
-#phase3 #planConfig>.settings,#phase3 #planConfig>.actions{margin-top:0!important}
-#phase3 #planConfig>.actions{justify-content:flex-end}
-#phase3 #agentRow .agentslider .meta{display:none}
-#phase3 #agentRow .agentslider input[type=range]{margin:8px 0 0}
-#phase3 #planConfig .advice{margin:0;padding:0;border:0;background:none;font-size:13px;color:var(--ink-soft)}
-#phase3 #planConfig .advice b{color:var(--ink)}
-#phase3 #plan{min-width:200px;justify-content:center}
+:is(#implBody,#implOut) #planConfig{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px 28px;align-items:center}
+:is(#implBody,#implOut) #planConfig>.stephead,:is(#implBody,#implOut) #planConfig>.settings,:is(#implBody,#implOut) #planConfig>.actions,:is(#implBody,#implOut) #planConfig>.nextin{grid-column:1/-1}
+:is(#implBody,#implOut) .nextin .field-label{display:block;margin-bottom:6px}
+:is(#implBody,#implOut) #planConfig>.stephead{margin-bottom:0}
+:is(#implBody,#implOut) #planConfig>.settings,:is(#implBody,#implOut) #planConfig>.actions{margin-top:0!important}
+:is(#implBody,#implOut) #planConfig>.actions{justify-content:flex-end}
+:is(#implBody,#implOut) #agentRow .agentslider .meta{display:none}
+:is(#implBody,#implOut) #agentRow .agentslider input[type=range]{margin:8px 0 0}
+:is(#implBody,#implOut) #planConfig .advice{margin:0;padding:0;border:0;background:none;font-size:13px;color:var(--ink-soft)}
+:is(#implBody,#implOut) #planConfig .advice b{color:var(--ink)}
+:is(#implBody,#implOut) #plan{min-width:200px;justify-content:center}
 /* Wie viele und welche Agenten gehören zusammen: Parallelisierung und Zielagent in einer Zeile; darunter die Schätzung, dann das Repository */
-#phase3 #planConfig>.settings{display:contents}
-#phase3 #planConfig>.stephead{order:0}
-#phase3 #agentRow{order:1;align-self:start}
-#phase3 #planConfig>.settings>div:last-child{order:2;align-self:start}
-#phase3 #runAdvice{order:3;grid-column:1/-1}
-#phase3 #planConfig>.settings>div:first-child{order:4;grid-column:1/-1}
-#phase3 #planConfig>.nextin{order:5}
-#phase3 #planConfig>.actions{order:6}
-#phase3 #planConfig>.settings>div:last-child .field-label{margin-bottom:6px}
-@media(max-width:900px){#phase3 #planConfig{grid-template-columns:1fr}}
+:is(#implBody,#implOut) #planConfig>.settings{display:contents}
+:is(#implBody,#implOut) #planConfig>.stephead{order:0}
+:is(#implBody,#implOut) #agentRow{order:1;align-self:start}
+:is(#implBody,#implOut) #planConfig>.settings>div:last-child{order:2;align-self:start}
+:is(#implBody,#implOut) #runAdvice{order:3;grid-column:1/-1}
+:is(#implBody,#implOut) #planConfig>.settings>div:first-child{order:4;grid-column:1/-1}
+:is(#implBody,#implOut) #planConfig>.nextin{order:5}
+:is(#implBody,#implOut) #planConfig>.actions{order:6}
+:is(#implBody,#implOut) #planConfig>.settings>div:last-child .field-label{margin-bottom:6px}
+@media(max-width:900px){:is(#implBody,#implOut) #planConfig{grid-template-columns:1fr}}
 /* „Neues Repository anlegen“ steht in derselben Zeile rechts neben dem Feld */
 .reporow{display:flex;align-items:stretch;gap:8px}
 .reporow input{flex:1;min-width:0}
 .reporow .btn{flex-shrink:0;white-space:nowrap}
 .repoextra{margin-top:8px}
 .repoextra:not(:has(#repoForm:not(.hidden))):has(#repoStatus:empty){display:none}
-#phase3 #planConfig>.actions{margin-top:12px!important}
+:is(#implBody,#implOut) #planConfig>.actions{margin-top:12px!important}
 #layoutSection:has(#layoutOn:not(:disabled)) #layoutHint{display:none}
-#phase3 #runPanel{margin-top:10px}
-#phase3 .review{font-size:13px}
-#phase3 .reviewrow{grid-template-columns:130px minmax(0,1fr) auto;gap:12px;padding:8px 2px;font-size:13px}
+:is(#implBody,#implOut) #runPanel{margin-top:10px}
+:is(#implBody,#implOut) .review{font-size:13px}
+:is(#implBody,#implOut) .reviewrow{grid-template-columns:130px minmax(0,1fr) auto;gap:12px;padding:8px 2px;font-size:13px}
 /* Grundsatz für die ganze Anwendung: Die Seite selbst rollt nie. Gerollt wird nur innerhalb der Ansicht –
    in jeder Ansicht ihr Inhaltsbereich, auf breiten Fenstern bei Spezifikation und Umsetzung jede Spalte für sich. */
 body.fitview{height:100vh;height:100dvh;box-sizing:border-box;overflow:hidden}
@@ -1179,6 +1192,29 @@ body.merged.decqa #decDerive{margin-top:12px}
   .md table{min-width:0;width:100%;font-size:9.5pt}
   .md td:first-child,.md th{white-space:normal}
 }
+/* Eine einzige Ansicht: links entsteht das Ergebnis (Idee → Konzept → Spezifikation → Aufträge), rechts stehen alle Festlegungen */
+.ideapane{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.ideapane>p{margin:0}
+.ideapane .ideahead{margin:0;padding:2px 4px 0}
+body.stage0 .ideapane{min-height:calc(100% - 18px)}
+body.stage0 .ideapane .ideacard{max-height:none}
+body.stage0 :is(.specbar,.specwrap,#specCount,#changeBar),body.stage0 .split>.side>:not(#setupPanel){display:none!important}
+body:not(.stage0) .ideapane>p{display:none}
+/* Steht die Spezifikation, tritt die Idee zurück: ein schmales Feld, das beim Bearbeiten wieder wächst; die Kurzfassung steht dann im Dokument */
+body.hasspec .ideapane .conceptbox{display:none}
+body.hasspec .ideapane .ideacard{min-height:0;max-height:none;flex:none}
+body.hasspec #idea{min-height:0;height:58px;transition:height .18s ease}
+body.hasspec #idea:focus{height:150px}
+#setupBody{display:flex;flex-direction:column;gap:12px;padding:0 10px 14px}
+#setupBody .scales>div{box-shadow:none!important}
+#implBody{display:flex;flex-direction:column;gap:16px}
+#implBody>.card{box-shadow:none;background:transparent;padding:0}
+#implBody>#reviewCard{border-top:1px solid var(--outline-soft);padding-top:14px}
+#implBody #planConfig,#implBody .runpanel{grid-template-columns:1fr}
+#implBody .stepno{display:none}
+.implout{margin-top:28px;display:flex;flex-direction:column;gap:12px;scroll-margin-top:12px}
+.implout>h2{font-size:18px;color:var(--heading)}
+.implout:has(#planOutput:empty):has(#planStatus:empty){display:none}
 </style>
 </head>
 <body>
@@ -1326,22 +1362,8 @@ body.merged.decqa #decDerive{margin-top:12px}
       <div class="wishfoot"><button id="wishRun" class="btn primary small" type="button">✦ Einarbeiten</button><span class="meta"><kbd>Strg</kbd> + <kbd>Enter</kbd></span></div>
     </div>
     <div class="specbar">
-      <div class="actions"><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="specPdf" class="btn small" type="button" title="Öffnet die Druckvorschau des Browsers mit der Spezifikation im A4-Format. Dort als Ziel „Als PDF speichern“ wählen.">↓ PDF / Vorschau</button><button id="generate" class="btn primary small" type="button">↻ Spezifikation aktualisieren</button><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div></div>
+      <div class="actions"><button id="specDownload" class="btn small" type="button">↓ SPEC.md</button><button id="specPdf" class="btn small" type="button" title="Öffnet die Druckvorschau des Browsers mit der Spezifikation im A4-Format. Dort als Ziel „Als PDF speichern“ wählen.">↓ PDF / Vorschau</button><button id="generate" class="btn primary small" type="button">↻ Spezifikation aktualisieren</button><div class="seg" role="group" aria-label="Darstellung der Spezifikation"><button id="modeView" type="button" aria-pressed="true">◉ Ansicht</button><button id="modeEdit" type="button" aria-pressed="false">✎ Bearbeiten</button></div><label class="stratpick" for="specStrategy"><span class="eyebrow">Strategie</span><select id="specStrategy" aria-describedby="specStrategyHint"><option value="incremental">Intelligent</option><option value="preload">Vorbereitet</option><option value="parallel">Parallel</option><option value="turbo">Turbo</option><option value="classic">Klassisch</option><option value="structured">Strukturiert</option><option value="gpu">GPU lokal</option></select><span class="chip hidden" id="specStrategyTime"></span><span class="hidden" id="specStrategyHint"></span></label><span class="modelchip hidden" id="specModel"></span></div>
       <div class="actions"><span class="chip" id="specBadge"></span><span id="specStatus" role="status" class="status" style="min-height:0"></span></div>
-    </div>
-    <div class="actions" style="align-items:center;gap:10px;flex-wrap:wrap">
-      <label class="field-label" for="specStrategy" style="margin:0">Generierungsstrategie</label>
-      <select id="specStrategy" aria-describedby="specStrategyHint" style="max-width:270px">
-        <option value="incremental">Intelligent · Änderungen gezielt</option>
-        <option value="preload">Vorbereitet · Entwurf im Voraus</option>
-        <option value="structured">Strukturiert · kompaktes JSON</option>
-        <option value="classic">Klassisch · immer alles neu</option>
-        <option value="parallel">Parallel · 3 Fachgruppen</option>
-        <option value="turbo">Turbo · parallel + schnelles Modell</option>
-        <option value="gpu">GPU lokal · eigener Inferenzserver</option>
-        <option value="diffusion">Diffusion · Mercury API</option>
-      </select>
-      <span class="meta" id="specStrategyHint" role="status">Strategie für die nächste Erstellung auswählen.</span>
     </div>
     <div id="changeBar" class="changebar hidden" role="status"></div>
     <div class="split">
@@ -1480,7 +1502,7 @@ body.merged.decqa #decDerive{margin-top:12px}
   <div class="lightscroll"><img id="lightImg" alt=""></div>
 </dialog>
 <dialog id="balance" class="lightbox balance" aria-label="Bilanz von Input und Output">
-  <div class="lightbar"><span class="meta">Bilanz · vom eigenen Input über das Zwischenergebnis der KI zum Output</span><div class="actions"><button id="balanceClose" class="btn small" type="button">Schließen</button></div></div>
+  <div class="lightbar"><span class="meta">Bilanz · vom eigenen Input über die Verarbeitung zum Output</span><div class="actions"><button id="balanceClose" class="btn small" type="button">Schließen</button></div></div>
   <div class="lightscroll balbody" id="balanceBody"></div>
 </dialog>
 <dialog id="protoBox" class="lightbox protobox" aria-label="Prototyp der Anwendung">
@@ -1520,7 +1542,14 @@ const phaseNames=['Idee','Fragen','Spezifikation','Umsetzung'];
 // Fragen und Spezifikation in einer Ansicht: Solange es keine Spezifikation gibt, stehen die Fragen an ihrer Stelle.
 // false stellt den getrennten Ablauf mit eigenem Schritt „Fragen“ vollständig wieder her.
 const MERGED=true;
-const inQuestions=()=>s.phase===1||(MERGED&&s.phase===2&&!s.spec.trim());
+// Es gibt nur noch eine Ansicht. Was darin zu sehen ist, folgt aus dem Stand der Arbeit – nicht aus einem gewählten Schritt.
+// s.phase merkt sich nur noch, woran zuletzt gearbeitet wurde (0 Idee, 2 Spezifikation, 3 Umsetzung): für die Schritt-Leiste und den Knopf unten rechts.
+const inQuestions=()=>!s.spec.trim()&&s.questions.length>0&&typeof streamText!=='string';
+// Arbeitsfläche offen: Es gibt Fragen, Features oder ein Dokument (oder es entsteht gerade)
+const wsOpen=()=>s.questions.length>0||s.features.length>0||!!s.spec.trim()||typeof streamText==='string'||specMode==='edit';
+// An der Idee wird gefeilt, solange kein Dokument steht: Nur dann entsteht das Live-Konzept
+const atIdea=()=>!s.spec.trim()&&typeof streamText!=='string';
+const ph=()=>wsOpen()?(s.phase===1?2:s.phase):0;
 // Modus in sechs Stufen (autonomy = Stufe × 20): von „fragt bei allem nach“ bis „entscheidet alles selbst“
 const levels=[
   ['fragt bei allem nach','Keine Annahmen, keine Standards: Jede Frage beantwortest du selbst, nichts ist vorausgewählt.'],
@@ -1562,7 +1591,7 @@ const toneNames=[
   ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung. Beschreibender Name, kein Humor.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,proto:null,runOutput:null,own:{},sketch:null,logoCount:1,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:1,names:[],nameAuto:'',featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,proto:null,featPool:[],runOutput:null,own:{},sketch:null,logoCount:1,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:1,names:[],nameAuto:'',featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -1580,7 +1609,7 @@ try{
     s.last=-1;
     if(!Number.isInteger(s.layoutCount)||s.layoutCount<1||s.layoutCount>5)s.layoutCount=3;
     if(!['DESKTOP','MOBILE','BOTH'].includes(s.layoutDevice))s.layoutDevice='DESKTOP';
-     if(!['classic','incremental','preload','structured','parallel','turbo','gpu','diffusion'].includes(s.specStrategy))s.specStrategy='incremental';
+     if(!['classic','incremental','preload','structured','parallel','turbo','gpu'].includes(s.specStrategy))s.specStrategy='incremental';
      if(!s.strategyTimes||typeof s.strategyTimes!=='object'||Array.isArray(s.strategyTimes))s.strategyTimes={};
     if(!['LIGHT','DARK','BOTH'].includes(s.layoutTheme))s.layoutTheme='LIGHT';
     if(s.layout&&!Array.isArray(s.layout.chosen))s.layout.chosen=typeof s.layout.chosen==='string'&&s.layout.chosen?[s.layout.chosen]:[];
@@ -1594,7 +1623,7 @@ try{
     // Die Skala begann früher bei 1 Stunde: gespeicherte Stufe auf die gleiche Dauer der neuen Skala abbilden
     if(saved.durScale!==2){const old=[0,60,120,240,480,960,2400,4800,9600][s.durLevel]||0;s.durLevel=old?durations.reduce((best,d,i)=>i&&Math.abs(Math.log(d[1]/old))<Math.abs(Math.log(durations[best][1]/old))?i:best,1):0;s.durScale=2}
     for(const k of ['creativity','tone'])if(!Number.isInteger(s[k])||s[k]<0||s[k]>4)s[k]=2;
-    s.features=cleanFeatures(saved.features);
+    s.features=cleanFeatures(saved.features);s.featPool=Array.isArray(saved.featPool)?saved.featPool.filter(f=>f&&typeof f.name==='string'&&Number.isFinite(f.minutes)).slice(0,24):[];
     if(!Number.isInteger(s.nameCount)||s.nameCount<0||s.nameCount>5)s.nameCount=3;
     s.names=cleanNames(saved.names);
     {const f=s.flow&&typeof s.flow.key==='string'?cleanFlow(s.flow):null;s.flow=f?{key:s.flow.key,...f}:null}
@@ -1617,7 +1646,7 @@ try{
   }
 }catch{s=blank()}
 
-let available=false,provider=null,statusLoaded=false,gpuAvailable=false,diffusionAvailable=false,stitch=false,active=false,layoutBusy=false,runBusy=false,revision=0;
+let available=false,provider=null,statusLoaded=false,gpuAvailable=false,specModels={},stitch=false,active=false,layoutBusy=false,runBusy=false,revision=0;
 // Auswahl der gerade aktiven Frage, bis sie bestätigt wird
 let pick=[],custom='',customOpen=false;
 // Darstellung der Spezifikation: gerenderte Ansicht oder Markdown-Editor
@@ -1636,23 +1665,39 @@ const strategyDescription={
  structured:'Experimentell: Kompakte Fachinformationen als JSON, alle acht Markdown-Kapitel werden lokal aufgebaut.',
  parallel:'Experimentell: Erstellt die komplette Spezifikation mit drei parallelen Aufrufen. Qualität gesondert prüfen.',
  turbo:'Experimentell: Parallele Neuerstellung mit Haiku und niedrigem Denkaufwand. Qualität gesondert prüfen.',
- gpu:'Experimentell: Vollständige Erstellung über einen lokalen OpenAI-kompatiblen GPU-Inferenzserver.',
- diffusion:'Experimentell: Vollständige Erstellung über ein gehostetes Text-Diffusion-Modell.'
+ gpu:'Experimentell: Vollständige Erstellung über einen lokalen OpenAI-kompatiblen GPU-Inferenzserver.'
 };
+// Das Modell, das die gewählte Strategie tatsächlich benutzt – mit allem, was der Server darüber weiß
+function modelUI(){
+  const chip=$('specModel');let m=specModels[s.specStrategy];
+  // Ohne Claude schreibt kein Modell: Dann setzt SpecIt das Dokument selbst aus den Antworten zusammen (das lokale Modell braucht Claude nicht)
+  if(statusLoaded&&!$('ai').checked&&!(m&&m.local)){chip.classList.remove('hidden');chip.replaceChildren(node('span','Modell','soft'),node('b','keines'),node('span','· Demo-Modus, SpecIt setzt das Dokument ohne KI zusammen'));chip.title='Der Schalter „Claude“ oben rechts ist aus: Es wird kein Sprachmodell aufgerufen.';return}
+  chip.classList.toggle('hidden',!m);if(!m)return;
+  const parts=m.local?[m.base,m.size,m.quant,m.server]:[m.id&&m.id!==m.name?m.id:'',!m.id?'Kurzname „'+m.asked+'“ – genaue Version nach dem ersten Aufruf':'',m.effort?'Denkaufwand '+m.effort:'',m.via];
+  chip.replaceChildren(node('span','Modell','soft'),node('b',m.name),...parts.filter(Boolean).map(p=>node('span','· '+p)));
+  chip.title=m.local?'Lokales Modell „'+m.name+'“'+(m.base?', Basis '+m.base:'')+(m.size?', '+m.size+' Parameter':'')+(m.quant?', Quantisierung '+m.quant:'')+(m.modified?', eingerichtet am '+m.modified:'')+(m.server?', ausgeführt von '+m.server:'')+'. Die Daten bleiben auf diesem Rechner.'
+    :'Dieses Modell schreibt die Spezifikation mit der gewählten Strategie'+(m.id?' (Kennung '+m.id+')':'')+', Zugang über '+m.via+'.';
+}
+let modelsAt=0;
+function refreshModels(){const now=Date.now();if(now-modelsAt<1500)return;modelsAt=now;fetch('/api/models').then(r=>r.json()).then(r=>{if(r&&typeof r==='object'){specModels=r;modelUI()}},()=>{})}
 function strategyUI(){
  const select=$('specStrategy'),hasApi=available;
  if(statusLoaded&&((!hasApi&&['preload','parallel','turbo'].includes(s.specStrategy))
-   ||(!gpuAvailable&&s.specStrategy==='gpu')||(!diffusionAvailable&&s.specStrategy==='diffusion')))s.specStrategy='incremental';
+   ||(!gpuAvailable&&s.specStrategy==='gpu')))s.specStrategy='incremental';
  for(const option of select.options){
   if(['preload','parallel','turbo'].includes(option.value))option.disabled=statusLoaded&&!hasApi;
   if(option.value==='gpu')option.disabled=statusLoaded&&!gpuAvailable;
-  if(option.value==='diffusion')option.disabled=statusLoaded&&!diffusionAvailable;
  }
  select.value=s.specStrategy;
  select.disabled=active;
  const ms=s.strategyTimes?.[s.specStrategy],last=Number.isFinite(ms)&&ms>0?' Letzte gemessene Erstellung: '+(ms/1000).toFixed(1)+' s.':'';
  const prep=s.specStrategy==='preload'&&preloadStatus.state==='ready'?' Vorbereitet – der nächste Klick kann den Entwurf übernehmen.':s.specStrategy==='preload'&&preloadStatus.state==='loading'?' Entwurf wird im Hintergrund vorbereitet …':s.specStrategy==='preload'&&preloadStatus.state==='error'?' Vorbereitung nicht verfügbar; Klick erstellt wie gewohnt.':'';
- $('specStrategyHint').textContent=strategyDescription[s.specStrategy]+last+prep+(statusLoaded&&!hasApi?' Vorbereitet, Parallel und Turbo benötigen Claude (API-Schlüssel oder Claude Code).':'');
+ const hint=strategyDescription[s.specStrategy]+last+prep+(statusLoaded&&!hasApi?' Vorbereitet, Parallel und Turbo benötigen Claude (API-Schlüssel oder Claude Code).':'');
+ $('specStrategyHint').textContent=hint;select.title=hint;select.closest('label').title=hint;
+ // Erklärung je Eintrag als Tooltip; gesperrte Einträge sagen, was fehlt
+ for(const option of select.options)option.title=strategyDescription[option.value]+(option.disabled?(option.value==='gpu'?' Nicht eingerichtet: SPECIT_GPU_MODEL in .env setzen (siehe README).':' Benötigt Claude.'):'');
+ modelUI();
+ {const chip=$('specStrategyTime'),on=Number.isFinite(ms)&&ms>0;chip.classList.toggle('hidden',!on);chip.textContent=on?Math.round(ms/1000)+' s':'';chip.title='Zuletzt gemessene Dauer einer Erstellung mit dieser Strategie';}
 }
 $('specStrategy').onchange=e=>{
  if(active)return;
@@ -1752,15 +1797,15 @@ function balanceUI(){
   const row=(kind,name,note,...facts)=>{const r=node('div',undefined,'balrow '+kind),head=node('div',undefined,'balhead'),nums=node('div',undefined,'balnums');head.append(node('i'),node('b',name));nums.append(...facts);r.append(head,nums,node('p',note,'meta'));return r};
   // Drei Spalten in Leserichtung: was der Nutzer eingibt → was die KI daraus als Zwischenergebnis macht (zugleich ihr Input für
   // den nächsten Schritt, zusammen mit dem, was SpecIt von sich aus beisteuert) → was am Ende entsteht.
-  const input=col('Dein Input','Was du selbst eingegeben und entschieden hast'),middle=col('KI-Zwischenergebnis','Was die KI daraus macht – und womit sie weiterarbeitet'),output=col('Output','Was am Ende entsteht');
-  input.append(row('user','Nutzer','',fact(b.user.words,b.user.words===1?'Wort getippt':'Wörter getippt'),fact(b.user.clicks,b.user.clicks===1?'Klick':'Klicks'),fact(b.user.decisions,b.user.decisions===1?'eigene Festlegung':'eigene Festlegungen')));
+  const input=col('Dein Input','Was du selbst eingegeben und entschieden hast'),middle=col('Verarbeitung','Was KI und SpecIt daraus machen – und womit weitergearbeitet wird'),output=col('Output','Was am Ende entsteht');
+  // Anteil an den Festlegungen – bei jeder Quelle in ihrer eigenen Spalte, nicht gesammelt unter der mittleren
+  const meter=(kind,n)=>{const m=node('div',undefined,'balmeter '+kind),bar=node('span',undefined,'track'),fill=node('i');fill.style.width=n+'%';bar.append(fill);m.append(bar,node('b',n+' %'),node('span','der Festlegungen'));m.title='Anteil an allen Festlegungen des Konzepts';return m};
+  const withShare=(r,kind,n)=>{r.append(meter(kind,n));return r};
+  input.append(withShare(row('user','Nutzer','',fact(b.user.words,b.user.words===1?'Wort getippt':'Wörter getippt'),fact(b.user.clicks,b.user.clicks===1?'Klick':'Klicks'),fact(b.user.decisions,b.user.decisions===1?'eigene Festlegung':'eigene Festlegungen')),'user',b.shares.user));
   if(b.open)input.append(node('p',plural(b.open,'Entscheidung ist','Entscheidungen sind')+' noch offen. Je mehr du selbst beantwortest, desto größer wird dein Anteil an den Festlegungen.','meta'));
   middle.append(
-    row('ai','KI','Fragen, Optionen, Features, Review, Namen – und eigene Vorschläge, die im Umfang stehen.',fact(b.ai.words,'Wörter erzeugt'),fact(b.ai.calls,b.ai.calls===1?'Anfrage':'Anfragen'),fact(b.ai.suggestions,b.ai.suggestions===1?'eigener Vorschlag im Umfang':'eigene Vorschläge im Umfang')),
-    row('std','Dazu von SpecIt','Übernommene Standardantworten und der feste Kontext (Anweisungen, Regeln, Vorlagen), der mit jeder Anfrage an die KI geht.',fact(b.std.decisions,b.std.decisions===1?'Annahme übernommen':'Annahmen übernommen'),...(b.std.auto?[fact(b.std.auto,'davon ohne Rückfrage')]:[]),fact(b.std.words,'Wörter Kontext')));
-  const share=node('div',undefined,'balshare');for(const [kind,n] of [['user',b.shares.user],['std',b.shares.std],['ai',b.shares.ai]]){const x=node('i',n>=8?n+' %':'',kind);x.style.width=n+'%';share.append(x)}
-  share.title='Anteile an den Festlegungen: Nutzer '+b.shares.user+' %, Standard '+b.shares.std+' %, KI '+b.shares.ai+' %';
-  middle.append(node('p','Wer die Festlegungen getroffen hat: Nutzer · Standard · KI','meta'),share);
+    withShare(row('ai','KI','Fragen, Optionen, Features, Review, Namen – und eigene Vorschläge, die im Umfang stehen.',fact(b.ai.words,'Wörter erzeugt'),fact(b.ai.calls,b.ai.calls===1?'Anfrage':'Anfragen'),fact(b.ai.suggestions,b.ai.suggestions===1?'eigener Vorschlag im Umfang':'eigene Vorschläge im Umfang')),'ai',b.shares.ai),
+    withShare(row('std','SpecIt','Übernommene Standardantworten und der feste Kontext (Anweisungen, Regeln, Vorlagen), der mit jeder Anfrage an die KI geht.',fact(b.std.decisions,b.std.decisions===1?'Annahme übernommen':'Annahmen übernommen'),...(b.std.auto?[fact(b.std.auto,'davon ohne Rückfrage')]:[]),fact(b.std.words,'Wörter Kontext')),'std',b.shares.std));
   if(!b.ai.calls)middle.append(node('p','Ohne Claude (Demo-Modus) gibt es keine Anfragen an die KI; Kontext und KI stehen dann bei null.','meta'));
   if(!b.outputs.length)output.append(node('p','Noch nichts entstanden. Zuerst kommt die Spezifikation; danach, je nach Vorgehen, die Aufträge zum Download oder der Code im Zielordner.','meta'));
   for(const o of b.outputs){
@@ -1808,7 +1853,7 @@ function phasesUI(){
     if(MERGED&&i===1)return;
     if(i)bar.append(node('span','→','arrow'));
     const b=button(undefined,'phase'+(p.done?' done':p.part?' part':''),()=>setPhase(i));
-    b.setAttribute('aria-current',i===s.phase?'page':'false');
+    b.setAttribute('aria-current',i===ph()?'page':'false');
     // Nummer und Stand sind zwei getrennte Angaben: Die Nummer bleibt immer stehen, der Stand steht als eigene Marke daneben
     const state=p.done?'erledigt':p.part?'in Arbeit':'offen';
     const no=MERGED&&i>1?i:i+1;
@@ -1819,7 +1864,14 @@ function phasesUI(){
     const mark=node('span',(p.done?'✓ ':'')+state,'state');mark.dataset.short=state==='erledigt'?'✓':state==='offen'?'○':'●';b.append(mark);b.setAttribute('aria-label','Schritt '+no+': '+phaseNames[i]+' – '+state+(i===s.phase?' (diese Ansicht ist geöffnet)':''));
     bar.append(b);
   });
-  [0,1,2,3].forEach(i=>$('phase'+i).classList.toggle('hidden',i!==s.phase));
+  [0,1,2,3].forEach(i=>$('phase'+i).classList.toggle('hidden',i!==2));
+  {const ws=wsOpen(),has=!!s.spec.trim(),b=document.body;
+   // Die Einstellungen stehen am Anfang offen und treten zurück, sobald die Arbeitsfläche aufgeht (danach entscheidet der Nutzer)
+   if(b.classList.contains('stage0')!==!ws||!b.dataset.one){b.dataset.one='1';$('setupPanel').open=!ws}
+   b.classList.toggle('stage0',!ws);b.classList.toggle('hasspec',has);
+   $('implPanel').classList.toggle('hidden',!has);$('implOut').classList.toggle('hidden',!has);
+   $('implMeta').textContent=s.plan?(stale()?'Plan veraltet':plural(s.plan.tasks.length,'Auftrag','Aufträge')+(s.finished?' · abgeschlossen':'')):has?'noch kein Plan':'';
+   $('setupMeta').textContent=ws?'Modus, Kreativität, Dauer, Name, Logo, Review':'';}
   // Genau eine primäre Aktion je Ansicht
   const ready=!!s.spec.trim()&&!s.dirty,allAnswered=s.questions.length>0&&firstOpen()<0;
   $('generate').textContent=s.spec.trim()?(s.specStrategy==='incremental'?'↻ Spezifikation aktualisieren':'↻ Spezifikation neu erstellen'):'✦ Spezifikation erstellen';
@@ -1827,23 +1879,32 @@ function phasesUI(){
   $('toSpec').classList.toggle('primary',allAnswered);
   navUI();
 }
-function setPhase(i){if(MERGED&&i===1)i=2;s.phase=i;if(inQuestions()&&s.active<0)activate(firstOpen(),false);renderAll();window.scrollTo({top:0});if(i===2)ensureFeatures()}
+function setPhase(i){if(i===1)i=2;s.phase=i;if(inQuestions()&&s.active<0)activate(firstOpen(),false);renderAll();focusPart(i);if(i===2)ensureFeatures()}
+// Führt den Blick zur passenden Stelle der einen Ansicht, statt die Ansicht zu wechseln
+function focusPart(i){
+  const left=document.querySelector('.split>div:first-child'),go=el=>el&&el.scrollIntoView({block:'start',behavior:'smooth'});
+  if(i===0){$('setupPanel').open=true;left.scrollTo({top:0,behavior:'smooth'});window.scrollTo({top:0});go($('setupPanel'));$('idea').focus({preventScroll:true})}
+  else if(i===3){if(!s.spec.trim())return;$('implPanel').open=true;go($('implPanel'));if(s.plan)go($('implOut'))}
+  else go(!s.spec.trim()&&!$('qaPane').classList.contains('hidden')?$('qaPane'):document.querySelector('.specwrap'));
+}
 // Je Stand der Spezifikation höchstens ein selbsttätiger Versuch, damit ein Fehler keine Schleife auslöst
 let featTried='';
 function ensureFeatures(){
-  if(active||s.phase!==2||s.features.length||!s.spec.trim()||s.dirty||specMode==='edit')return;
+  if(active||s.features.length||!s.spec.trim()||s.dirty||specMode==='edit')return;
   const key=digest(s.spec);if(featTried===key)return;featTried=key;deriveFeatures();
 }
 for(const b of document.querySelectorAll('[data-phase]'))b.onclick=()=>setPhase(Number(b.dataset.phase));
 // Die Knöpfe der einzelnen Schritte bleiben (versteckt) erhalten; die feste Leiste löst sie aus und zeigt ihren Stand.
-const nextOf=()=>[$('derive'),$('toSpec'),$('toTasks'),$('finish')][s.phase]||null;
+// Ohne Dokument ist der nächste Schritt immer „Spezifikation erstellen“ – erst danach geht es zur Umsetzung
+const needSpec=()=>ph()>=2&&!s.spec.trim();
+const nextOf=()=>needSpec()?$('generate'):[$('derive'),$('toSpec'),$('toTasks'),$('finish')][ph()]||null;
 function navUI(){
   const target=nextOf(),next=$('navNext'),back=$('navBack');
-  back.style.visibility=s.phase?'visible':'hidden';back.textContent='← '+(phaseNames[MERGED&&s.phase===2?0:s.phase-1]||'');
+  back.style.display='none';
   next.style.visibility=target?'visible':'hidden';
-  if(target){next.textContent=s.phase===0?$('deriveLabel').textContent:target.textContent;next.disabled=target.disabled}
+  if(target){next.textContent=ph()===0?$('deriveLabel').textContent:target.textContent;next.disabled=target.disabled}
   // Grün heißt überall: Das Nötige für den nächsten Schritt ist da. Sonst bleibt der Knopf neutral (ein Klick zeigt, was fehlt).
-  const open=s.questions.some(q=>q.state==='open'),okNow=[!!s.idea.trim()&&!scaleMissing().length,s.questions.length>0&&!open,!!s.spec.trim()&&!s.dirty&&!open&&!s.features.some(f=>f.on!==f.inSpec),!!s.plan&&!stale()&&!s.finished&&(s.nextStep!=='run'||!!s.runDir.trim())][s.phase];
+  const open=s.questions.some(q=>q.state==='open'),okNow=[!!s.idea.trim()&&!scaleMissing().length,s.questions.length>0&&!open,!!s.spec.trim()&&!s.dirty&&!open&&!s.features.some(f=>f.on!==f.inSpec),!!s.plan&&!stale()&&!s.finished&&(s.nextStep!=='run'||!!s.runDir.trim())][needSpec()?1:ph()]&&(!needSpec()||(s.features.length>0&&!overTarget()));
   next.classList.toggle('ready',!!okNow&&!!target&&!target.disabled&&!active);next.classList.toggle('nudge',next.classList.contains('ready'));
   // Derselbe Grundsatz über dem leeren Dokument: „Spezifikation erstellen“ wird grün, sobald der Umfang steht und in die Zielzeit passt
   {const can=!s.spec.trim()&&s.features.length>0&&!open&&!overTarget();$('generate').classList.toggle('nudge',(can||(!!s.spec.trim()&&!!s.dirty))&&!active)}
@@ -1858,7 +1919,7 @@ function navUI(){
   effortBar();
 }
 $('navNext').onclick=()=>nextOf()?.click();
-$('navBack').onclick=()=>{if(s.phase)setPhase(MERGED&&s.phase===2?0:s.phase-1)};
+
 
 /* ---------- Schritt 1: Idee ---------- */
 function ideaUI(){
@@ -1961,7 +2022,7 @@ async function derive(more){
     }
     // Je nach Modus entscheidet SpecIt einen Teil der Fragen selbst; im Auto-Modus alle, dann geht es direkt zur Spezifikation.
     s.questions=applyAutonomy(s.questions,s.autonomy);auto=!more&&firstOpen()<0;
-    s.qSource=r.source;s.phase=auto||MERGED?2:1;activate(firstOpen(),false);renderAll();if(!more)window.scrollTo({top:0});
+    s.qSource=r.source;s.phase=2;activate(firstOpen(),false);renderAll();if(!more)focusPart(2);
   }catch(e){status.textContent=e.message;flashNote(e.message)}finally{lock(false)}
   // Auch im Auto-Modus wird nur der Umfang ermittelt; geschrieben wird erst auf „Spezifikation erstellen“
   if(auto)startSpec(false);
@@ -2323,7 +2384,7 @@ async function bgCall(body,tries=10){
 // Ein einzelner Vorschlag gilt ohne weiteren Klick als gewählt und steht überall, wo Name und Logo gebraucht werden.
 const brandBusy={names:false,logos:false},brandTried={names:'',logos:''};
 function ensureBrand(){
-  if(!statusLoaded||s.phase<2||(!s.idea.trim()&&!s.spec.trim()))return;
+  if(!statusLoaded||!wsOpen()||(!s.idea.trim()&&!s.spec.trim()))return;
   const base=[s.idea.trim(),s.tone,$('ai').checked].join('|');
   if(s.nameCount>0&&!s.project.trim()&&!s.names.length&&!brandBusy.names&&brandTried.names!==base+'|'+s.nameCount){
     const key=brandTried.names=base+'|'+s.nameCount;brandBusy.names=true;namesUI();
@@ -2348,7 +2409,7 @@ async function deriveDiagram(src,force){
     const r=await bgCall({mode:src,spec:s.spec,project:s.project,ai:true}),m=def.clean(r[def.field]);
     if(m&&key===diagKey(src)){s[src]={key,...m};save()}
   }catch(e){diagNote[src]=e.message}
-  diagBusy[src]=false;if(s.phase===2&&specMode==='view'&&!active)specUI();
+  diagBusy[src]=false;if(specMode==='view'&&!active)specUI();
 }
 // Die drei Schaubilder: Titel, Quelle, wie aus dem Stand das Modell wird, wie es gezeichnet und als Mermaid-Text ausgegeben wird
 const diagKinds={
@@ -2594,10 +2655,10 @@ function declineAsk(){
   if($('askBox').open)$('askBox').close();askNext=null;needMark=true;
   // Dorthin, wo die Angaben fehlen: in Schritt 2 die Fragenliste, bei der Spezifikation das Feld „Entscheidungen“
   const here=inQuestions();
-  if(s.phase===2&&!here){$('decPanel').open=true;s.questions.forEach(q=>{if(q.state==='open')catGroups.add('o'+q.topic)})}
+  if(!here){$('decPanel').open=true;s.questions.forEach(q=>{if(q.state==='open')catGroups.add('o'+q.topic)})}
   if(here&&(s.active<0||s.questions[s.active]?.state!=='open'))activate(firstOpen(),false);
   renderAll();
-  (s.phase===2&&!here?$('decPanel'):document.querySelector('#questions .need'))?.scrollIntoView({block:'center'});
+  (!here?$('decPanel'):document.querySelector('#questions .need'))?.scrollIntoView({block:'center'});
 }
 $('askNo').onclick=declineAsk;
 $('askBox').addEventListener('cancel',e=>{e.preventDefault();declineAsk()});
@@ -2734,9 +2795,9 @@ function specUI(){
   const qaPane=MERGED?$('qaPane'):null;
   if(qaPane){
     // Dieselbe Fragenliste an zwei Orten: links anstelle des Dokuments, solange es keines gibt; danach im Feld „Entscheidungen“
-    const qa=s.phase===2&&!s.spec.trim()&&typeof streamText!=='string'&&specMode!=='edit'&&s.questions.length>0,inDec=!qa&&!!s.spec.trim()&&s.questions.length>0;
+    const qa=!s.spec.trim()&&typeof streamText!=='string'&&specMode!=='edit'&&s.questions.length>0,inDec=!qa&&!!s.spec.trim()&&s.questions.length>0;
     const home=inDec?$('decQa'):document.querySelector('.split>div:first-child');
-    if(qaPane.parentElement!==home){if(inDec)home.append(qaPane);else home.prepend(qaPane)}
+    if(qaPane.parentElement!==home){if(inDec)home.append(qaPane);else $('ideaPane').after(qaPane)}
     qaPane.classList.toggle('hidden',!(qa||inDec));document.body.classList.toggle('qa',qa);document.body.classList.toggle('decqa',inDec);
     $('decDerive').classList.toggle('hidden',!(inDec&&$('ai').checked));$('decDerive').disabled=active;
   }
@@ -2819,7 +2880,7 @@ function planUI(){
     return;
   }
   // Das Konzept ist abgeschlossen: gewünschte Layout-Entwürfe jetzt einmal von selbst anstoßen
-  if(s.phase===3||(s.phase===2&&s.spec.trim()&&!s.dirty))autoLayouts();
+  if(s.spec.trim()&&!s.dirty)autoLayouts();
   // 1) Abarbeitung: nacheinander durch einen Agenten (ein Gesamtauftrag) oder parallel durch mehrere (Teilaufträge).
   // Die Agentenzahl ist dieselbe wie bei der Feature-Auswahl in Schritt 3 und wird von dort übernommen.
   const agents=agentsNow(),single=agents===1,direct=s.nextStep==='run',max=planMax(),current=p&&!old?p:null;
@@ -2925,7 +2986,7 @@ async function post(url,data,signal){
   let r;try{r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data),signal:signal||aborter?.signal})}catch(e){throw aborted(e)}
   const x=await r.json();if(!r.ok)throw Error(x.error||'Anfrage fehlgeschlagen.');if(x&&x.usage)addUsage(data&&data.mode,x.usage);return x;
 }
-const call=data=>post('/api/spec',data);
+const call=data=>post('/api/spec',data).finally(refreshModels);
 // Antwort zeilenweise lesen (je Zeile ein JSON-Objekt) und jede Zeile sofort weiterreichen
 async function stream(url,data,onRow){
   let r;try{r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(data),signal:aborter?.signal})}catch(e){throw aborted(e)}
@@ -2951,7 +3012,7 @@ function finalPayload(extra={}){
 }
 function scheduleSpecPreload(){
  clearTimeout(preloadIdle);
- const eligible=s.specStrategy==='preload'&&available&&$('ai').checked&&!active&&s.phase===2
+ const eligible=s.specStrategy==='preload'&&available&&$('ai').checked&&!active&&wsOpen()
    &&s.idea.trim()&&s.features.length&&firstOpen()<0&&(!s.spec.trim()||s.dirty);
  if(!eligible){
   if(preloadTask&&!active){preloadTask.ac.abort();preloadTask=null}
@@ -3207,9 +3268,45 @@ async function applyScope(){
   renderAll();flash();
 }
 // Freie Zeit nutzen: Die KI schlägt weitere Features vor; übernommen wird der Reihe nach, was zusätzlich in die Zielzeit passt
+// Vorrat an Feature-Vorschlägen: Solange in der Zielzeit Luft ist, holt SpecIt im Hintergrund weitere Vorschläge und hält sie bereit,
+// bis sich die freie Zeit damit füllen ließe. Ein Klick auf das freie Stück des Zeitstrahls übernimmt dann sofort, was hineinpasst.
+let poolBusy=false,poolDry='',poolTries=0,poolFor='';
+const poolBase=()=>digest(s.idea.trim()+'|'+s.tone+'|'+s.creativity);
+// Vorschläge, die es inzwischen als Feature gibt, fallen aus dem Vorrat
+function poolNow(){const known=new Set(s.features.map(f=>f.name.toLowerCase()));if(s.featPool.some(f=>known.has(f.name.toLowerCase())))s.featPool=s.featPool.filter(f=>!known.has(f.name.toLowerCase()));return s.featPool}
+// Was aus dem Vorrat der Reihe nach in die Zielzeit passt: { list, added, rest }
+function poolFit(){
+  const target=targetMinutes(),agents=featDuration().agents,added=[],rest=[];let list=s.features;
+  for(const f of poolNow()){
+    const trial=cleanFeatures([...list,{...f,core:false,own:true,on:true,inSpec:false}]);
+    if(target&&featureDuration(trial,agents)<=target){list=trial;added.push(f)}else rest.push(f);
+  }
+  return {list,added,rest};
+}
+function ensurePool(){
+  const target=targetMinutes();
+  if(poolBusy||active||!statusLoaded||!$('ai').checked||!target||!s.features.length||!wsOpen())return;
+  const base=poolBase();if(poolFor!==base){poolFor=base;poolTries=0;poolDry='';if(s.featPool.length){s.featPool=[];save()}}
+  const fd=featDuration(),free=target-fd.total,pool=poolNow(),held=pool.reduce((n,f)=>n+f.minutes,0);
+  // genug vorrätig, nichts mehr zu holen, oder die Zeit ist ohnehin ausgeschöpft
+  if(free<Math.max(0.3,target*0.1)||held>=free||poolDry===base||poolTries>=5||pool.length>=20)return;
+  poolBusy=true;poolTries++;featuresUI();
+  bgCall({mode:'extend',project:s.project,idea:s.idea,spec:s.spec,features:[...s.features,...pool.map(f=>({...f,on:true}))].slice(0,30),target,free:Math.max(0.2,free-held),maxAgents:fd.agents,ai:true},3)
+    .then(r=>{
+      if(base!==poolBase())return;
+      const known=new Set([...s.features,...s.featPool].map(f=>f.name.toLowerCase())),fresh=(Array.isArray(r.features)?r.features:[]).filter(f=>f&&typeof f.name==='string'&&Number.isFinite(f.minutes)&&!known.has(f.name.toLowerCase()));
+      if(!fresh.length)poolDry=base;else{s.featPool=[...s.featPool,...fresh].slice(0,24);save()}
+    },()=>{poolDry=base})
+    .finally(()=>{poolBusy=false;featuresUI();setTimeout(ensurePool,300)});
+}
 async function extendFeatures(){
   if(active)return;
   const target=targetMinutes(),fd=featDuration(),free=target-fd.total;if(!(free>0))return;
+  const done=(names,list)=>{s.features=list;revision++;if(s.spec.trim())s.dirty=true;featNote=plural(names.length,'Feature','Features')+' ergänzt (als Erweiterung, abwählbar): '+names.join(', ')+'.'+(s.spec.trim()?' Ist die Feature-Liste fertig, arbeitet „Spezifikation aktualisieren“ sie ein.':'');save()};
+  // Liegt ein Vorrat bereit, kommt er sofort – ohne Warten
+  const fit=poolFit();
+  if(fit.added.length){s.featPool=fit.rest;done(fit.added.map(f=>f.name),fit.list);renderAll();return}
+  if(poolBusy){featNote='Vorschläge werden gerade geladen – gleich noch einmal klicken.';flashNote(featNote);featuresUI();return}
   const rev=revision;lock(true,'Weitere Features werden gesucht');featNote='';
   try{
     const r=await call({mode:'extend',project:s.project,idea:s.idea,spec:s.spec,features:s.features,target,free,maxAgents:fd.agents,ai:$('ai').checked});
@@ -3222,8 +3319,8 @@ async function extendFeatures(){
       if(featureDuration(trial,fd.agents)>target)continue;
       list=trial;added.push(f.name);known.add(f.name.toLowerCase());
     }
-    if(added.length){s.features=list;revision++;if(s.spec.trim())s.dirty=true;featNote=plural(added.length,'Feature','Features')+' ergänzt (als Erweiterung, abwählbar): '+added.join(', ')+'.'+(s.spec.trim()?' Ist die Feature-Liste fertig, arbeitet „Spezifikation aktualisieren“ sie ein.':'');save()}
-    else featNote=r.source==='demo'?'Weitere Features schlägt nur Claude vor (Schalter oben rechts).':'Kein weiteres Feature gefunden, das sinnvoll ist und noch in die Zielzeit passt.';
+    if(added.length)done(added,list);
+    else{featNote=r.source==='demo'?'Weitere Features schlägt nur Claude vor (Schalter oben rechts).':'Kein weiteres Feature gefunden, das sinnvoll ist und noch in die Zielzeit passt – '+hm(free)+' bleiben frei.';poolDry=poolBase();flashNote(featNote)}
   }catch(e){featNote=e.message}finally{lock(false);renderAll()}
   // Eingearbeitet wird nicht von selbst: Meist wird mehrfach ergänzt, bis die Zielzeit ausgeschöpft ist – erst dann lohnt das Schreiben.
 }
@@ -3261,10 +3358,12 @@ function featuresUI(){
   sum.append(bar,legend);
   // Bleibt in der Zielzeit spürbar Luft, ist das freie Stück des Zeitstrahls ein Knopf: Die KI ergänzt Features, die zusätzlich hineinpassen
   if(target&&!over&&target-total>=Math.max(0.3,target*0.1)){
-    const share=(target-total)/span,more=button(share>.45?'＋ '+hm(target-total)+' frei · Features ergänzen':share>.2?'＋ '+hm(target-total)+' frei':'＋','free',extendFeatures);
+    const fit=poolFit().added,gain=fit.reduce((n,f)=>n+f.minutes,0),dry=!fit.length&&!poolBusy&&(poolDry===poolBase()||poolTries>=5),ready=fit.length?plural(fit.length,'Feature','Features')+' ergänzen':poolBusy?'Vorschläge werden geladen …':dry?'keine weiteren Vorschläge':'Features ergänzen';
+    const share=(target-total)/span,more=button(share>.45?(dry?'':'＋ ')+hm(target-total)+' frei · '+ready:share>.2?(dry?hm(target-total)+' bleiben frei':'＋ '+hm(target-total)+' frei'):dry?'·':'＋','free',extendFeatures);
     more.style.width=(share*100)+'%';more.disabled=active||!$('ai').checked;more.setAttribute('aria-label',hm(target-total)+' frei: weitere Features ergänzen');
-    more.title=$('ai').checked?hm(target-total)+' frei: Claude schlägt weitere nützliche Features vor, die zusätzlich in die Zielzeit passen. Sie kommen als abwählbare Erweiterungen dazu.':hm(target-total)+' frei. Zum Ergänzen weiterer Features Claude einschalten (Schalter oben rechts).';
-    more.classList.toggle('nudge',!more.disabled);bar.classList.add('tall');bar.removeAttribute('role');bar.insertBefore(more,bar.querySelector('.goal'));
+    more.title=$('ai').checked?(fit.length?hm(target-total)+' frei. Bereit zum Übernehmen (zusammen ≈ '+hm(gain)+'): '+fit.map(f=>f.name+' ≈ '+hm(f.minutes)).join(' · ')+'. Sie kommen als abwählbare Erweiterungen dazu.':hm(target-total)+' frei: Claude schlägt weitere nützliche Features vor, die zusätzlich in die Zielzeit passen. Sie kommen als abwählbare Erweiterungen dazu.'):hm(target-total)+' frei. Zum Ergänzen weiterer Features Claude einschalten (Schalter oben rechts).';
+    more.classList.toggle('nudge',!more.disabled&&!dry);more.classList.toggle('loading',poolBusy&&!fit.length);more.classList.toggle('dry',dry);
+    if(dry&&$('ai').checked)more.title=hm(target-total)+' bleiben frei: Es wurden keine weiteren Features gefunden, die sinnvoll sind und hineinpassen. Ein Klick sucht noch einmal.';bar.classList.add('tall');bar.removeAttribute('role');bar.insertBefore(more,bar.querySelector('.goal'));
   }
   // Zielvorgabe direkt hier ändern: Die Rechnung passt sich sofort an; die Spezifikation nennt die Vorgabe als Rahmen
   // und wird deshalb erst auf Wunsch nachgezogen.
@@ -3674,12 +3773,12 @@ function drawStream(){
 function scheduleAuto(){
   clearTimeout(sketchIdle);
   const key=sketchKey(),done=s.sketch&&s.sketch.idea===key?(s.sketch.pass||2):0;
-  if(sketchAuto&&(sketchAuto.key!==key||s.phase!==0||!$('ai').checked)){sketchAuto.ac.abort();sketchAuto=null}
-  if(sketchAuto||!$('ai').checked||active||s.phase!==0||done>=2||words(s.idea)<4||Date.now()<sketchPauseUntil)return;
+  if(sketchAuto&&(sketchAuto.key!==key||!atIdea()||!$('ai').checked)){sketchAuto.ac.abort();sketchAuto=null}
+  if(sketchAuto||!$('ai').checked||active||!atIdea()||done>=2||words(s.idea)<4||Date.now()<sketchPauseUntil)return;
   sketchIdle=setTimeout(()=>runAuto(key,done+1),done?50:500);
 }
 async function runAuto(key,pass){
-  if(sketchAuto||active||s.phase!==0||key!==sketchKey())return;
+  if(sketchAuto||active||!atIdea()||key!==sketchKey())return;
   const ac=new AbortController(),job={key,ac,pass,text:'',timer:0};sketchAuto=job;sketchUI();
   try{
     const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'sketch',bg:true,pass,prev:pass>1&&s.sketch?s.sketch.svg:'',idea:s.idea.trim(),project:s.project,ai:true,...frame(),minutes:targetMinutes(),...modInput()}),signal:ac.signal});
@@ -3831,7 +3930,7 @@ function conceptPull(){
     if(a)s.conceptAnswers[q.question]=a;else delete s.conceptAnswers[q.question];
   }
 }
-const conceptRefresh=()=>{conceptUI();if(s.phase===2)specUI()};
+const conceptRefresh=()=>{conceptUI();specUI()};
 function conceptUI(){
   conceptPull();
   const out=$('concept'),note=$('conceptNote'),idea=s.idea.trim(),on=$('ai').checked,key=conceptKey(),own=s.concept;
@@ -3869,12 +3968,12 @@ function conceptUI(){
 }
 function scheduleConcept(){
   clearTimeout(conceptIdle);const key=conceptKey();
-  if(conceptJob&&(conceptJob.key!==key||s.phase!==0||!$('ai').checked)){conceptJob.ac.abort();conceptJob=null}
-  if(conceptJob||!$('ai').checked||active||s.phase!==0||(s.concept&&s.concept.key===key)||words(s.idea)<4||Date.now()<conceptPauseUntil)return;
+  if(conceptJob&&(conceptJob.key!==key||!atIdea()||!$('ai').checked)){conceptJob.ac.abort();conceptJob=null}
+  if(conceptJob||!$('ai').checked||active||!atIdea()||(s.concept&&s.concept.key===key)||words(s.idea)<4||Date.now()<conceptPauseUntil)return;
   conceptIdle=setTimeout(()=>runConcept(key),1200);
 }
 async function runConcept(key,wish=''){
-  if(conceptJob||active||s.phase!==0||key!==conceptKey())return;
+  if(conceptJob||active||!atIdea()||key!==conceptKey())return;
   const only=wish?null:conceptOnly(),ac=new AbortController(),job={key,ac,text:'',timer:0,only,wish,prev:only||wish?s.concept.text:''};conceptJob=job;conceptAsk='';conceptUI();
   try{
     const res=await fetch('/api/spec',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'concept',idea:s.idea.trim(),project:s.project,ai:true,...frame(),minutes:targetMinutes(),answers:Object.entries(s.conceptAnswers).map(([q,a])=>({q,a})),wishes:s.conceptWishes,...(only?{only,prev:job.prev}:{}),...(wish?{wish,prev:job.prev}:{})}),signal:ac.signal});
@@ -4353,7 +4452,7 @@ async function pollRun(){
   else if(runBusy&&!active&&!layoutBusy)working('');
   runBusy=live;
   // Beim Wechsel des Zustands die ganze Seite nachziehen, sonst nur die Liste (damit aufgeklappte Aufträge offen bleiben)
-  if(was!==live)renderAll();else if(s.phase===3){$('doneBox').classList.toggle('hidden',!(run.items.length&&s.nextStep==='run')&&s.finished!==finishKey());runUI()}
+  if(was!==live)renderAll();else{$('doneBox').classList.toggle('hidden',!(run.items.length&&s.nextStep==='run')&&s.finished!==finishKey());runUI()}
   if(live)runTimer=setTimeout(pollRun,2000);
 }
 $('runDir').oninput=e=>{s.runDir=e.target.value;save();reviewUI(s.plan&&!stale()?s.plan:null,agentsNow());navUI()};
@@ -4390,18 +4489,29 @@ if($('idea').value!==s.idea)$('idea').value=s.idea;
   $('creativity').value=s.creativity;$('tone').value=s.tone;
   $('autonomy').value=s.autonomy/20;$('durLevel').value=s.durLevel;
   $('repo').value=s.repo;$('agent').value=s.agent;$('layoutCount').value=s.layoutCount;$('layoutDevice').value=s.layoutDevice;$('layoutTheme').value=s.layoutTheme;
-  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();strategyUI();save();scheduleSpecPreload();ensureBrand();
+  ideaUI();questionsUI();gaugeUI();specUI();statuses();layoutUI();strategyUI();save();scheduleSpecPreload();ensureBrand();ensurePool();
 }
 if(MERGED){
   // Die Fragenliste zieht in die linke Spalte der Spezifikations-Ansicht um; die Ansicht „Fragen“ selbst wird nicht mehr gezeigt
   document.body.classList.add('merged');if(s.phase===1)s.phase=2;
   const pane=node('div',undefined,'qapane hidden');pane.id='qaPane';pane.append(...document.querySelector('#phase1>.column').children);
-  document.querySelector('.split>div:first-child').prepend(pane);renderAll();
+  const left=document.querySelector('.split>div:first-child'),side=document.querySelector('.split>.side');
+  left.prepend(pane);
+  // Einstellungen (bisher unter der Idee) und Umsetzung (bisher eigene Ansicht) werden Bereiche der rechten Spalte
+  const panel=(id,title,metaId,bodyId)=>{const d=node('details',undefined,'card catpanel');d.id=id;const sum=node('summary'),h=node('h2',title),m=node('span',undefined,'meta');m.id=metaId;sum.append(h,m);const body=node('div');body.id=bodyId;d.append(sum,body);return d};
+  const setup=panel('setupPanel','Einstellungen','setupMeta','setupBody'),impl=panel('implPanel','Umsetzung','implMeta','implBody');
+  side.prepend(setup);side.append(impl);
+  $('setupBody').append(document.querySelector('#phase0 .presets'),document.querySelector('#phase0 .scales'));
+  $('implBody').append($('planGate'),$('planStale'),$('planConfig'),$('reviewCard'));
+  // Links steht, was entsteht: oben Idee und Konzept, darunter Fragen und Dokument, am Ende Plan und Lauf
+  const ideaPane=node('div',undefined,'ideapane');ideaPane.id='ideaPane';ideaPane.append(...$('phase0').children);left.prepend(ideaPane);
+  const out=node('section',undefined,'implout');out.id='implOut';out.append(node('h2','Umsetzung'),$('planStatus'),$('planOutput'));left.append(out);
+  renderAll();
 }
 if(inQuestions()&&s.active<0)activate(firstOpen(),false);else if(s.active>=0)activate(s.active,false);
 renderAll();
 fetch('/api/status').then(r=>r.json()).then(r=>{
-  available=!!r.available;provider=r.provider||null;statusLoaded=true;gpuAvailable=!!r.gpu;diffusionAvailable=!!r.diffusion;stitch=!!r.stitch;agentsOk=!!r.agents;setAgentSkill(r.agentSkill);reviewers=Array.isArray(r.reviewers)?r.reviewers:[];agentModels=Array.isArray(r.models)?r.models:[];runModelUI();projectsDir=typeof r.projectsDir==='string'?r.projectsDir:'';pathSep=r.pathSep==='/'?'/':'\\';suggestRunDir();$('repoNew').disabled=!r.github;$('repoNew').title=r.github?'Legt über die GitHub-CLI ein leeres Repository in deinem Konto an.':'Dafür die GitHub-CLI einrichten: im Terminal „gh auth login“, dann SpecIt neu starten.';reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
+  available=!!r.available;provider=r.provider||null;statusLoaded=true;gpuAvailable=!!r.gpu;specModels=r.specModels&&typeof r.specModels==='object'?r.specModels:{};stitch=!!r.stitch;agentsOk=!!r.agents;setAgentSkill(r.agentSkill);reviewers=Array.isArray(r.reviewers)?r.reviewers:[];agentModels=Array.isArray(r.models)?r.models:[];runModelUI();projectsDir=typeof r.projectsDir==='string'?r.projectsDir:'';pathSep=r.pathSep==='/'?'/':'\\';suggestRunDir();$('repoNew').disabled=!r.github;$('repoNew').title=r.github?'Legt über die GitHub-CLI ein leeres Repository in deinem Konto an.':'Dafür die GitHub-CLI einrichten: im Terminal „gh auth login“, dann SpecIt neu starten.';reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
   let wanted=false;try{wanted=localStorage.getItem('specit-ai')==='1'}catch{}
   $('ai').checked=available&&wanted;aiUI();
   if(!stitch)$('layoutHint').textContent='Kein STITCH_API_KEY konfiguriert. Schlüssel in .env setzen und neu starten, siehe README.';

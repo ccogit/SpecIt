@@ -11,18 +11,8 @@ test('GPU inference accepts only local loopback /v1 and explicit model IDs',()=>
  assert.equal(generationBackends({...env,SPECIT_GPU_BASE_URL:'http://localhost:8000/private'}).gpu,null);
  assert.equal(generationBackends({}).gpu,null);
 });
-test('diffusion uses only fixed Inception endpoint and requires server key',()=>{
- assert.equal(generationBackends({}).diffusion,null);
- const backend=generationBackends({SPECIT_INCEPTION_API_KEY:'secret'}).diffusion;
- assert.equal(backend.endpoint,'https://api.inceptionlabs.ai/v1/chat/completions');
- assert.equal(backend.model,'mercury-3');
- const router=generationBackends({SPECIT_DIFFUSION_PROVIDER:'openrouter',SPECIT_OPENROUTER_API_KEY:'another-secret'}).diffusion;
- assert.equal(router.endpoint,'https://openrouter.ai/api/v1/chat/completions');
- assert.equal(router.model,'inception/mercury-3');
- assert.equal(generationBackends({SPECIT_DIFFUSION_PROVIDER:'unknown',SPECIT_INCEPTION_API_KEY:'secret'}).diffusion,null);
-});
 test('SSE chunks stream in order, count real tokens, and preserve server-side auth',async()=>{
- const backend=generationBackends({SPECIT_INCEPTION_API_KEY:'secret'}).diffusion;
+ const backend=generationBackends({SPECIT_GPU_MODEL:'lokal',SPECIT_GPU_API_KEY:'secret'}).gpu;
  const sse=['data: {"choices":[{"delta":{"content":"## Ziel"}}]}\n\n',
   'data: {"choices":[{"delta":{"content":" und Nutzer"},"finish_reason":"stop"}]}\n\n',
   'data: {"choices":[],"usage":{"prompt_tokens":42,"completion_tokens":8}}\n\n',
@@ -43,7 +33,7 @@ test('SSE chunks stream in order, count real tokens, and preserve server-side au
  assert.equal(store.timings[0].ok,true);
 });
 test('truncated, HTTP-error and empty output fail closed',async()=>{
- const backend=generationBackends({SPECIT_INCEPTION_API_KEY:'secret'}).diffusion;
+ const backend=generationBackends({SPECIT_GPU_MODEL:'lokal',SPECIT_GPU_API_KEY:'secret'}).gpu;
  const bad=async()=>new Response('bad',{status:401});
  await assert.rejects(streamChatCompletion({backend,system:'',instruction:'',data:{},request:bad}),/HTTP 401/);
  const truncated=async()=>new Response('data: {"choices":[{"delta":{"content":"partial"},"finish_reason":"length"}]}\n\n');

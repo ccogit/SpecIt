@@ -16,10 +16,13 @@ export const protoCss = accent => `
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}.col-4{grid-column:span 4}.col-5{grid-column:span 5}.col-6{grid-column:span 6}.col-7{grid-column:span 7}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
 @media(max-width:760px){.grid>*{grid-column:span 12}}
 .card{background:var(--card);border-radius:18px;padding:20px 22px;box-shadow:var(--shadow);border:1px solid var(--line)}
-.card h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin:0 0 14px;font-weight:700}
-.hero{background:linear-gradient(135deg,var(--accent),var(--deep));color:#fff;border:0}.hero h2{color:rgba(255,255,255,.78)}.hero .big{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.1}.hero .muted{color:rgba(255,255,255,.82)}
+.card h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);margin:0;font-weight:700}
+.card>*+*{margin-top:14px}.card>h2+*{margin-top:12px}.stack>*{margin:0}
+.hero{background:linear-gradient(135deg,var(--accent),var(--deep));color:#fff;border:0;padding:24px 26px}.hero h2{color:rgba(255,255,255,.78)}.hero .big{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1.15}.hero>h2+.big{margin-top:6px}.hero .muted{color:rgba(255,255,255,.85)}
+.hero .bar{height:6px;background:rgba(255,255,255,.22)}.hero .bar>i{background:#fff}.hero .row{gap:10px 12px;flex-wrap:wrap}.hero label{color:#fff}.hero .toggle{background:rgba(255,255,255,.3)}.hero .toggle:checked{background:#fff}.hero .toggle:checked::after{background:var(--accent)}
 .btn{font:inherit;font-weight:700;border:0;border-radius:12px;padding:11px 18px;background:var(--accent);color:var(--accent-ink);cursor:pointer;transition:transform .12s,box-shadow .12s;box-shadow:0 6px 16px -6px var(--accent)}.btn:hover{transform:translateY(-1px)}.btn:active{transform:none}.btn:disabled{opacity:.45;cursor:default;transform:none}
-.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}.hero .btn.ghost{color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.45)}.btn.light{background:#fff;color:var(--accent);box-shadow:none}.btn.small{padding:6px 12px;font-size:13px;border-radius:9px}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}.btn.light{background:#fff;color:var(--accent);box-shadow:none}
+.hero .btn{background:#fff;color:var(--deep);box-shadow:0 6px 16px -8px rgba(0,0,0,.45)}.hero .btn.ghost,.hero .btn+.btn{background:transparent;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5)}.btn.small{padding:6px 12px;font-size:13px;border-radius:9px}
 .field{width:100%;font:inherit;padding:11px 14px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink);outline:none}.field:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--tint)}textarea.field{resize:vertical;min-height:72px}
 .row{display:flex;align-items:center;gap:10px}.row.wrap{flex-wrap:wrap}.grow{flex:1;min-width:0}.stack{display:flex;flex-direction:column;gap:12px}
 .list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:#faf8f3;transition:background .15s}.item:hover{background:var(--tint)}.item.off{opacity:.45}
@@ -42,7 +45,7 @@ export const protoPrompt = 'Baue einen klickbaren Prototyp der Anwendung aus den
   + 'Liefere NUR <div class="app">…</div> und danach ein <script>…</script> – kein <html>, <head>, <style>, keine externen Dateien. '
   + 'Der Kernablauf ist wirklich bedienbar, mit sinnvollen Beispieldaten im Speicher; kein Netzwerk, kein localStorage. '
   + 'Oben steht .top mit <div class="logo"></div> (leer lassen – das Logo setzt SpecIt ein), dem Namen als h1 und einem kurzen Satz. '
-  + 'Die erste Karte ist eine .card.hero mit der wichtigsten Aktion und einer großen Zahl oder Aussage (.big). '
+  + 'Die erste Karte ist eine .card.hero mit einer großen Zahl oder Aussage (.big) und genau einer Hauptaktion; höchstens eine Nebenaktion daneben, alle weiteren Aktionen und Schalter gehören in die Karten darunter. '
   + 'Hat die Anwendung mehrere Bereiche, schalten .tabs zwischen ihnen um (per .hidden). Begriffe und Anrede aus der Spezifikation, Texte auf Deutsch. '
   + 'Zeige den Kernablauf und zwei bis drei wichtige Erweiterungen; keine Erklärtexte über den Prototyp selbst. Kompakt: höchstens 130 Zeilen. '
   + 'Schreibe sofort los, ohne Vorüberlegung: Das erste Zeichen deiner Antwort ist „<“.';

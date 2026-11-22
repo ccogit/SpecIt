@@ -31,8 +31,10 @@ export function balance(x = {}) {
   }
   const logos = num(x.logos), layouts = num(x.layouts), name = String(x.name || '').trim();
   if (name || logos || layouts) {
-    outputs.push({ key: 'brand', label: 'Name, Layout und Logo', short: 'Entwürfe', value: logos + layouts, unit: 'Entwürfe',
-      detail: [name ? 'Name „' + name + '“' : '', layouts ? layouts + ' Layout-Entwürfe' : '', logos ? logos + ' Logo-Entwürfe' : ''].filter(Boolean).join(' · ') });
+    // Der Name zählt mit: Auch er ist ein Ergebnis – ein Name und ein Logo sind zwei Ergebnisse, nicht „1 Entwürfe“
+    const count = (name ? 1 : 0) + logos + layouts, unit = count === 1 ? 'Ergebnis' : 'Ergebnisse', one = (n, single, many) => n + ' ' + (n === 1 ? single : many);
+    outputs.push({ key: 'brand', label: 'Name, Layout und Logo', short: unit, value: count, unit,
+      detail: [name ? 'Name „' + name + '“' : '', layouts ? one(layouts, 'Layout-Entwurf', 'Layout-Entwürfe') : '', logos ? one(logos, 'Logo-Entwurf', 'Logo-Entwürfe') : ''].filter(Boolean).join(' · ') });
   }
   const plan = x.plan && Array.isArray(x.plan.tasks) ? x.plan : null;
   if (plan) {
