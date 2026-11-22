@@ -2084,3 +2084,120 @@ body:not(.showset) .specwrap .doccol>.specbar{display:none!important}
 .top .bar>#navHint,.top #navHint .ph{height:34px}
 .top #navHint .pnum{font-size:11px}
 .link,.md h3 .meta,.concept h3,.concept h4{font-size:12px}
+/* ================= Einstellungen als Overlay mit Reglern ================= */
+.specwrap .doccol>.specbar{display:none!important}
+.lightbox.setdlg{width:min(94vw,780px);height:fit-content!important;max-height:90vh;margin:auto;overflow:hidden}
+.lightbox.setdlg[open]{display:flex;flex-direction:column}
+.setdlg .lightbar{flex:none;flex-wrap:nowrap;padding:16px 22px}
+.setdlg .lightbar .baltitle{flex-direction:column;align-items:flex-start;gap:3px}
+.setbody{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:20px 22px 24px}
+.setsec{padding:18px 22px 20px;border-radius:16px;background:var(--surface-low)}
+.setsec h3{margin:0;font:700 17px/1.2 var(--sans);letter-spacing:-.01em;color:var(--heading)}
+.setsec>.meta,.setsec .sethead .meta{margin:4px 0 0;font-size:13px!important;color:var(--ink-soft)}
+.sethead{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.setvalbox{display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right;min-width:0}
+.setval{font:700 18px/1.2 var(--sans);color:color-mix(in srgb,var(--go) 70%,var(--heading))}
+.setstate{font:600 11px/1 var(--mono);padding:4px 8px;border-radius:999px;background:color-mix(in srgb,#e2a336 20%,transparent);color:color-mix(in srgb,#e2a336 60%,var(--ink))}
+.setstate.own{background:color-mix(in srgb,var(--go) 20%,transparent);color:color-mix(in srgb,var(--go) 70%,var(--heading))}
+/* Regler: gefüllte Spur, großer Griff; die Stufen stehen als anklickbare Namen darunter, je in ihrer Spalte */
+.setrange{-webkit-appearance:none;appearance:none;display:block;width:auto;height:28px;margin:18px calc(50% / var(--n) - 12px) 4px;padding:0;background:none;border:0;cursor:pointer;--p:0%}
+.setrange:focus{outline:0}
+.setrange::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--go) var(--p),color-mix(in srgb,var(--ink) 14%,transparent) var(--p))}
+.setrange::-moz-range-track{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--go) var(--p),color-mix(in srgb,var(--ink) 14%,transparent) var(--p))}
+.setrange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;margin-top:-8px;border-radius:50%;background:var(--card);box-shadow:0 0 0 3px var(--go),0 4px 14px rgba(0,0,0,.28);transition:transform .12s}
+.setrange::-moz-range-thumb{width:24px;height:24px;border:0;border-radius:50%;background:var(--card);box-shadow:0 0 0 3px var(--go),0 4px 14px rgba(0,0,0,.28)}
+.setrange:active::-webkit-slider-thumb{transform:scale(1.12)}
+.setrange:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(--go),0 0 0 7px color-mix(in srgb,var(--go) 30%,transparent)}
+.setticks{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:4px}
+.setticks button{all:unset;box-sizing:border-box;cursor:pointer;text-align:center;font:500 12px/1.25 var(--sans);color:var(--ink-soft);padding:6px 4px;border-radius:8px;overflow-wrap:anywhere}
+.setticks button:hover{background:color-mix(in srgb,var(--go) 12%,transparent);color:var(--heading)}
+.setticks button[aria-current=true]{color:var(--heading);font-weight:700}
+.setticks button:focus-visible{outline:2px solid var(--go);outline-offset:1px}
+.setwhy{margin:12px 0 0;padding:10px 14px;border-radius:10px;background:var(--card);font-size:13.5px;line-height:1.45;color:var(--ink);min-height:2.9em;box-sizing:content-box}
+.setchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.setchip{all:unset;box-sizing:border-box;cursor:pointer;padding:9px 16px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--outline-soft);font:600 13px/1.2 var(--sans);color:var(--ink)}
+.setchip:hover{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--go) 60%,transparent)}
+.setchip[aria-pressed=true]{background:color-mix(in srgb,var(--go) 22%,var(--card));box-shadow:inset 0 0 0 1.5px var(--go);color:var(--heading)}
+.setchip:focus-visible{outline:2px solid var(--go);outline-offset:2px}
+.setmodel{margin:12px 0 0!important;font-family:var(--mono)}
+@media(max-width:620px){.sethead{flex-direction:column;gap:8px}.setvalbox{align-items:flex-start;text-align:left}.setticks button{font-size:11px}}
+.lightbox.setdlg{width:min(94vw,880px)}
+.setticks button{overflow-wrap:normal;hyphens:auto}
+.setsec{padding:16px 22px 18px}
+.setbody{gap:12px}
+/* ================= Kopfzeile: beide Phasen-Blöcke vollständig, mit Akteuren an den Balken ================= */
+.top .bar>#navHint{height:46px;gap:10px}
+.top #navHint .ph,.top #navHint .ph.empty{height:46px;padding:0 14px;gap:14px;background:var(--surface-low);box-shadow:none}
+.top #navHint .pcap{gap:4px;min-width:86px}
+.top #navHint .pcap b,.top #navHint .ph.empty .pcap b{font-size:13px;color:var(--heading)}
+.top #navHint .pnum,.top #navHint .ph.empty .pnum{display:block!important;font-size:11px}
+.top #navHint .pbar,.top #navHint .ph.empty .pbar{display:flex!important;flex-direction:column;gap:3px;width:168px}
+.top #navHint .prow{display:flex;align-items:center;gap:8px;height:10px}
+.top #navHint .pname{display:inline-block!important;flex:0 0 38px;font:700 8.5px/10px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft)}
+.top #navHint .prow.user .pname{color:var(--src-user)}
+.top #navHint .prow.ai .pname{color:var(--src-ai)}
+.top #navHint .ptrack{flex:1 1 auto}
+@media(max-width:1280px){.top #navHint .pbar,.top #navHint .ph.empty .pbar{width:110px}}
+@media(max-width:1100px){.top #navHint .pbar,.top #navHint .ph.empty .pbar{display:none!important}}
+/* Arbeitsanzeige: nur Symbol, Laufzeit und Abbrechen – der Text steht im Hinweis beim Überfahren; dazu das Lauflicht an der Unterkante */
+.top .working{justify-self:start;gap:10px;margin-left:4px}
+.top .working b,.top .working #workingHint{display:none!important}
+.top .working .pulse{display:block!important;flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 22%,var(--go));-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));animation:wturn .9s linear infinite}
+.top .working .timer{font-size:12.5px;color:var(--heading);font-weight:600}
+.top .working .workstop{font-size:12px!important}
+@media(prefers-reduced-motion:reduce){.top .working .pulse{animation:none}}
+/* ================= Fußzeile: Phasen-Blöcke links, Arbeitsanzeige rechts ================= */
+.top .bar{grid-template-columns:minmax(0,1fr) auto!important}
+.top .bar>.tools{grid-column:2!important}
+.foot{position:sticky;bottom:0;z-index:12;flex:none;overflow:hidden;background:var(--top-bg);backdrop-filter:blur(8px);box-shadow:0 -1px 8px rgba(0,0,0,.06)}
+.footin{width:100%;max-width:var(--page);margin:0 auto;box-sizing:border-box;padding:8px 32px;display:flex;align-items:center;gap:24px;min-height:62px}
+.toast{bottom:84px}
+/* Phasen-Blöcke */
+.foot #navHint{display:flex!important;flex-direction:row;align-items:center;gap:10px;height:46px;margin:0;padding:0;overflow:visible;visibility:visible;width:auto;flex:none;cursor:pointer}
+.foot #navHint .arr{display:inline;color:var(--outline);font-size:13px}
+.foot #navHint .ph{display:flex;flex-direction:row;align-items:center;gap:16px;height:46px;box-sizing:border-box;padding:0 16px;border-radius:10px;background:var(--surface-low);min-width:0}
+.foot #navHint .pcap{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:96px}
+.foot #navHint .pcap b{font:700 13px/1 var(--sans);color:var(--heading);white-space:nowrap}
+.foot #navHint .pnum{display:block!important;font:500 11px/1 var(--mono);color:var(--ink-soft);white-space:nowrap}
+.foot #navHint .pbar{display:flex;flex-direction:column;gap:3px;width:220px}
+.foot #navHint .prow{display:flex;align-items:center;gap:8px;height:10px}
+.foot #navHint .pname{display:inline-block!important;flex:0 0 40px;font:700 8.5px/10px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft)}
+.foot #navHint .prow.user .pname{color:var(--src-user)}
+.foot #navHint .prow.ai .pname{color:var(--src-ai)}
+.foot #navHint .ptrack{flex:1 1 auto}
+.foot #navHint .ph.tick{animation:tickreset .8s ease-out}
+@media(max-width:1280px){.foot #navHint .pbar{width:120px}}
+@media(max-width:900px){.foot #navHint .pbar{display:none}.footin{padding:8px 16px;gap:12px}}
+/* Arbeitsanzeige: Ring, Text, Laufzeit, Abbrechen – rechts in der Fußzeile */
+.foot .working:not(.hidden){display:flex}
+.foot .working{position:static;flex:1 1 auto;min-width:0;justify-content:flex-end;align-items:center;gap:12px;flex-wrap:nowrap;margin:0;padding:0;background:none!important;border:0;box-shadow:none!important;animation:none!important;color:var(--ink);font-size:13px;overflow:visible;height:auto;width:auto}
+.foot .working::before,.foot .working::after,.foot .working .stripe,.foot .working .pulse i,.foot .working #workingHint{display:none!important}
+.foot .working .pulse{display:block;flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 22%,var(--go));-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));animation:wturn .9s linear infinite}
+.foot .working b{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:600 13px/1.5 var(--sans);color:var(--heading);background:none;animation:none}
+.foot .working .timer{flex:none;padding:0;background:none;box-shadow:none;color:var(--ink-soft);font:600 12.5px/1 var(--mono);font-variant-numeric:tabular-nums}
+.foot .working .workstop{flex:none;height:30px;padding:0 12px;border-radius:8px;background:var(--surface-low)!important;box-shadow:none!important;color:var(--ink);font-size:12px!important}
+.foot .working .workstop:hover{background:color-mix(in srgb,#e5484d 16%,var(--surface-low))!important;color:var(--heading)}
+/* Lauflicht an der Oberkante der Fußzeile, solange gearbeitet wird */
+.foot:has(#working:not(.hidden))::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:color-mix(in srgb,var(--go) 14%,transparent);pointer-events:none}
+.foot:has(#working:not(.hidden))::after{content:"";position:absolute;left:0;top:0;width:22%;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,var(--go));box-shadow:0 0 10px 0 color-mix(in srgb,var(--go) 60%,transparent);animation:wsweep 1.8s cubic-bezier(.45,.05,.55,.95) infinite;pointer-events:none}
+@media(max-width:760px){.foot .working b{display:none}}
+@media(prefers-reduced-motion:reduce){.foot .working .pulse,.foot:has(#working:not(.hidden))::after{animation:none}.foot:has(#working:not(.hidden))::after{width:100%}}
+@media print{.foot{display:none!important}}
+/* Arbeitsanzeige im Ruhezustand: immer da, nur ganz blass */
+.foot .working.hidden{display:flex!important;opacity:.42}
+.foot .working.hidden .pulse{animation:none;background:var(--ink-soft);opacity:.7}
+.foot .working.hidden b{font-weight:500;color:var(--ink-soft)}
+.foot .working.hidden b:empty::after{content:"Bereit"}
+.foot .working.hidden .timer,.foot .working.hidden .workstop{display:none!important}
+.foot .working{transition:opacity .25s}
+.footin{min-height:0;padding:8px 32px}
+.foot #navHint{margin:0!important;padding:0!important}
+.foot .working .timer{order:3}
+.foot .working .workstop{order:4}
+.foot{padding:0!important}
+/* Fußzeile liegt halbtransparent über dem Inhalt; Dokument und Spalten laufen bis zum unteren Rand durch */
+.foot{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--surface) 72%,transparent);backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);box-shadow:0 -1px 0 color-mix(in srgb,var(--ink) 8%,transparent)}
+.foot #navHint .ph{background:color-mix(in srgb,var(--surface-low) 80%,transparent)}
+main{padding-bottom:0!important}
+body.fitview .split>div:first-child,body.fitview .split>.side{padding-bottom:86px}
+.doccol>.btn.elaborate{bottom:74px}

@@ -13,12 +13,12 @@
     <div class="brand">
       <span class="wordmark">Spec<span>It.</span></span>
     </div>
-    <div class="effortbar" id="navHint" role="button" tabindex="0"></div>
-    <div id="working" class="working hidden" role="status" aria-live="polite"><span class="pulse" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b id="workingText"></b><span id="workingHint"></span><button id="workingStop" class="btn small workstop" type="button" title="Die laufende Verarbeitung beenden; es entstehen keine weiteren Kosten.">✕ Abbrechen</button><span id="workingTime" class="timer" aria-hidden="true"></span><span class="stripe" aria-hidden="true"></span></div>
+    
+    
     <div class="tools">
       <span id="mode" class="pill hidden" role="status">Demo-Modus</span>
       <label class="switch" id="aiSwitch"><input type="checkbox" id="ai"><span class="track"></span><span>Claude</span></label>
-      <button id="setToggle" class="btn ghost" type="button" aria-label="Einstellungen anzeigen oder ausblenden" aria-pressed="false" title="Einstellungen ein- oder ausblenden: Strategie, Modell, Voreinstellung, Modus, Kreativität, Einsatz">⚙ Einstellungen</button>
+      <button id="setToggle" class="btn ghost" type="button" aria-label="Einstellungen anzeigen oder ausblenden" aria-pressed="false" title="Einstellungen öffnen: Voreinstellung, Modus, Kreativität, Einsatz, Strategie und Modell">⚙ Einstellungen</button>
       <button id="theme" class="btn ghost" type="button" aria-pressed="false">Dunkel</button>
       <button id="reset" class="btn ghost" type="button" aria-label="Zurücksetzen – Idee, Antworten, Spezifikation und Aufträge leeren" title="Idee, Modus, Dauer, alle Antworten, Spezifikation und Aufträge leeren">↺ Zurücksetzen</button>
     </div>
@@ -317,6 +317,10 @@
   <div class="lightbar"><span id="lightCap" class="meta"></span><div class="actions"><button id="lightPrev" class="btn small" type="button">← Vorige</button><button id="lightNext" class="btn small" type="button">Nächste →</button><button id="lightClose" class="btn small" type="button">Schließen</button></div></div>
   <div class="lightscroll"><img id="lightImg" alt=""></div>
 </dialog>
+<dialog id="setDlg" class="lightbox setdlg" aria-label="Einstellungen">
+  <div class="lightbar"><span class="baltitle"><b>Einstellungen</b><span class="meta">gelten für Entwurf und Spezifikation</span></span><div class="actions"><button id="setClose" class="btn small" type="button">Schließen</button></div></div>
+  <div class="setbody" id="setBody"></div>
+</dialog>
 <dialog id="wishDlg" class="lightbox wishdlg" aria-label="Änderungswunsch">
   <div class="lightbar"><span class="baltitle"><b id="wishTitle">Was soll anders werden?</b><span class="meta">in eigenen Worten – die KI arbeitet es ein</span></span><div class="actions"><button id="wishClose" class="btn small" type="button">Schließen</button></div></div>
   <div id="wishPane" class="promptpane wishpane">
@@ -343,6 +347,10 @@
   <p id="askText" class="muted"></p>
   <div class="actions"><button id="askYes" class="btn primary" type="button"></button><button id="askNo" class="btn" type="button">Abbrechen – selbst entscheiden</button></div>
 </dialog>
+<footer class="foot" id="footBar" aria-label="Beiträge und laufende Verarbeitung"><div class="footin">
+  <div class="effortbar" id="navHint" role="button" tabindex="0"></div>
+  <div id="working" class="working hidden" role="status" aria-live="polite"><span class="pulse" aria-hidden="true"><i></i><i></i><i></i><i></i></span><b id="workingText"></b><span id="workingHint"></span><button id="workingStop" class="btn small workstop" type="button" title="Die laufende Verarbeitung beenden; es entstehen keine weiteren Kosten.">✕ Abbrechen</button><span id="workingTime" class="timer" aria-hidden="true"></span><span class="stripe" aria-hidden="true"></span></div>
+</div></footer>
 <div id="toast" class="toast hidden" role="status"></div>
 
 <nav class="stepnav" aria-label="Laufende Verarbeitung"><div class="inner"><div class="navleft"></div><div class="navmid"></div></div></nav>
