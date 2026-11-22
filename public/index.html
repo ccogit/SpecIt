@@ -4306,14 +4306,14 @@ function ensurePool(){
   const fd=featDuration(),free=target-fd.total,pool=poolNow(),held=pool.reduce((n,f)=>n+f.minutes,0);
   // genug vorrätig, nichts mehr zu holen, oder die Zeit ist ohnehin ausgeschöpft
   if(free<Math.max(0.3,target*0.1)||held>=free||poolDry===base||poolTries>=5||pool.length>=20)return;
-  poolBusy=true;poolTries++;featuresUI();
+  poolBusy=true;poolTries++;featuresUI();const epoch=workSession.generation;
   bgCall({mode:'extend',project:s.project,idea:s.idea,spec:s.spec,features:[...s.features,...pool.map(f=>({...f,on:true}))].slice(0,30),target,free:Math.max(0.2,free-held),maxAgents:fd.agents,ai:true},3)
     .then(r=>{
-      if(base!==poolBase())return;
+      if(!workSession.isCurrent(epoch)||base!==poolBase())return;
       const known=new Set([...s.features,...s.featPool].map(f=>f.name.toLowerCase())),fresh=(Array.isArray(r.features)?r.features:[]).filter(f=>f&&typeof f.name==='string'&&Number.isFinite(f.minutes)&&!known.has(f.name.toLowerCase()));
       if(!fresh.length)poolDry=base;else{s.featPool=[...s.featPool,...fresh].slice(0,24);save()}
-    },()=>{poolDry=base})
-    .finally(()=>{poolBusy=false;featuresUI();setTimeout(ensurePool,300)});
+    },()=>{if(workSession.isCurrent(epoch))poolDry=base})
+    .finally(()=>{if(workSession.isCurrent(epoch)){poolBusy=false;featuresUI();setTimeout(()=>{if(workSession.isCurrent(epoch))ensurePool()},300)}});
 }
 async function extendFeatures(){
   if(active)return;
@@ -5556,11 +5556,31 @@ $('runOpen').onclick=async()=>{try{await post('/api/run',{action:'open',dir:(run
 $('runStop').onclick=async()=>{try{run=await post('/api/run',{action:'stop'})}catch(e){$('runStatus').textContent=e.message}pollRun()};
 
 function replaceState(next){revision++;next.autonomy=s.autonomy;next.specStrategy=s.specStrategy;next.layoutDevice=s.layoutDevice;next.layoutTheme=s.layoutTheme;s=next;pick=[];custom='';customOpen=false;change=null;catOpen=-1;renderAll()}
-// Zurücksetzen mit einem Klick: alle Angaben und Antworten leeren, ohne Rückfrage – dafür kurz widerrufbar.
+// Arbeitsstand zurücksetzen, ohne dass später eintreffende Antworten der vorherigen Sitzung Daten eintragen.
+function cancelSessionWork(){
+  workSession.invalidate();
+  currentLockId++; // ausstehende lock(false)-Aufrufe alter Vorgänge ignorieren
+  aborter?.abort();layoutAbort?.abort();conceptJob?.ac.abort();sketchAuto?.ac.abort();preloadTask?.ac.abort();
+  clearTimeout(preloadIdle);clearTimeout(conceptIdle);clearTimeout(sketchIdle);clearTimeout(runTimer);
+  runPollId++;run=null;runBusy=false;
+  conceptJob=null;sketchAuto=null;preloadTask=null;preloadStatus={key:'',state:''};
+  active=false;aborter=null;layoutBusy=false;layoutAbort=null;streamText=null;paintAt=0;
+  tidyBusy='';featTried='';poolBusy=false;poolDry='';poolTries=0;poolFor='';
+  brandBusy.names=brandBusy.logos=false;brandTried.names=brandTried.logos='';
+  for(const kind of Object.keys(diagBusy)){diagBusy[kind]=false;diagTried[kind]='';diagNote[kind]=''}
+  working('');
+}
+// Zurücksetzen bleibt widerrufbar; aktive Coding-Agenten müssen zuvor ausdrücklich gestoppt werden.
 let undoTimer=0;
 $('reset').onclick=()=>{
+  if(runBusy||runStarting){
+    $('implPanel').open=true;
+    $('runStatus').textContent=runStarting?'Bitte warten, bis der Agentenlauf gestartet ist, und ihn dann stoppen.':'Bitte die laufende Umsetzung zuerst mit „Abbrechen“ stoppen.';
+    if(runBusy)$('runStop').focus();
+    return;
+  }
   const before=s,fresh=blank(),toast=$('toast');
-  replaceState(fresh);s.autonomy=blank().autonomy;s.phase=0;catGroups.clear();renderAll();window.scrollTo({top:0});$('idea').focus();
+  cancelSessionWork();replaceState(fresh);lock(false);s.autonomy=blank().autonomy;s.phase=0;catGroups.clear();renderAll();window.scrollTo({top:0});$('idea').focus();
   const undo=button('↶ Rückgängig','btn small',()=>{clearTimeout(undoTimer);toast.classList.add('hidden');revision++;s=before;change=null;catOpen=-1;if(s.active>=0)activate(s.active,false);renderAll()});
   toast.replaceChildren(node('span','Alles zurückgesetzt.'),undo);toast.classList.remove('hidden');
   clearTimeout(undoTimer);undoTimer=setTimeout(()=>toast.classList.add('hidden'),20000);
