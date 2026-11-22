@@ -10,11 +10,11 @@ export function validateExternalCore(content) {
     ||sections.chapters.some((c,i)=>c.title!==wanted[i]||!c.body.trim()))
    throw Error('Der Inferenzdienst hat keine vollständige Kapitelstruktur geliefert.');
  const frBody=sections.chapters.find(c=>c.title==='Funktionale Anforderungen')?.body||'';
- if(!/\\bFR-\\d{3}\\b/.test(frBody) || !/Abnahme|Akzeptanz/i.test(frBody))
+ if(!/\bFR-\d{3}\b/.test(frBody) || !/Abnahme|Akzeptanz/i.test(frBody))
    throw Error('Der Inferenzdienst hat keine prüfbaren funktionalen Anforderungen geliefert.');
- const ids=[...frBody.matchAll(/\\bFR-\\d{3}\\b/g)].map(m=>m[0]);
+ const ids=[...frBody.matchAll(/\bFR-\d{3}\b/g)].map(m=>m[0]);
  if(new Set(ids).size<1)throw Error('Die Anforderungskennungen fehlen.');
- return sections.chapters.map(c=>'## '+c.title+'\\n\\n'+c.body).join('\\n\\n')+'\\n';
+ return sections.chapters.map(c=>'## '+c.title+'\n\n'+c.body).join('\n\n')+'\n';
 }
 
 const modelId = v => typeof v === 'string' && /^[a-zA-Z0-9._:/-]{1,120}$/.test(v) ? v : '';
