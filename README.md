@@ -162,3 +162,22 @@ fertigen Spezifikation und die angefallenen Modellaufrufe. Für vergleichbare Te
 dieselbe Projektidee, Feature-Auswahl und Zielzeit mehrfach verwenden;
 P50/P95 und fachliche Vollständigkeit getrennt auswerten. Ohne API-Zugang lassen
 sich keine belastbaren Modell-Benchmarks durchführen.
+
+### Experiment: Fachkapitel parallel erzeugen
+
+Mit `SPECIT_PARALLEL_SPEC=1` und **`ANTHROPIC_API_KEY`** werden die acht
+projektspezifischen Kapitel in drei parallel laufenden API-Aufrufen geschrieben:
+(1) Ziel, Nutzer, Kernabläufe; (2) FR-/NFR-Anforderungen; (3) UX, Daten, Risiken.
+Die Textstücke erscheinen weiterhin in der korrekten Kapitelreihenfolge. Vor der
+Übernahme überprüft SpecIt alle acht Kapitel auf Reihenfolge, eindeutige
+Überschriften und nichtleere Inhalte. Bei fehlerhafter Ausgabe schlägt die
+Generierung fehl, statt eine unvollständige Spezifikation als fertig auszugeben.
+
+**Experimentell:** Die Fachkapitel können trotz lokaler Strukturprüfung inhaltlich
+widersprüchlich sein. Daher noch nicht als Standard aktivieren. Die parallele
+Variante verbraucht wegen des mehrfach übermittelten Kontexts zusätzliche
+Eingabetokens und kann bei API-Limits ausgebremst werden. Vor einer Produktiv-
+Freigabe die Akzeptanz- und Konsistenzprüfung anhand identischer Fallbeispiele
+vergleichen. Bei `SPECIT_PARALLEL_SPEC=0` bleibt der bisherige serielle
+Generierungspfad unverändert. Kapitelweise Updates nutzen in beiden Fällen den
+bestehenden Delta-Pfad.
