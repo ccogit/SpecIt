@@ -606,7 +606,7 @@ http.createServer(async(req,res)=>{
    }
    // Optional experiment: independent chapters are generated concurrently. API only; legacy flow stays default.
    if(strategy.parallel){
-    const shared=withSkills('final',finalPrompt(data)+conceptNote(data));
+    const shared=finalPrompt(data)+conceptNote(data);
     const payload={...brief(data),fixedSections:frame.tail};
     const cancel=new AbortController();
     const signal=currentAbort?.signal?AbortSignal.any([currentAbort.signal,cancel.signal]):cancel.signal;
@@ -614,7 +614,7 @@ http.createServer(async(req,res)=>{
     let parts;
     try{
      parts=await Promise.all(chapterGroups.map(async(titles,i)=>{
-      const result=await askStream(shared+partPrompt(frame,titles),payload,i===1?9500:5500,t=>ordered.chunk(i,t),'',signal);
+      const result=await askStream(withSkills('final',shared+partPrompt(frame,titles)),payload,i===1?9500:5500,t=>ordered.chunk(i,t),'',signal);
       ordered.done(i);
       return result;
      }));
