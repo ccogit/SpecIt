@@ -5350,11 +5350,12 @@ $('layoutRun').onclick=async()=>{
   if(!s.spec.trim()||s.dirty){status.textContent='Bitte zuerst eine aktuelle Spezifikation erzeugen.';return}
   const spec=s.spec,project=s.project,wish=s.layoutWish.trim().slice(0,500),combos=layoutCombos();
   if(count*combos.length>8){status.textContent='Das wären '+count*combos.length+' Entwürfe. Bitte die Anzahl Varianten oder die Kombinationen verringern (höchstens 8 je Lauf).';return}
-  layoutBusy=true;layoutAbort=new AbortController();const stop=layoutAbort.signal;$('layoutRun').disabled=true;working('Stitch erzeugt Layouts');
+  layoutBusy=true;layoutAbort=new AbortController();const stop=layoutAbort.signal,epoch=workSession.generation;$('layoutRun').disabled=true;working('Stitch erzeugt Layouts');
   try{
     if(!s.layout){
       status.textContent='Stitch-Projekt wird angelegt …';
       const p=await post('/api/layout',{action:'project',project},stop);
+      if(!workSession.isCurrent(epoch))return;
       s.layout={projectId:p.projectId,url:p.url,screens:[],known:[],spec:'',chosen:[]};save();layoutUI();
     }
     const l=s.layout,projectId=l.projectId;l.known=l.known||[];
@@ -5362,22 +5363,24 @@ $('layoutRun').onclick=async()=>{
     for(const [k,[deviceType,theme]] of combos.entries()){
       const name=comboName(deviceType,theme),step=combos.length>1?'Kombination '+(k+1)+' von '+combos.length+' ('+name+'): ':'';
       status.textContent=step+'Erster Entwurf wird erzeugt. Das dauert meist einige Minuten …';working('Stitch erzeugt Layouts · '+name);
-      let screens=(await post('/api/layout',{action:'generate',projectId,project,spec,wish,tone:s.tone,theme,deviceType,known:l.known},stop)).screens.slice(0,count);
-      if(s.layout!==l)return;
+      const generated=await post('/api/layout',{action:'generate',projectId,project,spec,wish,tone:s.tone,theme,deviceType,known:l.known},stop);
+      if(!workSession.isCurrent(epoch)||s.layout!==l)return;
+      let screens=Array.isArray(generated.screens)?generated.screens.slice(0,count):[];
+      if(!screens.length)throw Error('Stitch hat keinen verwendbaren Layout-Entwurf geliefert.');
       l.known=[...l.known,...screens.map(x=>x.id)].slice(-50);
       if(screens.length<count){
         status.textContent=step+plural(count-screens.length,'weitere Variante wird','weitere Varianten werden')+' erzeugt …';
         const more=(await post('/api/layout',{action:'variants',projectId,screenId:screens[0].id,count:count-screens.length,deviceType,known:l.known},stop)).screens.slice(0,count-screens.length);
-        if(s.layout!==l)return;
+        if(!workSession.isCurrent(epoch)||s.layout!==l)return;
         screens=[...screens,...more];l.known=[...l.known,...more.map(x=>x.id)].slice(-50);
       }
       // Entwürfe erscheinen, sobald ihre Kombination fertig ist; die bisherigen werden mit der ersten ersetzt
       all=[...all,...screens.map(x=>({...x,device:deviceType,theme}))];
       l.screens=all;l.chosen=[];l.spec=digest(spec);save();layoutUI();
     }
-    layoutBusy=false;layoutUI();planUI();navUI();
-  }catch(e){layoutBusy=false;layoutUI();status.textContent=e.message}
-  finally{layoutBusy=false;layoutAbort=null;$('layoutRun').disabled=false;if(!active)working('')}
+    if(workSession.isCurrent(epoch)){layoutBusy=false;layoutUI();planUI();navUI()}
+  }catch(e){if(workSession.isCurrent(epoch)){layoutBusy=false;layoutUI();status.textContent=e.message}}
+  finally{if(workSession.isCurrent(epoch)){layoutBusy=false;layoutAbort=null;$('layoutRun').disabled=false;if(!active)working('')}}
 };
 
 /* ---------- Export ---------- */
@@ -5441,11 +5444,12 @@ $('finish').onclick=async()=>{
   const p=s.plan&&!stale()?s.plan:null;if(!p||active||runBusy)return;
   if(s.nextStep!=='run'){s.finished=finishKey();save();renderAll();$('doneBox').scrollIntoView({block:'nearest'});return}
   if(!s.runDir.trim()){$('finishHint').textContent='Bitte einen Zielordner angeben.';$('runDir').focus();return}
-  $('finish').disabled=true;$('finishHint').textContent='Umsetzung wird gestartet …';runOpen.clear();
+  $('finish').disabled=true;runStarting=true;$('finishHint').textContent='Umsetzung wird gestartet …';runOpen.clear();
   try{
     run=await post('/api/run',{action:'start',featRaw:s.features.filter(f=>f.on).every(f=>f.raw>0)?s.features.filter(f=>f.on).reduce((n,f)=>n+f.raw,0):0,dir:s.runDir,agents:agentsNow(),shell:s.runShell,model:s.runModel,plan:p,spec:s.planSpec,repo:s.repo,reuse:selectedReuse(),...(s.logos[s.logoChosen]?{logo:cleanSvg(s.logos[s.logoChosen].svg)}:{}),...(layoutActive()?{layoutUrl:s.layout.url,...(chosenLayout()?{layoutChoice:chosenLayout().label,layoutHtmls:chosenLayout().htmls}:{})}:{})});
     s.finished=finishKey();save();runBusy=true;renderAll();pollRun();$('doneBox').scrollIntoView({block:'nearest'});
   }catch(e){renderAll();$('finishHint').textContent=e.message}
+   finally{runStarting=false}
 };
 
 /* ---------- Änderungswunsch zur Spezifikation in eigenen Worten ---------- */
@@ -5517,11 +5521,15 @@ function runUI(){
     list.append(node('div',r.active?'Warteschlange · '+rest.length:'Nicht begonnen · '+rest.length,'queuehead'),q);
   }
 }
-let run=null,runTimer=0,agentsOk=false;const runOpen=new Set();
+let run=null,runTimer=0,runPollId=0,agentsOk=false,runStarting=false;const runOpen=new Set();
 // Stand des Laufs vom Server holen; solange er läuft, alle zwei Sekunden erneut
 async function pollRun(){
+  const pollId=++runPollId,epoch=workSession.generation;
   clearTimeout(runTimer);
-  try{run=await fetch('/api/run').then(r=>r.json())}catch{return}
+  let next;
+  try{next=await fetch('/api/run',{signal:workSession.signal}).then(r=>r.json())}catch{return}
+  if(!workSession.isCurrent(epoch)||pollId!==runPollId)return;
+  run=next;
   // Was im Zielordner entstanden ist, bleibt auch nach einem Neustart des Servers in der Bilanz stehen
   {const out=run.output&&run.output.files?{...run.output,seconds:run.items.reduce((a,x)=>a+(Number(x.seconds)||0),0)}:null;if(out&&JSON.stringify(out)!==JSON.stringify(s.runOutput)){s.runOutput=out;save();effortBar()}}
   const live=!!run.active,was=runBusy;
