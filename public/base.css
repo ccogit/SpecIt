@@ -2679,3 +2679,16 @@ body.runview .specwrap .doccol>#runView{padding-left:max(32px,calc((100% - 1560p
 .rvplain .rvgrid>.rvcard.sel .rvtop b{color:var(--heading);font-weight:600}
 @media(max-width:1250px){.rvcols{grid-template-columns:minmax(0,1fr)}.rvside{position:static;max-height:none;overflow:visible}}
 @media(max-width:900px){.rvplain .rvgrid>.rvcard{grid-template-columns:22px minmax(0,1fr) 104px}.rvplain .rvgrid>.rvcard>.rvsteps{grid-column:2/-1;grid-row:2;justify-content:flex-start;max-width:none}}
+/* „Bearbeiten“ so hoch wie der Umschalter daneben */
+.dochead #modeEdit{height:35px;padding:0 14px}
+/* Vorbereitung: etwas steht noch an (z. B. das Repository wird beim Start angelegt) */
+.rvpstep.todo .rvpmark{background:color-mix(in srgb,var(--src-ai) 26%,transparent);color:var(--heading)}
+/* Viele Arbeitsschritte in einer Zeile: kleine Marken ohne Kennung, dahinter die Anzahl */
+.rvplain .rvgrid>.rvcard>.rvsteps.mini{gap:3px;align-items:center;flex-wrap:nowrap}
+.rvsteps.mini .rvstep{width:9px;height:14px;padding:0;border-radius:3px}
+.rvsteps.mini .meta{margin-left:4px;font-size:11px!important}
+/* Leiste über dem Dokument: alle Elemente gleich hoch wie der Umschalter */
+.dochead .btn{height:35px!important;box-sizing:border-box;padding-top:0!important;padding-bottom:0!important}
+.dochead .wishopen{width:35px!important}
+.dochead .draftstep{display:inline-flex!important;align-items:center;height:35px;box-sizing:border-box;padding-top:0;padding-bottom:0}
+.dochead .draftstep.hidden{display:none!important}
