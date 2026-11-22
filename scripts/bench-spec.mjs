@@ -1,5 +1,6 @@
 /** Live benchmark. Requires a running SpecIt server and configured Claude access. */
 import { setTimeout as pause } from 'node:timers/promises';
+import { randomBytes } from 'node:crypto';
 import { specFrame, coreChapters } from '../blocks.mjs';
 import { chapterGroups } from '../spec-parallel.mjs';
 
@@ -19,7 +20,16 @@ for (const example of cases) {
   for (let i = 0; i < repeats; i++) {
     if (all.length) await pause(1700); // server has a 1500 ms cooldown
     const payload = { mode: 'final', strategy, ai: true, project: example.name, idea: example.idea,
-      features: example.features, questions: [], extras: [], autonomy: 100, duration: '1 Stunde', minutes: 60, creativity: 2, tone: 2 };
+      features: example.features, questions: [], extras: [], autonomy: 100, duration: '1 Stunde', minutes: 60, creativity: 2, tone: 2,
+      ...(strategy==='preload'?{preloadToken:randomBytes(16).toString('hex')}:{}) };
+    let preparationMs=null,preloadUsage=null;
+    if(strategy==='preload'){
+      const prepStart=performance.now();
+      const prep=await fetch(new URL('/api/spec/preload',base),{method:'POST',headers:{'content-type':'application/json',origin:new URL(base).origin},body:JSON.stringify(payload)});
+      if(!prep.ok)throw Error(example.name+': Preloading HTTP '+prep.status+' '+(await prep.text()).slice(0,120));
+      const body=await prep.json();if(!body.ready)throw Error(example.name+': Preloading unvollständig.');
+      preparationMs=Math.round(performance.now()-prepStart);preloadUsage=body.usage||null;
+    }
     const start = performance.now();
     const res = await fetch(new URL('/api/spec/stream', base), { method: 'POST', headers: { 'content-type': 'application/json', origin: new URL(base).origin }, body: JSON.stringify(payload) });
     if (!res.ok) throw Error(example.name + ': HTTP ' + res.status + ': ' + (await res.text()).slice(0, 200));
@@ -37,11 +47,11 @@ for (const example of cases) {
     }
     const elapsed = Math.round(performance.now() - start);
     if (!done?.markdown) throw Error(example.name + ': Ergebnis unvollständig.');
-    const actual = coreChapters(done.markdown, specFrame(payload)).map(c => c.title);
+    const actual = coreChapters(done.markdown, specFrame({...payload,scope:payload.features.map(f=>({name:f.name,note:f.note,basis:!!f.core}))})).map(c => c.title);
     const expected = chapterGroups.flat();
     const complete = JSON.stringify(actual) === JSON.stringify(expected) && /\bFR-\d{3}\b/.test(done.markdown);
-    const calls = done.usage?.timings || [];
-    const result = { strategy, case: example.name, run: i + 1, elapsedMs: elapsed, complete,
+    const calls = [...(preloadUsage?.timings||[]),...(done.usage?.timings||[])];
+    const result = { strategy, case: example.name, run: i + 1, elapsedMs: elapsed, preparationMs, complete,
       models: calls.map(x => x.model).join(', '), calls: calls.length, firstTokenMs: Math.min(...calls.map(x => x.firstTokenMs).filter(Number.isFinite)),
       inputTokens: calls.reduce((sum, x) => sum + (x.input_tokens || 0), 0), outputTokens: calls.reduce((sum, x) => sum + (x.output_tokens || 0), 0) };
     if (!Number.isFinite(result.firstTokenMs)) result.firstTokenMs = null;
