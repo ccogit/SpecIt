@@ -1,3 +1,4 @@
+import { routeDiagram } from './diagram-routing.mjs';
 // Schaubilder der spezifizierten Anwendung. Die KI liefert nur Struktur (Knoten und Verbindungen als JSON); gezeichnet wird
 // hier: Anordnung für das SVG der Oberfläche und Mermaid-Text für das Markdown. So gibt es keine Syntaxfehler im Schaubild
 // und keine Abhängigkeit von einer Zeichenbibliothek. Läuft im Browser und in Node – keine Dateizugriffe.
@@ -226,7 +227,7 @@ export function cleanArch(raw) {
  * Ordnet die Bausteine in Ebenen an (Nutzer, Oberfläche, Logik, Daten und Schnittstellen). Verbindungen setzen verteilt an der
  * Kante eines Bausteins an (nicht alle in der Mitte) und laufen über Ebenen hinweg durch die Lücken. Liefert { width, height, rows, nodes, edges }.
  */
-export function layoutStructure(st, { w = 168, h = 46, gapX = 26, gapY = 62, pad = 16, top = 16 } = {}) {
+export function layoutStructure(st, { w = 168, h = 46, gapX = 26, gapY = 82, pad = 34, top = 16 } = {}) {
   const order = Object.keys(layerNames), groups = order.map(l => st.nodes.filter(n => layerOf(n.kind) === l)).map((list, i) => ({ layer: order[i], list })).filter(g => g.list.length);
   const col = new Map(), rowOf = new Map();
   groups.forEach((g, r) => {
@@ -241,27 +242,10 @@ export function layoutStructure(st, { w = 168, h = 46, gapX = 26, gapY = 62, pad
   const half = Math.max(...groups.map(g => g.list.length * w + (g.list.length - 1) * gapX)) / 2;
   const rowY = r => pad + top + r * (h + gapY), at = new Map();
   const nodes = st.nodes.map(n => { const p = { ...n, w, h, x: pad + half + col.get(n.id) - w / 2, y: rowY(rowOf.get(n.id)), lines: wrapLabel(n.label, 22) }; at.set(n.id, p); return p; });
-  const mids = groups.map((g, r) => ({ top: rowY(r), bottom: rowY(r) + h, gaps: gapsOf(g.list.map(n => at.get(n.id).x), w, gapX), used: new Map() }));
-  // Ansatzpunkte: je Baustein und Kante (oben/unten) die Verbindungen nach der Lage ihres anderen Endes über 70 % der Breite verteilen
-  const port = new Map(), side = (id, other) => rowOf.get(other) < rowOf.get(id) ? 'top' : 'bottom';
-  for (const n of st.nodes) for (const where of ['top', 'bottom']) {
-    const list = st.edges.filter(e => (e.from === n.id || e.to === n.id) && rowOf.get(e.from) !== rowOf.get(e.to) && side(n.id, e.from === n.id ? e.to : e.from) === where)
-      .sort((a, b) => at.get(a.from === n.id ? a.to : a.from).x - at.get(b.from === n.id ? b.to : b.from).x);
-    list.forEach((e, k) => port.set(n.id + '|' + e.from + '>' + e.to, at.get(n.id).x + w * 0.15 + w * 0.7 * (k + 0.5) / list.length));
-  }
-  const taken = [];
-  const edges = st.edges.map(e => {
-    const a = at.get(e.from), b = at.get(e.to), ra = rowOf.get(e.from), rb = rowOf.get(e.to), key = '|' + e.from + '>' + e.to;
-    if (ra === rb) {
-      // gleiche Ebene: von Seite zu Seite; liegen andere dazwischen, im Bogen darüber hinweg
-      const dir = a.x < b.x ? 1 : -1, x1 = a.x + (dir > 0 ? w : 0), x2 = b.x + (dir > 0 ? 0 : w), y = a.y + h / 2, far = Math.abs(x2 - x1) > gapX + 1, lift = far ? h / 2 + 22 : 0;
-      return { ...e, d: 'M' + rnd(x1) + ',' + rnd(y) + ' C' + rnd(x1 + dir * 24) + ',' + rnd(y - lift * 1.6) + ' ' + rnd(x2 - dir * 24) + ',' + rnd(y - lift * 1.6) + ' ' + rnd(x2 - dir * 4) + ',' + rnd(y), lx: rnd((x1 + x2) / 2), ly: rnd(far ? y - lift * 1.2 : a.y - 9) };
-    }
-    const down = ra < rb, between = down ? mids.slice(ra + 1, rb) : mids.slice(rb + 1, ra).reverse();
-    const way = routeThrough(port.get(e.from + key), down ? a.y + h : a.y, port.get(e.to + key), down ? b.y : b.y + h, between);
-    return { ...e, d: way.d, ...labelSpot(way.curve, e.label, nodes, taken) };
-  });
-  return { width: Math.ceil(pad * 2 + half * 2), height: Math.ceil(pad * 2 + top + groups.length * h + (groups.length - 1) * gapY), rows: groups.map((g, r) => ({ name: layerNames[g.layer], y: rowY(r) - 8 })), nodes, edges };
+  const width = Math.ceil(pad * 2 + half * 2);
+  const height = Math.ceil(pad * 2 + top + groups.length * h + (groups.length - 1) * gapY);
+  const edges = routeDiagram(nodes, st.edges, { width, height, mode: 'structure' });
+  return { width, height, rows: groups.map((g, r) => ({ name: layerNames[g.layer], y: rowY(r) - 8 })), nodes, edges };
 }
 
 // Liegt der Punkt in einem der Kästen (mit Rand)?
@@ -276,7 +260,7 @@ const crosses = (a, b, c, d) => { const o = (p, q, r) => Math.sign((q[0] - p[0])
  * einem fremden Kasten durchläuft und sich möglichst wenige kreuzen; was dann noch im Weg liegt, wird im Bogen umgangen.
  * Liefert { width, height, entities, relations:[{…, d, lx, ly, ca, cb, pa, pb}] }.
  */
-export function layoutData(d, { w = 176, pad = 18, gapX = 112, gapY = 84, head = 28, line = 17 } = {}) {
+export function layoutData(d, { w = 176, pad = 34, gapX = 120, gapY = 96, head = 28, line = 17 } = {}) {
   const ids = d.entities.map(e => e.id), near = new Map(ids.map(id => [id, []]));
   for (const r of d.relations) { near.get(r.from).push(r.to); near.get(r.to).push(r.from); }
   const order = [], seen = new Set();
@@ -311,30 +295,7 @@ export function layoutData(d, { w = 176, pad = 18, gapX = 112, gapY = 84, head =
     }
   }
   const { at, height } = place(slots), boxes = [...at.values()];
-  // Ansatz am Rand eines Kastens in Richtung eines Punktes
-  const edge = (b, to) => { const [cx, cy] = mid(b), dx = to[0] - cx, dy = to[1] - cy, k = Math.min(dx ? b.w / 2 / Math.abs(dx) : Infinity, dy ? b.h / 2 / Math.abs(dy) : Infinity); return [cx + dx * k, cy + dy * k]; };
-  const taken = [];
-  const relations = d.relations.map(r => {
-    const a = at.get(r.from), b = at.get(r.to), others = boxes.filter(x => x !== a && x !== b), ca = mid(a), cb = mid(b);
-    // Gerade, wenn frei – sonst der kleinste Bogen, der an den fremden Kästen vorbeiführt und im Bild bleibt
-    let ctrl = null;
-    if (hits(edge(a, cb), null, edge(b, ca), others)) {
-      const len = Math.hypot(cb[0] - ca[0], cb[1] - ca[1]) || 1, nx = -(cb[1] - ca[1]) / len, ny = (cb[0] - ca[0]) / len, m = [(ca[0] + cb[0]) / 2, (ca[1] + cb[1]) / 2];
-      for (const off of [60, -60, 100, -100, 150, -150, 210, -210]) {
-        const c = [m[0] + nx * off, m[1] + ny * off], p = edge(a, c), q = edge(b, c); let inside = true;
-        for (let i = 1; i < 12; i++) { const [x, y] = along(p, c, q, i / 12); if (x < 4 || x > width - 4 || y < 4 || y > height - 4) inside = false; }
-        if (inside && !hits(p, c, q, others)) { ctrl = c; break; }
-      }
-    }
-    const p = edge(a, ctrl || cb), q = edge(b, ctrl || ca), unit = (from, to) => { const l = Math.hypot(to[0] - from[0], to[1] - from[1]) || 1; return [(to[0] - from[0]) / l, (to[1] - from[1]) / l]; };
-    // Beschriftung: an der Mitte, bei Gedränge ein Stück weiter – nicht auf einem Kasten und nicht auf einer anderen Beschriftung
-    let spot = along(p, ctrl, q, 0.5);
-    for (const s of [0.5, 0.38, 0.62, 0.28, 0.72]) { const c = along(p, ctrl, q, s); if (!inBox(c[0], c[1], boxes, 8) && !taken.some(o => Math.abs(o[0] - c[0]) < 58 && Math.abs(o[1] - c[1]) < 15)) { spot = c; break; } }
-    taken.push(spot);
-    const [na, nb] = r.kind === '1:1' ? ['1', '1'] : r.kind === 'n:m' ? ['n', 'm'] : ['1', 'n'], ua = unit(p, ctrl || q), ub = unit(q, ctrl || p);
-    const mark = (pt, u) => ({ x: rnd(pt[0] + u[0] * 13 - u[1] * 9), y: rnd(pt[1] + u[1] * 13 + u[0] * 9 + 4) });
-    return { ...r, d: 'M' + rnd(p[0]) + ',' + rnd(p[1]) + (ctrl ? ' Q' + rnd(ctrl[0]) + ',' + rnd(ctrl[1]) + ' ' : ' L') + rnd(q[0]) + ',' + rnd(q[1]), curved: !!ctrl, lx: rnd(spot[0]), ly: rnd(spot[1]), ca: na, cb: nb, pa: mark(p, ua), pb: mark(q, ub) };
-  });
+  const relations = routeDiagram(boxes, d.relations, { width, height, mode: 'data' });
   return { width: Math.ceil(width), height: Math.ceil(height), entities: slots.filter(Boolean).map(id => at.get(id)), relations };
 }
 
