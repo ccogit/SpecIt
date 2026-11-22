@@ -3,7 +3,7 @@
 // Die Agenten arbeiten ausschließlich im angegebenen Zielordner und dürfen Dateien lesen und schreiben;
 // Befehle (Tests, Build) nur, wenn das ausdrücklich erlaubt wurde.
 import { spawn } from 'node:child_process';
-import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, realpath, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validatePlan, renderTask, renderSingle } from './planner.mjs';
@@ -35,13 +35,20 @@ export function targetDir(value) {
   return dir;
 }
 
+/** Prüft auch symbolische Verknüpfungen und verlinkte Elternordner vor dem Zugriff. */
+export async function canonicalTargetDir(value) {
+  const dir = targetDir(value);
+  return targetDir(await realpath(dir));
+}
+
 /** Öffnet den Zielordner im Dateimanager des Rechners. */
 export async function openDir(value) {
   const dir = targetDir(value);
   try { if (!(await stat(dir)).isDirectory()) throw 0; } catch { throw Error('Der Zielordner existiert nicht: ' + dir); }
+  const safeDir = await canonicalTargetDir(dir);
   const cmd = process.platform === 'win32' ? 'explorer' : process.platform === 'darwin' ? 'open' : 'xdg-open';
-  spawn(cmd, [dir], { detached: true, stdio: 'ignore' }).on('error', () => {}).unref();
-  return { dir };
+  spawn(cmd, [safeDir], { detached: true, stdio: 'ignore' }).on('error', () => {}).unref();
+  return { dir: safeDir };
 }
 
 export function validateRun(b) {
@@ -85,6 +92,7 @@ function agent(prompt, dir, shell, children) {
 export async function startRun(r) {
   if (job && !job.ended) throw Error('Es läuft bereits eine Umsetzung.');
   await mkdir(r.dir, { recursive: true });
+  r.dir = await canonicalTargetDir(r.dir);
   runModel = r.model || '';
   if (!(await stat(r.dir)).isDirectory()) throw Error('Der Zielordner ist kein Ordner.');
   // Den gewählten Stitch-Entwurf als Datei in den Zielordner legen, damit die Agenten ihn lesen können
