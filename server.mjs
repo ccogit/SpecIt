@@ -583,7 +583,7 @@ http.createServer(async(req,res)=>{
    if(strategy.id!=='preload')row({t:frame.head});
    // Compact JSON contract: Claude emits only domain data; SpecIt renders all Markdown.
    if(strategy.id==='structured'){
-    const json=await ask(withSkills('final',structuredPrompt+'\n'+finalPrompt(data)+conceptNote(data))+startJson,
+    const json=await ask(withSkills('final',structuredPrompt+framePrompt(data.autonomy,data.duration,data.creativity,data.tone)+conceptNote(data))+startJson,
       {...brief(data),fixedSections:frame.tail},12000);
     const core=renderStructuredCore(parseJson(json),data.scope);
     row({t:core});row({t:frame.tail});
