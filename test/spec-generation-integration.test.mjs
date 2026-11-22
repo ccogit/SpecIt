@@ -45,8 +45,12 @@ async function post(base,path,value){
 }
 async function generate(base,value){
  const res=await post(base,'/api/spec/stream',value);
- let rows=[];for await(const chunk of res.body){
-  for(const line of new TextDecoder().decode(chunk).split('\n'))if(line.trim())rows.push(JSON.parse(line));
+ let rows=[],buffer='',decoder=new TextDecoder();for await(const chunk of res.body){
+  buffer+=decoder.decode(chunk,{stream:true});
+  let index;while((index=buffer.indexOf('\n'))>=0){
+   const line=buffer.slice(0,index);buffer=buffer.slice(index+1);
+   if(line.trim())rows.push(JSON.parse(line));
+  }
  }
  const error=rows.find(row=>row.error);if(error)throw Error(error.error);
  return rows.find(row=>row.done);
