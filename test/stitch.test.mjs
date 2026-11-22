@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { screensFrom, layoutPrompt, variantCount, device, isFileName, isProjectId, projectUrl } from '../stitch.mjs';
+import { screensFrom, layoutPrompt, variantCount, device, isFileName, isProjectId, projectUrl, generateLayout, generateVariants, createProject } from '../stitch.mjs';
 
 const screen = (id, extra = {}) => ({ id, title: 'Layout ' + id, screenshot: { name: 'projects/123456789/files/' + id }, htmlCode: { name: 'projects/123456789/files/' + id + 'ff' }, width: 1280, height: 900, ...extra });
 
@@ -44,4 +44,13 @@ test('layout prompt states the requested colour mode and change request', () => 
   assert.ok(layoutPrompt('P', 'S', '', 2, 'LIGHT').includes('light theme'));
   assert.ok(!layoutPrompt('P', 'S').includes('Colour mode'));
   assert.ok(layoutPrompt('P', 'S', 'Navigation links', 4, 'DARK').includes('Navigation links'));
+});
+
+test('already aborted Stitch generation never contacts the remote service', async () => {
+  const ac = new AbortController();
+  ac.abort();
+  const input = { projectId: '123456789', project: 'Test', spec: 'Testfall', deviceType: 'DESKTOP' };
+  await assert.rejects(generateLayout(input, ac.signal), /abgebrochen/);
+  await assert.rejects(generateVariants({ ...input, screenId: 'aaaaaaaa', count: 1 }, ac.signal), /abgebrochen/);
+  await assert.rejects(createProject('Test', ac.signal), /abgebrochen/);
 });
