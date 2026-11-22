@@ -5,6 +5,8 @@ import { chapterGroups } from '../spec-parallel.mjs';
 
 const base = process.env.SPECIT_BENCH_URL || 'http://127.0.0.1:3000';
 const repeats = Number(process.argv[2] || 2);
+const strategy = process.argv[3] || process.env.SPECIT_BENCH_STRATEGY || 'incremental';
+if (!['classic','incremental','parallel','turbo'].includes(strategy)) throw Error('Unbekannte Strategie: '+strategy);
 if (!Number.isInteger(repeats) || repeats < 1 || repeats > 10) throw Error('Aufrufe pro Fall: 1 bis 10.');
 const cases = [
   { name: 'Notizen', idea: 'Eine lokale Notizen-App mit Listen, Bearbeiten und Suche.', features: [{ name: 'Notizen', note: 'anlegen, bearbeiten, löschen', core: true }, { name: 'Suche', note: 'nach Text', core: false }] },
@@ -16,7 +18,7 @@ const all = [];
 for (const example of cases) {
   for (let i = 0; i < repeats; i++) {
     if (all.length) await pause(1700); // server has a 1500 ms cooldown
-    const payload = { mode: 'final', ai: true, project: example.name, idea: example.idea,
+    const payload = { mode: 'final', strategy, ai: true, project: example.name, idea: example.idea,
       features: example.features, questions: [], extras: [], autonomy: 100, duration: '1 Stunde', minutes: 60, creativity: 2, tone: 2 };
     const start = performance.now();
     const res = await fetch(new URL('/api/spec/stream', base), { method: 'POST', headers: { 'content-type': 'application/json', origin: new URL(base).origin }, body: JSON.stringify(payload) });
@@ -39,7 +41,7 @@ for (const example of cases) {
     const expected = chapterGroups.flat();
     const complete = JSON.stringify(actual) === JSON.stringify(expected) && /\bFR-\d{3}\b/.test(done.markdown);
     const calls = done.usage?.timings || [];
-    const result = { case: example.name, run: i + 1, elapsedMs: elapsed, complete,
+    const result = { strategy, case: example.name, run: i + 1, elapsedMs: elapsed, complete,
       models: calls.map(x => x.model).join(', '), calls: calls.length, firstTokenMs: Math.min(...calls.map(x => x.firstTokenMs).filter(Number.isFinite)),
       inputTokens: calls.reduce((sum, x) => sum + (x.input_tokens || 0), 0), outputTokens: calls.reduce((sum, x) => sum + (x.output_tokens || 0), 0) };
     if (!Number.isFinite(result.firstTokenMs)) result.firstTokenMs = null;
