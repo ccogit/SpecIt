@@ -65,7 +65,7 @@ const toneNames=[
   ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung. Beschreibender Name, kein Humor.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({ideaTidy:null,time:{req:0,spec:0,impl:0},aiLedger:{spec:{w:0,ms:0},impl:{w:0,ms:0}},concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,proto:null,featPool:[],runOutput:null,own:{},sketch:null,logoCount:1,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:1,names:[],nameAuto:'',featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durCustom:null,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({ideaTidy:null,time:{req:0,spec:0,impl:0},aiLedger:{spec:{w:0,ms:0},impl:{w:0,ms:0}},concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,proto:null,featPool:[],runOutput:null,own:{},sketch:null,logoCount:1,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:1,names:[],nameAuto:'',featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durCustom:null,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',repoOn:true,agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -125,7 +125,7 @@ let available=false,provider=null,statusLoaded=false,gpuAvailable=false,specMode
 // Auswahl der gerade aktiven Frage, bis sie bestätigt wird
 let pick=[],custom='',customOpen=false;
 // Darstellung der Spezifikation: gerenderte Ansicht oder Markdown-Editor
-let specMode='view';
+let specMode='view',runViewOn=false;
 // Entstehende Spezifikation, solange Claude schreibt (null = es wird gerade nichts gestreamt)
 let streamText=null,paintAt=0;
 // Fragen-Katalog in aufgeklappte Frage samt Auswahl; zuletzt geänderte Antwort mit dem Stand davor
@@ -187,7 +187,9 @@ const digest=t=>{let h=5381;for(let i=0;i<t.length;i++)h=(h*33^t.charCodeAt(i))>
 const plural=(n,one,many)=>n+' '+(n===1?one:many);
 // Open-Source-Kandidaten, die der Nutzer ausdrücklich angehakt hat (nur solange die Recherche zur Spezifikation passt)
 function selectedReuse(){return s.reuse&&s.reuseSpec===digest(s.spec)?s.reuse.projects.filter(p=>p.included).map(p=>({url:p.url,name:p.name,license:p.license,functions:p.functions})):[]}
-function ctx(){return {repo:s.repo,agent:s.agent,reuse:selectedReuse()}}
+// Repository-Angabe, wie sie in Plan und Lauf eingeht: leer, wenn das Repository ausgeschaltet ist
+const repoText=()=>s.repoOn===false?'':s.repo;
+function ctx(){return {repo:repoText(),agent:s.agent,reuse:selectedReuse()}}
 // Rahmen für jede Anfrage: Autonomiegrad und Ziel-Entwicklungsdauer als Text („3 Tage“)
 const durUnits={min:[1,'Minute','Minuten'],h:[60,'Stunde','Stunden'],d:[480,'Tag','Tage'],w:[2400,'Woche','Wochen']};
 const durOwn=()=>{const c=s.durCustom;return s.durLevel&&c&&c.level===s.durLevel&&durUnits[c.unit]&&Number.isInteger(c.n)&&c.n>0?c:null};
@@ -457,11 +459,11 @@ function mainUI(){
   // Beim Konzept: der Schritt vom Konzept zur Spezifikation
   // Sind die Entscheidungen schon abgeleitet, heißt der Schritt „Spezifikation erstellen“ (auch ohne Claude)
   const specReady=!atIdea()&&typeof streamText!=='string'&&specMode!=='edit'&&!!s.spec.trim(),upd=specReady&&!!s.dirty;
-  // Spezifikation steht: erst eine geänderte Feature-Auswahl übernehmen, sonst weiter zur Umsetzung (in der Umsetzungsansicht selbst entfällt der Knopf)
+  // Spezifikation steht: erst eine geänderte Feature-Auswahl übernehmen, sonst weiter zur Umsetzung (in der Umsetzungsansicht und nach dem Abschluss entfällt der Knopf – zwischen den Ansichten wechselt allein der Umschalter oben)
   const pend=specReady&&!upd&&s.features.some(f=>f.on!==f.inSpec),planOk=!!s.plan&&!stale(),doneImpl=planOk&&s.finished===finishKey();
-  const goImpl=specReady&&!upd&&!pend&&!document.body.classList.contains('runview');
+  const goImpl=specReady&&!upd&&!pend&&!doneImpl&&!document.body.classList.contains('runview');
   const make=ideaSame(),show=(atIdea()&&specMode!=='edit')||upd||pend||goImpl,old=draftStale();e.classList.toggle('hidden',!show);e.classList.toggle('specact',upd||pend||goImpl);e.dataset.act=upd?'update':pend?'apply':goImpl?'impl':'';
-  e.textContent=pend?'✓ Feature-Auswahl in die Spezifikation übernehmen':goImpl?(doneImpl?'▸ Umsetzung ansehen – Plan, Dateien und Stand':planOk?(s.nextStep==='run'?'▸ Plan freigeben und Umsetzung starten':'✓ Plan bestätigen und Dateien bereitstellen'):'▸ Weiter zur Umsetzung'):upd?'↻ Spezifikation aktualisieren – Eingaben oder Antworten wurden geändert':busy?'Entwurf entsteht …':old?'↻ Entwurf aktualisieren – Idee oder Einstellungen wurden geändert':need?'✦ Entwurf erstellen':make?'✦ Spezifikation erstellen →':next;
+  e.textContent=pend?'✓ Feature-Auswahl in die Spezifikation übernehmen':goImpl?(planOk?(s.nextStep==='run'?'▸ Plan freigeben und Umsetzung starten':'✓ Plan bestätigen und Dateien bereitstellen'):'▸ Weiter zur Umsetzung'):upd?'↻ Spezifikation aktualisieren – Eingaben oder Antworten wurden geändert':busy?'Entwurf entsteht …':old?'↻ Entwurf aktualisieren – Idee oder Einstellungen wurden geändert':need?'✦ Entwurf erstellen':make?'✦ Spezifikation erstellen →':next;
   e.title=upd?'Die Spezifikation passt nicht mehr zu deinen Eingaben. Die geänderten Kapitel werden neu geschrieben.':busy?'':old?'Der Entwurf passt nicht mehr zu Idee oder Einstellungen. Erst wenn er aktualisiert ist, fließen die Änderungen in die Spezifikation ein.':need?(empty?'Zuerst links die Idee eingeben und die Zeit wählen.':'Claude schreibt aus deiner Idee und den Einstellungen den Grobentwurf der Spezifikation.'):make?'Schreibt aus Entwurf, Entscheidungen und Features die vollständige Spezifikation.':nextTitle;
   e.disabled=upd||pend||goImpl?active:active||busy||(need&&empty)||(!ai&&!s.idea.trim());e.classList.toggle('stale',upd||pend||(old&&!busy&&!goImpl));
   e.classList.toggle('nudge',show&&!e.disabled&&(!make||$('generate').classList.contains('nudge')));
@@ -1371,7 +1373,7 @@ function specUI(){
     $('decDerive').classList.toggle('hidden',!(inDec&&$('ai').checked));$('decDerive').disabled=active;
   }
   const edit=specMode==='edit';
-  $('modeView').setAttribute('aria-pressed',String(!edit));$('modeEdit').setAttribute('aria-pressed',String(edit));
+  $('modeView').setAttribute('aria-pressed',String(edit||!runViewOn));$('modeEdit').setAttribute('aria-pressed',String(edit));
   $('spec').classList.toggle('hidden',!edit);$('specView').classList.toggle('hidden',edit);
   if(change&&(change.ids.some(i=>!s.questions[i])||!s.spec.trim()))change=null;
   if(edit){$('specRail').classList.add('hidden');changeUI(null);return}
@@ -1393,8 +1395,9 @@ function specUI(){
   changeUI(view);
 }
 function setSpecMode(mode,focus){specMode=mode;specUI();if(mode==='view')ensureFeatures();if(focus)(mode==='edit'?$('spec'):$('modeEdit')).focus()}
-$('modeView').onclick=()=>setSpecMode('view');
-$('modeEdit').onclick=()=>setSpecMode('edit',true);
+// Ein Umschalter für die beiden Ansichten Spezifikation und Umsetzung; „Bearbeiten“ ist ein eigener Schalter der Spezifikation
+$('modeView').onclick=()=>{runViewOn=false;setSpecMode('view');runFeatureUI();mainUI()};
+$('modeEdit').onclick=()=>{runViewOn=false;if(specMode==='edit')setSpecMode('view');else setSpecMode('edit',true);runFeatureUI();mainUI()};
 function statuses(){
   // Stand, auf dem die Spezifikation beruht: wird mitgeführt, solange sie aktuell ist, und dient danach als Vergleich
   if(s.spec&&!s.dirty)s.specBasis=basisNow();
@@ -1502,27 +1505,6 @@ function planUI(){
     main.append(top,ol,details);box.append(main,row);foldTask(box,top,'Gesamt');
     out.append(box);return;
   }
-  const byId=new Map(p.tasks.map(t=>[t.id,t]));
-  // Stufen und Aufträge sind im Standard zugeklappt; ein Knopf klappt alles auf einmal auf oder zu
-  const keys=[...p.waves.map((w,i)=>'S'+i),...p.tasks.map(t=>t.id)],allOpen=keys.every(k=>planOpen.has(k));
-  const all=button(allOpen?'▾ Alles zuklappen':'▸ Alles aufklappen','link',()=>{for(const k of keys)allOpen?planOpen.delete(k):planOpen.add(k);planUI()});all.classList.add('foldall');out.append(all);
-  p.waves.forEach((w,i)=>{
-    const wave=node('details',undefined,'wave'),head=node('summary',undefined,'wavehead'),grid=node('div',undefined,'wavegrid');
-    wave.open=planOpen.has('S'+i);wave.ontoggle=()=>{wave.open?planOpen.add('S'+i):planOpen.delete('S'+i)};
-    head.append(node('h2','Stufe '+(i+1)),node('span',plural(w.length,'Aufgabe','Aufgaben'),'chip'),node('span',w.map(id=>id+' '+byId.get(id).title).join(' · '),'peek'));head.title='Gleiche Stufe bedeutet nur potenziell parallel. Dateikonflikte und Schnittstellen vor Start prüfen.';wave.append(head,grid);
-    for(const id of w){
-      const t=byId.get(id),blocked=p.blocked.includes(t.id),box=node('article',undefined,'card task'),top=node('div',undefined,'taskhead'),main=node('div',undefined,'taskmain'),details=node('details'),row=node('div',undefined,'taskacts'),goal=node('p',t.goal,'muted');
-      top.append(node('span',t.id,'id'),node('h3',t.title));if(blocked)top.append(node('span','BLOCKIERT','chip warn'));
-      if(t.dependsOn.length){top.append(node('span','nach','meta'));for(const d of t.dependsOn)top.append(node('span',d,'chip'))}
-      goal.title=t.goal;
-      const text=()=>renderTask(t,p,s.planSpec,exportCtx());
-      details.append(node('summary','Vollständiger Agent-Auftrag'));
-      details.ontoggle=()=>{if(details.open&&!details.querySelector('pre'))details.append(node('pre',text()))};
-      const copy=button('⧉ Prompt kopieren','btn small',()=>copyText(text(),$('planStatus'))),dl=button('↓ Markdown','btn small',()=>download(t.id+'.md',text()));
-      copy.disabled=dl.disabled=old;row.append(copy,dl);main.append(top,goal,details);box.append(main,row);foldTask(box,top,t.id);grid.append(box);
-    }
-    out.append(wave);
-  });
 }
 
 /* ---------- Server ---------- */
@@ -2038,25 +2020,32 @@ function runModelUI(){
   const sel=$('runModel');sel.replaceChildren(new Option('Standard von Claude Code',''),...agentModels.map(modelOption));
   if(s.runModel&&agentModels.length&&!agentModels.some(m=>m.id===s.runModel))s.runModel='';
   sel.value=s.runModel;const m=agentModels.find(x=>x.id===s.runModel);
-  $('runModelCost').textContent=m?modelHint(m):'Es gilt das in Claude Code eingestellte Modell. Kosten und Laufzeit gelten je Agent.';$('runModel').title=$('runModelCost').textContent;
+  $('runModelCost').textContent=m?modelHint(m):'Es gilt das in Claude Code eingestellte Modell. Kosten und Laufzeit gelten je Agent.';$('runModel').title=$('runModelCost').textContent;$('runModelCost').classList.toggle('shown',!!m);
 }
 $('runModel').onchange=e=>{s.runModel=e.target.value;save();renderAll()};
 // Neues Repository auf GitHub anlegen und gleich als Repository eintragen
 const repoSlug=()=>(s.project.trim()||s.idea).toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40).replace(/-+$/,'')||'neues-projekt';
-$('repoNew').onclick=()=>{
-  const f=$('repoForm'),open=f.classList.toggle('hidden')===false;$('repoNew').setAttribute('aria-expanded',String(open));$('repoStatus').textContent='';
-  if(open){if(!$('repoName').value)$('repoName').value=repoSlug();$('repoName').focus()}
-};
 $('repoName').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('repoCreate').click()}};
+let githubOk=false;
+async function createRepoNow(){
+  const name=$('repoName').value.trim()||repoSlug(),vis=$('repoVis').value;
+  const r=await post('/api/repo',{name,visibility:vis,description:s.project.trim()});
+  $('repo').value=r.url;$('repo').dispatchEvent(new Event('input'));return {url:r.url,vis};
+}
 $('repoCreate').onclick=async()=>{
-  const name=$('repoName').value.trim(),st=$('repoStatus'),vis=$('repoVis').value;if(!name)return;
-  $('repoCreate').disabled=true;st.className='status';st.textContent='Repository wird angelegt …';
-  try{
-    const r=await post('/api/repo',{name,visibility:vis,description:s.project.trim()});
-    $('repo').value=r.url;$('repo').dispatchEvent(new Event('input'));$('repoForm').classList.add('hidden');$('repoNew').setAttribute('aria-expanded','false');
-    st.textContent='Angelegt ('+(vis==='public'?'öffentlich':'privat')+', leer) und oben eingetragen.';
-  }catch(e){st.className='banner';st.textContent=e.message}finally{$('repoCreate').disabled=false}
+  const st=$('repoStatus');$('repoCreate').disabled=true;st.className='status';st.textContent='Repository wird angelegt …';
+  try{const r=await createRepoNow();st.textContent='Angelegt ('+(r.vis==='public'?'öffentlich':'privat')+', leer) und als Repository eingetragen.'}
+  catch(e){st.className='banner';st.textContent=e.message}finally{$('repoCreate').disabled=!githubOk}
 };
+// Wird beim Start von selbst ein Repository angelegt? Nur wenn eingeschaltet, noch keines eingetragen und die GitHub-CLI eingerichtet ist
+const repoAuto=()=>s.repoOn!==false&&!s.repo.trim()&&githubOk;
+function repoUI(){
+  const on=s.repoOn!==false,name=$('repoName').value.trim()||repoSlug();
+  $('repoOn').checked=on;$('repo').disabled=!on;$('repoName').placeholder=repoSlug();
+  $('repo').placeholder=!on?'ohne Repository – nur im Zielordner':repoAuto()?'neu: '+name+' ('+($('repoVis').value==='public'?'öffentlich':'privat')+') – wird beim Start auf GitHub angelegt':'URL eines vorhandenen Repositorys';
+}
+$('repoOn').onchange=e=>{revision++;s.repoOn=e.target.checked;statuses();save();renderAll()};
+$('repoName').oninput=$('repoVis').onchange=()=>repoUI();
 const reviewModelNow=()=>(reviewerNow()?.models||[]).find(m=>m.id===s.reviewModel)||null;
 const reviewModelName=()=>reviewModelNow()?.name||s.reviewModel;
 function reviewChoiceUI(){
@@ -3073,7 +3062,7 @@ function reviewUI(p,agents){
    l.replaceChildren(node('span','Agenten','eyebrow'),minus,node('b',String(n),'agentnum'),plus,txt,...(dauer?[dauer]:[]),...(cost?[cost]:[]))}
   {const busy=active||runBusy||runStarting||layoutBusy;$('goDownload').disabled=busy;$('goApprove').disabled=$('goDirect').disabled=busy||!agentsOk;if(!agentsOk)$('goApprove').title=$('goDirect').title='Claude Code wurde auf diesem Rechner nicht gefunden.';
    const sum=summary(s.questions),on=s.features.filter(f=>f.on).length;$('specGroupMeta').textContent=s.features.length||s.questions.length?[on?plural(on,'Feature','Features'):'',s.questions.length?(sum.open?sum.open+' offen':'alle Entscheidungen getroffen'):''].filter(Boolean).join(' · '):''}$('plan').classList.toggle('hasplan',!!p);$('planAgainRow').classList.toggle('hidden',!p);$('planAgain').disabled=active||runBusy;
-  {const m=$('implMoreMeta');if(m)m.textContent=['Zielagent '+$('agent').value,$('repo').value.trim()?'Repository angegeben':'kein Repository','Layouts '+($('layoutOn').checked?'an':'aus')].join(' · ')}
+  {const m=$('implMoreMeta');if(m)m.textContent=['Zielagent '+$('agent').value,'Layouts '+($('layoutOn').checked?'an':'aus')].join(' · ');repoUI()}
   const jump=id=>()=>$(id).scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   const row=(label,value,go,warn)=>{const r=node('div',undefined,'reviewrow'+(warn?' warn':'')),b=button('Ändern','link',go);b.setAttribute('aria-label',label+' ändern');r.append(node('span',label,'eyebrow'),node('span',value,'val'),b);box.append(r)};
   row('Abarbeitung',single?'Nacheinander · ein Agent · ein Gesamtauftrag':'Parallel · '+agents+' Agenten · mehrere Teilaufträge',jump('planConfig'));
@@ -3101,6 +3090,11 @@ async function goFlow(kind){
   if(!s.spec.trim()||s.dirty){note.textContent='Bitte zuerst die Spezifikation aktualisieren.';return}
   if(run&&!agentsOk){note.textContent='Claude Code wurde auf diesem Rechner nicht gefunden; die Umsetzung hier ist nicht möglich.';return}
   if(run&&!s.runDir.trim()){note.textContent='Bitte zuerst den Zielordner angeben.';$('runDir').focus();return}
+  // Repository eingeschaltet, aber noch keines eingetragen: jetzt anlegen – vor dem Plan, weil die Adresse in die Aufträge eingeht
+  if(run&&repoAuto()){
+    note.textContent='Repository wird auf GitHub angelegt …';
+    try{await createRepoNow();note.textContent=''}catch(e){note.textContent=e.message+' Unter „Weitere Optionen“ einen anderen Namen wählen, ein vorhandenes Repository eintragen oder das Repository ausschalten.';return}
+  }
   s.nextStep=run?'run':'download';save();renderAll();if(run)pollRun();
   if(!(s.plan&&!stale()))await $('plan').onclick();
   if(!(s.plan&&!stale())){note.textContent=$('planStatus').textContent||'Der Plan konnte nicht erstellt werden.';return}
@@ -3111,9 +3105,6 @@ async function goFlow(kind){
 }
 $('planAgain').onclick=()=>$('plan').onclick();
 $('goDownload').onclick=()=>goFlow('download');$('goApprove').onclick=()=>goFlow('approve');$('goDirect').onclick=()=>goFlow('direct');
-// Zielordner und Erlaubnis für Befehle stehen bei den beiden Aktionen für diesen Rechner
-$('runSlot').replaceWith($('runPanel'));
-{const m=document.querySelector('.runmodel'),sw=$('runShell').closest('label');if(m&&sw)sw.before(m)}
 // Klappt in der Gruppe etwas auf, öffnet sich auch die Gruppe
 for(const id of ['featPanel','decPanel'])$(id).addEventListener('toggle',()=>{if($(id).open)$('specGroup').open=true});
 $('finish').onclick=async()=>{
@@ -3122,7 +3113,7 @@ $('finish').onclick=async()=>{
   if(!s.runDir.trim()){$('finishHint').textContent='Bitte einen Zielordner angeben.';$('runDir').focus();return}
   $('finish').disabled=true;runStarting=true;$('finishHint').textContent='Umsetzung wird gestartet …';runOpen.clear();
   try{
-    run=await post('/api/run',{action:'start',featRaw:s.features.filter(f=>f.on).every(f=>f.raw>0)?s.features.filter(f=>f.on).reduce((n,f)=>n+f.raw,0):0,dir:s.runDir,agents:agentsNow(),shell:s.runShell,model:s.runModel,plan:p,spec:s.planSpec,repo:s.repo,reuse:selectedReuse(),...(s.logos[s.logoChosen]?{logo:cleanSvg(s.logos[s.logoChosen].svg)}:{}),...(layoutActive()?{layoutUrl:s.layout.url,...(chosenLayout()?{layoutChoice:chosenLayout().label,layoutHtmls:chosenLayout().htmls}:{})}:{})});
+    run=await post('/api/run',{action:'start',featRaw:s.features.filter(f=>f.on).every(f=>f.raw>0)?s.features.filter(f=>f.on).reduce((n,f)=>n+f.raw,0):0,dir:s.runDir,agents:agentsNow(),shell:s.runShell,model:s.runModel,plan:p,spec:s.planSpec,repo:repoText(),reuse:selectedReuse(),...(s.logos[s.logoChosen]?{logo:cleanSvg(s.logos[s.logoChosen].svg)}:{}),...(layoutActive()?{layoutUrl:s.layout.url,...(chosenLayout()?{layoutChoice:chosenLayout().label,layoutHtmls:chosenLayout().htmls}:{})}:{})});
     s.finished=finishKey();save();runBusy=true;renderAll();pollRun();$('doneBox').scrollIntoView({block:'nearest'});
   }catch(e){renderAll();$('finishHint').textContent=e.message}
    finally{runStarting=false}
@@ -3164,7 +3155,7 @@ const targetMinutes=()=>{const c=durOwn();return c?c.n*durUnits[c.unit][0]:durat
 const dur=sec=>sec<60?sec+' s':hm(sec/60);
 const stateNames={waiting:'wartet',running:'läuft',done:'fertig',failed:'Fehler',skipped:'übersprungen',stopped:'gestoppt'};
 /* ---------- Umsetzung nach Features: steht während des Laufs an der Stelle des Dokuments ---------- */
-let runViewOn=false,runSeen='',runPlanRef;const runSecOpen=new Set(),runCardOpen=new Set();const runListEl=$('runList'),runListHome=runListEl.parentElement,implOutEl=$('implOut'),implOutHome=implOutEl.parentElement;
+let runSeen='',runPlanRef;let runSel='';const promptOpen=new Set();const runListEl=$('runList'),runListHome=runListEl.parentElement,implOutEl=$('implOut'),implOutHome=implOutEl.parentElement;
 // Welche Arbeitsschritte zu welchem Feature gehören: aus dem Plan (features je Task); ältere Pläne ohne diese Angabe werden nach Stichworten zugeordnet
 function featTasks(){
   const p=s.plan,map=new Map();if(!p)return {map,exact:false};
@@ -3184,7 +3175,7 @@ function runFeatureUI(){
   // Ein neu erstellter Plan wird sofort gezeigt (nicht beim bloßen Laden der Seite)
   if(s.plan!==runPlanRef){if(runPlanRef!==undefined&&s.plan)runViewOn=true;runPlanRef=s.plan||null}
   if(!has)runViewOn=false;
-  tab.classList.toggle('hidden',!has);tab.setAttribute('aria-pressed',String(runViewOn));tab.textContent=runViewOn?'▤ Dokument zeigen':'▸ Umsetzung zeigen';
+  tab.classList.toggle('hidden',!has);{const on=runViewOn&&specMode!=='edit';tab.setAttribute('aria-pressed',String(on));$('modeView').setAttribute('aria-pressed',String(!on))}
   document.body.classList.toggle('runview',runViewOn&&specMode!=='edit');
   if(!runViewOn){if(runListEl.parentElement!==runListHome)runListHome.append(runListEl);if(implOutEl.parentElement!==implOutHome)implOutHome.append(implOutEl);box.replaceChildren();return}
   const p=s.plan,single=r.items.length===1&&r.items[0].id==='Gesamt',{map,exact}=featTasks(),st=new Map(),mins=id=>{const t=p.tasks.find(x=>x.id===id);return t&&t.minutes>0?t.minutes:1};
@@ -3211,22 +3202,56 @@ function runFeatureUI(){
   head.append(node('h2',!real?(stale()?'Der Plan ist veraltet':'Der Plan steht – noch nicht umgesetzt'):r.active?'Umsetzung läuft':r.stopped?'Umsetzung gestoppt':nBad?'Umsetzung beendet – nicht alles abgeschlossen':'Umsetzung abgeschlossen'),
     node('p',!real?plural(p.tasks.length,'Arbeitsschritt','Arbeitsschritte')+' in '+plural(p.waves.length,'Stufe','Stufen')+' · '+rows.length+' Features · '+(r.agents===1?'1 Agent':r.agents+' Agenten parallel'):nDone+' von '+rows.length+' Features fertig'+(nRun?' · '+nRun+' in Arbeit':'')+(nBad?' · '+nBad+' nicht abgeschlossen':'')+' · '+dur(r.seconds)+' · '+(r.agents===1?'1 Agent':r.agents+' Agenten parallel'),'meta'),bar);
   const grid=node('div',undefined,'rvgrid'),label={done:'fertig',running:'in Arbeit',partial:'teilweise fertig',waiting:'wartet',failed:'nicht abgeschlossen',none:'ohne Arbeitsschritt'};
-  for(const [title,list] of [['Basis',rows.filter(x=>x.f.core)],['Erweiterungen',rows.filter(x=>!x.f.core)]]){
-    if(!list.length)continue;grid.append(node('h3',title+' · '+list.filter(x=>x.state==='done').length+' von '+list.length+' fertig','rvgroup'));
-    for(const x of list){
-      const card=node('div',undefined,'rvcard '+x.state),top=node('div',undefined,'rvtop'),pb=node('div',undefined,'rvprog'),pf=node('i');
-      top.append(node('span',undefined,'rvdot'),node('b',x.f.name),node('span',label[x.state],'rvstate'));
-      pf.style.width=(x.ids.length?Math.round(100*x.done/x.ids.length):0)+'%';pb.append(pf);card.append(top,pb);
-      if(x.ids.length){card.classList.add('more');card.tabIndex=0;card.setAttribute('role','button');card.title='Arbeitsschritte dieses Features '+(runCardOpen.has(x.f.id)?'ausblenden':'zeigen');const flip=()=>{runCardOpen.has(x.f.id)?runCardOpen.delete(x.f.id):runCardOpen.add(x.f.id);runFeatureUI()};card.onclick=flip;card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}}}
-      if(x.ids.length&&runCardOpen.has(x.f.id)){const steps=node('div',undefined,'rvsteps');for(const id of x.ids){const t=p.tasks.find(y=>y.id===id),c=node('span',id,'rvstep '+(st.get(id)||'waiting'));c.title=(t?t.title:'')+' – '+(stateNames[st.get(id)||'waiting']||'');steps.append(c)}card.append(steps)}
-      grid.append(card);
+  // Eine Liste: je Feature eine Zeile, aufgeklappt mit ihren Arbeitsschritten; Schritte ohne Bezug zu einem Feature stehen als eigene Zeilen davor (Vorarbeiten) oder danach
+  const byId=new Map(p.tasks.map(t=>[t.id,t])),waveOf=new Map(),old=!!stale();p.waves.forEach((w,i)=>w.forEach(id=>waveOf.set(id,i)));
+  const where=t=>'Stufe '+((waveOf.get(t.id)||0)+1)+(t.dependsOn.length?' · nach '+t.dependsOn.join(', '):'');
+  const taskBody=t=>{
+    const b=node('div',undefined,'rvtaskbody'),it=single?null:r.items.find(x=>x.id===t.id);
+    b.append(node('p',t.goal));
+    if(p.blocked.includes(t.id))b.append(node('span','BLOCKIERT','chip warn'));
+    if(it&&it.note&&it.state!=='running'){const d=node('details');d.open=runOpen.has(it.id);d.ontoggle=()=>{d.open?runOpen.add(it.id):runOpen.delete(it.id)};d.append(node('summary','Bericht des Agenten'),node('pre',it.note));b.append(d)}
+    if(!single){
+      const text=()=>renderTask(t,p,s.planSpec,exportCtx()),d=node('details'),acts=node('div',undefined,'actions'),note=node('span',undefined,'meta');
+      const fill=()=>{if(d.open&&!d.querySelector('pre'))d.append(node('pre',text()))};
+      d.append(node('summary','Vollständiger Agent-Auftrag'));d.open=promptOpen.has(t.id);fill();d.ontoggle=()=>{d.open?promptOpen.add(t.id):promptOpen.delete(t.id);fill()};
+      const copy=button('⧉ Prompt kopieren','btn small',()=>copyText(text(),note)),dl=button('↓ Markdown','btn small',()=>download(t.id+'.md',text()));
+      copy.disabled=dl.disabled=old;acts.append(copy,dl,note);b.append(d,acts);
     }
+    return b;
+  };
+  const taskRow=t=>{
+    const state=st.get(t.id)||'waiting',row=node('div',undefined,'rvtask'),th=node('div',undefined,'rvtaskhead');
+    th.append(node('span',t.id,'rvstep '+state),node('b',t.title),node('span',where(t)+(real?' · '+(stateNames[state]||state):''),'meta'));
+    row.append(th,taskBody(t));return row;
+  };
+  // Zeile der Liste: Name, die Arbeitsschritte als Marken (gefärbt nach Stand) und der Stand; ein Klick zeigt die Einzelheiten in der rechten Spalte
+  let picked=null;
+  const line=(key,name,ids,state)=>{
+    const card=node('div',undefined,'rvcard '+state),top=node('div',undefined,'rvtop'),steps=node('div',undefined,'rvsteps'),sel=runSel===key&&ids.length>0;
+    top.append(node('span',undefined,'rvdot'),node('b',name),node('span',label[state],'rvstate'));
+    for(const id of ids){const t=byId.get(id),c=node('span',id,'rvstep '+(st.get(id)||'waiting'));c.title=(t?t.title:'')+' – '+(stateNames[st.get(id)||'waiting']||'');steps.append(c)}
+    card.append(top,steps);
+    if(ids.length){
+      card.classList.add('more');card.classList.toggle('sel',sel);card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-pressed',String(sel));card.title='Einzelheiten rechts '+(sel?'ausblenden':'zeigen');
+      const flip=()=>{runSel=sel?'':key;runFeatureUI()};
+      card.onclick=flip;card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}};
+    }
+    if(sel)picked={name,ids,state};
+    grid.append(card);
+  };
+  const group=(title,n,d)=>grid.append(node('h3',title+' · '+d+' von '+n+' fertig','rvgroup'));
+  const used=new Set([...map.values()].flat()),rest=p.tasks.filter(t=>!used.has(t.id)),first=Math.min(...[...used].map(id=>waveOf.get(id)||0));
+  const before=used.size?rest.filter(t=>(waveOf.get(t.id)||0)<first):rest,after=rest.filter(t=>!before.includes(t));
+  const solo=(title,list)=>{if(!list.length)return;group(title,list.length,list.filter(t=>st.get(t.id)==='done').length);for(const t of list)line('task:'+t.id,t.title,[t.id],fstate([t.id]))};
+  solo(used.size?'Vorarbeiten':'Arbeitsschritte',before);
+  for(const [title,list] of [['Basis',rows.filter(x=>x.f.core)],['Erweiterungen',rows.filter(x=>!x.f.core)]]){
+    if(!list.length)continue;group(title,list.length,list.filter(x=>x.state==='done').length);
+    for(const x of list)line(x.f.id,x.f.name,x.ids,x.state);
   }
-  const used=new Set([...map.values()].flat()),rest=p.tasks.filter(t=>!used.has(t.id));
-  let restBox=null;if(rest.length){restBox=node('div',undefined,'rvrestbox');const wrap=node('div',undefined,'rvrest');for(const t of rest){const c=node('span',undefined,'rvstep '+(st.get(t.id)||'waiting'));c.append(node('b',t.id),' '+t.title);wrap.append(c)}restBox.append(node('p','Ohne Bezug zu einem einzelnen Feature · '+rest.length,'meta'),wrap)}
+  solo('Übergreifend',after);
   // Vorbereitung und Organisation: was vor und neben der eigentlichen Programmierung geschieht
   const prep=node('div',undefined,'rvprep'),step=(label,text,state)=>{const x=node('div',undefined,'rvpstep '+(state||'done'));x.append(node('span',state==='off'?'–':state==='running'?'…':'✓','rvpmark'),node('b',label),node('span',text));prep.append(x)};
-  const repo=(s.repo||'').trim(),lay=typeof chosenLayout==='function'?chosenLayout():null,started=r.items.some(x=>x.state!=='waiting');
+  const repo=(repoText()||'').trim(),lay=typeof chosenLayout==='function'?chosenLayout():null,started=r.items.some(x=>x.state!=='waiting');
   step('Spezifikation',words(s.planSpec||s.spec).toLocaleString('de-DE')+' Wörter als SPEC.md übergeben');
   step('Plan',plural(p.tasks.length,'Arbeitsschritt','Arbeitsschritte')+' in '+plural(p.waves.length,'Stufe','Stufen')+(single?' · als ein Gesamtauftrag':' · als einzelne Aufträge'));
   step('Zielordner',r.dir||s.runDir||'–');
@@ -3234,26 +3259,35 @@ function runFeatureUI(){
   step('Logo',s.logos[s.logoChosen]?'liegt als design/logo.svg im Zielordner':'keines gewählt',s.logos[s.logoChosen]?'done':'off');
   step('Layout-Entwurf',lay?'gewählter Entwurf liegt im Ordner design':'keiner gewählt',lay?'done':'off');
   step('Agenten',(r.agents===1?'1 Agent, nacheinander':r.agents+' Agenten parallel')+(r.shell?' · dürfen Befehle ausführen (Tests, Build, Installation)':' · ohne Befehle'),!real?'off':started?'done':'running');
-  const sec=(title,el,info)=>{const w=node('details',undefined,'rvsec'),sm=node('summary');sm.append(node('span',title,'rvgroup'));if(info)sm.append(node('span',info,'meta'));w.open=runSecOpen.has(title);w.ontoggle=()=>{w.open?runSecOpen.add(title):runSecOpen.delete(title)};w.append(sm,el);return w};
-  const slot=node('div',undefined,'rvlist'),acts=node('div',undefined,'rvacts');
+  const acts=node('div',undefined,'rvacts');
   if(r.active)acts.append(button('■ Umsetzung stoppen','btn small',()=>$('runStop').click()));
   if(!r.active&&!stale()&&s.finished!==finishKey()&&!$('finish').disabled)acts.append(button(s.nextStep==='run'?'▸ Plan freigeben und Umsetzung starten':'✓ Plan bestätigen und Dateien bereitstellen','btn small rvmain',()=>$('finish').click()));
   if(real&&!r.active&&!$('runZip').classList.contains('hidden'))acts.append(button('↓ Implementierung (ZIP)','btn small rvmain',()=>$('runZip').click()),button('Ordner öffnen','btn small',()=>$('runOpen').click()));
-  acts.append(button('▤ Dokument zeigen','btn small',()=>{runViewOn=false;runFeatureUI();mainUI()}));head.prepend(acts);
+  if(acts.children.length)head.prepend(acts);
   const planSlot=node('div',undefined,'rvplan');
   const agentInfo=real?r.items.filter(x=>x.state==='done').length+' von '+r.items.length+' Aufträgen fertig':'';
   const plain=(title,el,info)=>{const w=node('section',undefined,'rvplain'),h=node('div',undefined,'rvplainhead');h.append(node('span',title,'rvgroup'));if(info)h.append(node('span',info,'meta'));w.append(h,el);return w};
   // Agenten als schlanke Karten: woran jeder gerade arbeitet
   let agentRow=null;
   if(real){agentRow=node('div',undefined,'rvagents');
-    if(single){const it=r.items[0],c=node('div',undefined,'rvagent '+it.state);c.append(node('b','Agent 1'),node('span',it.state==='running'?'arbeitet den Gesamtauftrag ab · '+dur(it.seconds):stateNames[it.state]||it.state));agentRow.append(c)}
+    if(single){const it=r.items[0],c=node('div',undefined,'rvagent '+it.state);c.append(node('b','Agent 1'),node('span',it.state==='running'?'arbeitet den Gesamtauftrag ab · '+dur(it.seconds):stateNames[it.state]||it.state));agentRow.append(c);
+      if(it.note&&it.state!=='running'){const d=node('details');d.open=runOpen.has(it.id);d.ontoggle=()=>{d.open?runOpen.add(it.id):runOpen.delete(it.id)};d.append(node('summary','Bericht des Agenten'),node('pre',it.note));agentRow.append(d)}}
     else for(let n=1;n<=r.agents;n++){const mine=r.items.filter(x=>x.agent===n),now=mine.find(x=>x.state==='running'),c=node('div',undefined,'rvagent '+(now?'running':'idle'));c.append(node('b','Agent '+n),node('span',now?now.id+' · '+now.title:r.active?'frei – wartet auf den nächsten Auftrag':'fertig'),node('span',mine.filter(x=>x.state==='done').length+' erledigt','meta'));agentRow.append(c)}}
-  if(restBox)slot.prepend(restBox);
-  box.replaceChildren(head,...(agentRow?[plain('Agenten',agentRow,agentInfo)]:[]),plain('Features',grid,nDone+' von '+rows.length+' fertig'+(nRun?' · '+nRun+' in Arbeit':'')+((single&&r.active)||!exact?' · Stand geschätzt':'')+' · Zeile anklicken für die Arbeitsschritte'),...(real||restBox?[sec('Alle Aufträge',slot,agentInfo||plural(rest.length,'übergreifender Schritt','übergreifende Schritte'))]:[]),sec('Vorbereitung und Organisation',prep,'Spezifikation, Plan, Zielordner, Repository …'),sec('Plan',planSlot,plural(p.tasks.length,'Arbeitsschritt','Arbeitsschritte')+' in '+plural(p.waves.length,'Stufe','Stufen')));
-  if(real)slot.append(runListEl);else if(runListEl.parentElement!==runListHome)runListHome.append(runListEl);
-  planSlot.append(implOutEl);
+  // Zwei Spalten: links die Liste, rechts die Einzelheiten zur gewählten Zeile – ohne Auswahl Vorbereitung und Plan; während eines Laufs darüber die Agenten
+  const side=node('div',undefined,'rvside'),cols=node('div',undefined,'rvcols');
+  if(agentRow)side.append(plain('Agenten',agentRow,agentInfo));
+  if(picked){
+    const tasks=node('div',undefined,'rvtasks'),close=button('✕','btn small rvclose',()=>{runSel='';runFeatureUI()});
+    close.setAttribute('aria-label','Einzelheiten schließen');close.title='Auswahl aufheben – zeigt wieder Vorbereitung und Plan';
+    for(const id of picked.ids){const t=byId.get(id);if(t)tasks.append(taskRow(t))}
+    const w=plain(picked.name,tasks,label[picked.state]+' · '+plural(picked.ids.length,'Arbeitsschritt','Arbeitsschritte'));w.classList.add('rvdetail');w.querySelector('.rvplainhead').append(close);side.append(w);
+  }else side.append(plain('Vorbereitung und Organisation',prep),plain('Plan',planSlot,(single?'Gesamtauftrag':'Zusammenfassung')+(p.decisions.length?' · '+plural(p.decisions.length,'Festlegung','Festlegungen'):'')));
+  cols.append(plain(rows.length?'Features und Arbeitsschritte':'Arbeitsschritte',grid,(rows.length?nDone+' von '+rows.length+' Features fertig'+(nRun?' · '+nRun+' in Arbeit':''):plural(p.tasks.length,'Arbeitsschritt','Arbeitsschritte'))+((single&&r.active)||(rows.length&&!exact)?' · Stand geschätzt':'')),side);
+  box.replaceChildren(head,cols);
+  if(runListEl.parentElement!==runListHome)runListHome.append(runListEl);
+  if(picked){if(implOutEl.parentElement!==implOutHome)implOutHome.append(implOutEl)}else planSlot.append(implOutEl);
 }
-$('runTab').onclick=()=>{runViewOn=!runViewOn;runFeatureUI();mainUI()};
+$('runTab').onclick=()=>{runViewOn=true;if(specMode==='edit')setSpecMode('view');runFeatureUI();mainUI()};
 $('specRail').addEventListener('click',()=>{if(runViewOn){runViewOn=false;runFeatureUI()}},true);
 function runUI(){
   const r=run,busyRun=!!(r&&r.active),list=runListEl;list.replaceChildren();
@@ -3370,7 +3404,7 @@ if(s.phase===1)s.phase=2;
 if(inQuestions()&&s.active<0)activate(firstOpen(),false);else if(s.active>=0)activate(s.active,false);
 renderAll();
 fetch('/api/status').then(r=>r.json()).then(r=>{
-  available=!!r.available;provider=r.provider||null;statusLoaded=true;gpuAvailable=!!r.gpu;specModels=r.specModels&&typeof r.specModels==='object'?r.specModels:{};stitch=!!r.stitch;agentsOk=!!r.agents;setAgentSkill(r.agentSkill);reviewers=Array.isArray(r.reviewers)?r.reviewers:[];agentModels=Array.isArray(r.models)?r.models:[];runModelUI();projectsDir=typeof r.projectsDir==='string'?r.projectsDir:'';pathSep=r.pathSep==='/'?'/':'\\';suggestRunDir();$('repoNew').disabled=!r.github;$('repoNew').title=r.github?'Legt über die GitHub-CLI ein leeres Repository in deinem Konto an.':'Dafür die GitHub-CLI einrichten: im Terminal „gh auth login“, dann SpecIt neu starten.';reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
+  available=!!r.available;provider=r.provider||null;statusLoaded=true;gpuAvailable=!!r.gpu;specModels=r.specModels&&typeof r.specModels==='object'?r.specModels:{};stitch=!!r.stitch;agentsOk=!!r.agents;setAgentSkill(r.agentSkill);reviewers=Array.isArray(r.reviewers)?r.reviewers:[];agentModels=Array.isArray(r.models)?r.models:[];runModelUI();projectsDir=typeof r.projectsDir==='string'?r.projectsDir:'';pathSep=r.pathSep==='/'?'/':'\\';suggestRunDir();githubOk=!!r.github;repoUI();$('repoCreate').disabled=!r.github;$('repoCreate').title=r.github?'Legt über die GitHub-CLI ein leeres Repository in deinem Konto an.':'Dafür die GitHub-CLI einrichten: im Terminal „gh auth login“, dann SpecIt neu starten.';reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
   let wanted=false;try{wanted=localStorage.getItem('specit-ai')==='1'}catch{}
   $('ai').checked=available&&wanted;aiUI();
   if(!stitch)$('layoutHint').textContent='Kein STITCH_API_KEY konfiguriert. Schlüssel in .env setzen und neu starten, siehe README.';
