@@ -155,6 +155,18 @@ Jeder Task trägt ID, Ziel, Anforderungsbezug, Abhängigkeiten, Scope und Nicht-
 
 `npm test` prüft Planner, Fragenmodul (Standards, Pegel, Demo-Spezifikation) und die Stitch-Hilfsfunktionen, ohne Netzwerkzugriff. Ein Live-Test mit Claude benötigt Claude Code oder einen API-Key mit Guthaben. Server bindet an localhost, prüft Origin/Host und begrenzt Eingaben und parallele API-Anfragen. Entwürfe werden im Browser gespeichert; mit aktivierter KI werden Projektdaten an Anthropic übermittelt, mit aktivierter Layout-Erstellung an Google Stitch. Keine vertraulichen Daten nutzen. Keine öffentliche Bereitstellung ohne Authentifizierung, Zugriffskontrolle und Datenschutzkonzept. GitHub Pages kann das Node-Backend nicht ausführen. KI-Ausgaben stets fachlich prüfen.
 
+### Frontend-Aufbau und Regressionstests
+
+SpecIt bleibt bewusst eine lokale Node.js-Anwendung **ohne npm-Laufzeitabhängigkeiten oder Frontend-Bundler**. Die Oberfläche ist in wenige Dateien aufgeteilt:
+
+- `public/index.html` – HTML-Struktur und barrierefrei beschriftete Bedienelemente.
+- `public/app.mjs` – Browserzustand, Nutzerinteraktionen und Rendering.
+- `public/base.css` – Designsystem, Komponenten und Druckansicht.
+- `public/responsive.css` – gesonderte Regeln für Tablets und Smartphones.
+- `ndjson.mjs` und `work-session.mjs` – Streaming und abbrechbare Arbeitssitzungen.
+
+Beim Zurücksetzen werden laufende Konzept-, Spezifikations- und Hintergrundanfragen der bisherigen Sitzung abgebrochen. Alte Antworten dürfen den neuen Arbeitsstand nicht überschreiben. Während einer aktiven direkten Agenten-Umsetzung muss der Lauf vor dem Zurücksetzen ausdrücklich gestoppt werden. `npm test` enthält neben Modulprüfungen auch Mock-Integrationstests für die Spezifikationsstrategien sowie die HTTP-Auslieferung der Frontend-Dateien. Für Änderungen an Layout und Dialogen sollte zusätzlich ein visueller Browser-Smoke-Test (mobil/desktop, hell/dunkel, Tastatur, Druckausgabe) durchgeführt werden. Die umfassende Roadmap steht unter [docs/optimization-roadmap.md](docs/optimization-roadmap.md).
+
 ## Spezifikations-Performance messen (Experiment)
 
 Der bestehende Standard bleibt erhalten. Für einen schnellen Modellvergleich kann in der lokalen `.env`

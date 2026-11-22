@@ -3,10 +3,11 @@
 // Die Agenten arbeiten ausschließlich im angegebenen Zielordner und dürfen Dateien lesen und schreiben;
 // Befehle (Tests, Build) nur, wenn das ausdrücklich erlaubt wurde.
 import { spawn } from 'node:child_process';
-import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, realpath, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validatePlan, renderTask, renderSingle } from './planner.mjs';
+import { MAX_SPEC_CHARS } from './limits.mjs';
 import './agentskill.mjs';
 import { cleanSelections } from './reuse.mjs';
 import { isFileName, downloadFile } from './stitch.mjs';
@@ -34,18 +35,25 @@ export function targetDir(value) {
   return dir;
 }
 
+/** Prüft auch symbolische Verknüpfungen und verlinkte Elternordner vor dem Zugriff. */
+export async function canonicalTargetDir(value) {
+  const dir = targetDir(value);
+  return targetDir(await realpath(dir));
+}
+
 /** Öffnet den Zielordner im Dateimanager des Rechners. */
 export async function openDir(value) {
   const dir = targetDir(value);
   try { if (!(await stat(dir)).isDirectory()) throw 0; } catch { throw Error('Der Zielordner existiert nicht: ' + dir); }
+  const safeDir = await canonicalTargetDir(dir);
   const cmd = process.platform === 'win32' ? 'explorer' : process.platform === 'darwin' ? 'open' : 'xdg-open';
-  spawn(cmd, [dir], { detached: true, stdio: 'ignore' }).on('error', () => {}).unref();
-  return { dir };
+  spawn(cmd, [safeDir], { detached: true, stdio: 'ignore' }).on('error', () => {}).unref();
+  return { dir: safeDir };
 }
 
 export function validateRun(b) {
   const dir = targetDir(b && b.dir);
-  if (typeof b.spec !== 'string' || !b.spec.trim() || b.spec.length > 50000) throw Error('Spezifikation fehlt oder zu lang.');
+  if (typeof b.spec !== 'string' || !b.spec.trim() || b.spec.length > MAX_SPEC_CHARS) throw Error('Spezifikation fehlt oder zu lang.');
   const agents = Number.isInteger(b.agents) ? Math.min(maxAgents, Math.max(1, b.agents)) : 1;
   return { dir, agents, featRaw: Number.isFinite(b.featRaw) && b.featRaw > 0 ? Math.min(100000, b.featRaw) : 0, logo: typeof b.logo === 'string' && b.logo.length <= 40000 ? cleanSvg(b.logo) : '', layoutHtmls: (Array.isArray(b.layoutHtmls) ? b.layoutHtmls : []).filter(isFileName).slice(0, 4), shell: b.shell === true, model: /^claude-[a-z0-9-]{3,40}$/.test(b.model || '') ? b.model : '', spec: b.spec, plan: validatePlan(b.plan), context: { repo: String(b.repo || '').slice(0, 500), agent: 'Claude Code', reuse: cleanSelections(b.reuse), ...(typeof b.layoutChoice === 'string' && b.layoutChoice.trim() ? { layoutChoice: b.layoutChoice.trim().slice(0, 200) } : {}), ...(typeof b.layoutUrl === 'string' && b.layoutUrl.startsWith('https://stitch.withgoogle.com/projects/') ? { layoutUrl: b.layoutUrl } : {}) } };
 }
@@ -84,6 +92,7 @@ function agent(prompt, dir, shell, children) {
 export async function startRun(r) {
   if (job && !job.ended) throw Error('Es läuft bereits eine Umsetzung.');
   await mkdir(r.dir, { recursive: true });
+  r.dir = await canonicalTargetDir(r.dir);
   runModel = r.model || '';
   if (!(await stat(r.dir)).isDirectory()) throw Error('Der Zielordner ist kein Ordner.');
   // Den gewählten Stitch-Entwurf als Datei in den Zielordner legen, damit die Agenten ihn lesen können

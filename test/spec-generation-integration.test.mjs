@@ -59,6 +59,12 @@ test('mocked end-to-end spec generation: classic, parallel, structured, and loca
  await serverSession(async base=>{
   const status=await (await fetch(base+'/api/status')).json();
   assert.equal(status.gpu,true);assert.equal(status.specModels.gpu.name,'Qwen/Qwen3-8B');assert.ok(status.specModels.classic.name);
+  for(const [asset,mime] of [['/','text/html'],['/app.mjs','text/javascript'],['/base.css','text/css'],['/responsive.css','text/css'],['/ndjson.mjs','text/javascript'],['/work-session.mjs','text/javascript']]){
+   const file=await fetch(base+asset);
+   assert.equal(file.status,200,asset);
+   assert.ok(file.headers.get('content-type')?.startsWith(mime),asset+' has incorrect content type');
+   assert.ok((await file.text()).length>100,asset+' is unexpectedly empty');
+  }
   for(const strategy of ['classic','parallel','structured','gpu']){
    const result=await generate(base,payload(strategy));
    assert.ok(result?.markdown,strategy);

@@ -24,9 +24,10 @@ test('an archive contains every file with its content, names in UTF-8', () => {
 
 test('the target folder is collected without dependencies and version control', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'specit-zip-'));
-  fs.mkdirSync(path.join(dir, 'src')); fs.mkdirSync(path.join(dir, 'node_modules', 'x'), { recursive: true }); fs.mkdirSync(path.join(dir, '.git'));
-  fs.writeFileSync(path.join(dir, 'index.html'), '<p>'); fs.writeFileSync(path.join(dir, 'src', 'app.js'), '1'); fs.writeFileSync(path.join(dir, 'node_modules', 'x', 'i.js'), '2'); fs.writeFileSync(path.join(dir, '.git', 'HEAD'), '3');
-  assert.deepEqual((await collect(dir)).map(f => f.name), ['index.html', 'src/app.js']);
+  fs.mkdirSync(path.join(dir, 'src')); fs.mkdirSync(path.join(dir, 'node_modules', 'x'), { recursive: true }); fs.mkdirSync(path.join(dir, '.git')); fs.mkdirSync(path.join(dir, 'dist'));
+  fs.writeFileSync(path.join(dir, 'index.html'), '<p>'); fs.writeFileSync(path.join(dir, 'src', 'app.js'), '1'); fs.writeFileSync(path.join(dir, 'node_modules', 'x', 'i.js'), '2'); fs.writeFileSync(path.join(dir, '.git', 'HEAD'), '3'); fs.writeFileSync(path.join(dir, 'dist', 'bundle.js'), '4');
+  fs.writeFileSync(path.join(dir, '.env'), 'SECRET=1'); fs.writeFileSync(path.join(dir, '.env.production'), 'SECRET=2'); fs.writeFileSync(path.join(dir, '.env.example'), 'SECRET=replace-me');
+  assert.deepEqual((await collect(dir)).map(f => f.name), ['.env.example', 'index.html', 'src/app.js']);
   await assert.rejects(collect(path.join(dir, 'fehlt')), /existiert nicht/);
   await assert.rejects(collect(path.join(dir, '.git', '..', 'node_modules', '..', 'leer-' + Date.now())), /existiert nicht/);
 });
