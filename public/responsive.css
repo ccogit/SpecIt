@@ -1,0 +1,54 @@
+/* SpecIt: mobile and tablet layout rules, served after the core design system.
+   Keep rules here instead of appending further !important overrides to index.html. */
+/* Responsive Ausarbeitung: bei schmalen Fenstern nur eine Dokumentenspalte.
+   Verhindert, dass die Desktop-Grid-Positionierung Gliederung und Dokument überlagert. */
+@media screen and (max-width:1180px) {
+  .split>*{min-width:0}
+  .specwrap{display:flex!important;flex-direction:column;gap:12px;min-width:0}
+  .specwrap>.doccol,.specwrap>.railcol{display:flex!important;position:static;align-self:stretch;width:100%;min-width:0;gap:10px}
+  .specwrap>.doccol{order:1}
+  .specwrap>.railcol{order:0}
+  .specwrap>.doccol>*{grid-column:auto!important;grid-row:auto!important;min-width:0}
+  .specwrap>.railcol>#railBrand{display:none!important}
+  .specwrap>.railcol>.specrail{position:static;display:flex;flex-direction:row;flex-wrap:nowrap;flex:0 0 auto;gap:4px;max-height:none;overflow-x:auto;overflow-y:hidden;padding:7px;scrollbar-width:thin}
+  .specwrap>.railcol>.specrail>button{flex:0 0 auto;width:auto;max-width:240px}
+  .specwrap .doccol>.specbar{height:auto;min-height:38px}
+  .split>.side{order:-1;min-width:0}
+}
+@media screen and (max-width:760px) {
+  .top .bar{grid-template-columns:minmax(0,1fr) auto!important;gap:8px}
+  .top .bar>.brand{grid-column:1}
+  .top .bar>.tools{grid-column:2!important;gap:4px;justify-content:flex-end;min-width:0}
+  .top .bar>.working{grid-column:1/-1;grid-row:2}
+  .toolrow{grid-template-columns:minmax(0,1fr)}
+  .toolrow #reviewGo,.toolrow #reuseBox>.btn{grid-column:1;grid-row:auto}
+  .md details.req>summary,.md .reqhead{padding-right:12px}
+  .md details.req>summary::after,.md .reqhead::after{display:none}
+  .specwrap>.railcol>.specrail>button{max-width:175px}
+}
+@media screen and (max-width:480px) {
+  #setToggle{font-size:0!important;min-width:38px;justify-content:center}
+  #setToggle::before{content:"⚙";font-size:17px;line-height:1}
+  .top .bar>.tools{gap:2px}
+}
+
+/* A running generation must remain cancellable on phones, including narrow headers. */
+@media screen and (max-width:760px) {
+  .top .working .workstop {
+    display:inline-flex!important;
+    align-items:center;
+    min-height:40px;
+    padding:8px 10px;
+    flex-shrink:0;
+    border-radius:6px;
+  }
+  .top .working{flex-wrap:wrap;overflow:visible;gap:8px}
+  .top .working #workingText{min-width:0;flex:1 1 130px}
+  .specwrap>.railcol:has(#draftRail.blank){display:none!important}
+  .specwrap>.railcol>.specrail>button{min-height:40px;align-items:center}
+  .specwrap>.railcol>.specrail{overscroll-behavior-x:contain}
+}
+@media screen and (max-width:480px) {
+  #reset,#theme{min-height:40px;min-width:40px;justify-content:center}
+  .top .bar>.tools{flex-wrap:wrap}
+}
