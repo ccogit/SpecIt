@@ -12,8 +12,9 @@ export function validatePlan(plan) {
     const dependsOn=arr(t.dependsOn,'dependsOn');
     if(new Set(dependsOn).size!==dependsOn.length)fail('Doppelte Abhängigkeit in '+id);
     // Geschätzte Laufzeit eines Coding-Agenten in Minuten; fehlt sie (ältere Pläne), gelten zehn Minuten.
-    const minutes=Number.isFinite(t.minutes)?Math.min(2880,Math.max(1,Math.round(t.minutes))):10;
-    return {id,minutes,title:str(t.title,'title',160),goal:str(t.goal,'goal'),requirements:arr(t.requirements,'requirements',1),dependsOn,scope:arr(t.scope,'scope',1),outOfScope:arr(t.outOfScope,'outOfScope'),interfaces:arr(t.interfaces,'interfaces'),deliverables:arr(t.deliverables,'deliverables',1),acceptance:arr(t.acceptance,'acceptance',1),tests:arr(t.tests,'tests',1),blockedBy:arr(t.blockedBy,'blockedBy')};
+    const mins=(x,d)=>Number.isFinite(x)&&x>0?Math.min(2880,Math.max(.05,Math.round(x*100)/100)):d,minutes=mins(t.minutes,10);
+    // raw = Schätzung der KI vor der Kalibrierung an gemessenen Läufen (calibration.mjs)
+    return {id,minutes,...(Number.isFinite(t.raw)&&t.raw>0?{raw:t.raw}:{}),title:str(t.title,'title',160),goal:str(t.goal,'goal'),requirements:arr(t.requirements,'requirements',1),dependsOn,scope:arr(t.scope,'scope',1),outOfScope:arr(t.outOfScope,'outOfScope'),interfaces:arr(t.interfaces,'interfaces'),deliverables:arr(t.deliverables,'deliverables',1),acceptance:arr(t.acceptance,'acceptance',1),tests:arr(t.tests,'tests',1),blockedBy:arr(t.blockedBy,'blockedBy')};
   });
   const byId=new Map(tasks.map(t=>[t.id,t]));
   for(const t of tasks)for(const d of t.dependsOn)if(!byId.has(d)||d===t.id)fail('Unzulässige Abhängigkeit '+t.id+' → '+d);
@@ -46,7 +47,7 @@ export function estimate(plan,agents) {
     running.sort((a,b)=>a.end-b.end);
     const first=running.shift();time=first.end;done.add(first.id);
   }
-  return time;
+  return Math.round(time*100)/100;
 }
 
 /**
@@ -67,10 +68,10 @@ export function demoPlan(spec) {
  const excerpt=(spec.trim().replace(/\s+/g,' ').slice(0,220)||'Projektbeschreibung');
  const mk=(id,minutes,title,goal,dependsOn,scope,deliverables,acceptance,tests,blockedBy=[])=>({id,minutes,title,goal,requirements:['Projekt-Spezifikation prüfen: '+excerpt],dependsOn,scope,outOfScope:['Keine nicht spezifizierten Produktfunktionen; keine ungefragten Änderungen außerhalb des Auftrags.'],interfaces:['Schnittstellen mit dem zuständigen Task abstimmen und dokumentieren.'],deliverables,acceptance,tests,blockedBy});
  return validatePlan({summary:'DEMO: Generisches Arbeitsgerüst, keine projektspezifische KI-Zerlegung. Vor Delegation fachlich anpassen.',decisions:['Architektur, Dateigrenzen und Schnittstellen legt T01 anhand der Spezifikation fest (Demo-Gerüst ohne projektspezifische Zerlegung).'],tasks:[
- mk('T01',5,'Spezifikation und Schnittstellen konkretisieren','Anforderungen ordnen und die verbindlichen technischen Schnittstellen festlegen.',[],['Architektur und Verträge'],['Anforderungszuordnung, Architekturentwurf, Schnittstellenverträge'],['Festlegungen dokumentiert; Implementierungsbereiche klar abgegrenzt.'],['Anforderungen gegen Schnittstellen prüfen.']),
- mk('T02',12,'Kernfunktionalität umsetzen','Die priorisierten fachlichen Regeln der Spezifikation implementieren.',['T01'],['Geschäftslogik'],['Implementierung, Unit-Tests'],['Bestätigte fachliche Regeln sind überprüfbar umgesetzt.'],['Normalfälle, Randfälle, Fehlerfälle']),
- mk('T03',12,'Nutzerschnittstellen umsetzen','Bestätigte Nutzerabläufe auf Basis der vereinbarten Schnittstellen umsetzen.',['T01'],['Nutzerschnittstellen'],['Nutzerabläufe und Schnittstellentests'],['Vereinbarte Abläufe und Fehlermeldungen funktionieren.'],['Interaktions- und Fehlerfälle']),
- mk('T04',8,'Integration und Qualitätssicherung','Komponenten integrieren und gegen die Spezifikation prüfen.',['T02','T03'],['Integration, Regressionstests, Dokumentation'],['Testbericht, Startanleitung, offene Risiken'],['Akzeptanzkriterien nachweisbar geprüft; offene Abweichungen dokumentiert.'],['Integration, Regression, dokumentierter Start'])
+ mk('T01',0.5,'Spezifikation und Schnittstellen konkretisieren','Anforderungen ordnen und die verbindlichen technischen Schnittstellen festlegen.',[],['Architektur und Verträge'],['Anforderungszuordnung, Architekturentwurf, Schnittstellenverträge'],['Festlegungen dokumentiert; Implementierungsbereiche klar abgegrenzt.'],['Anforderungen gegen Schnittstellen prüfen.']),
+ mk('T02',1.2,'Kernfunktionalität umsetzen','Die priorisierten fachlichen Regeln der Spezifikation implementieren.',['T01'],['Geschäftslogik'],['Implementierung, Unit-Tests'],['Bestätigte fachliche Regeln sind überprüfbar umgesetzt.'],['Normalfälle, Randfälle, Fehlerfälle']),
+ mk('T03',1.2,'Nutzerschnittstellen umsetzen','Bestätigte Nutzerabläufe auf Basis der vereinbarten Schnittstellen umsetzen.',['T01'],['Nutzerschnittstellen'],['Nutzerabläufe und Schnittstellentests'],['Vereinbarte Abläufe und Fehlermeldungen funktionieren.'],['Interaktions- und Fehlerfälle']),
+ mk('T04',0.8,'Integration und Qualitätssicherung','Komponenten integrieren und gegen die Spezifikation prüfen.',['T02','T03'],['Integration, Regressionstests, Dokumentation'],['Testbericht, Startanleitung, offene Risiken'],['Akzeptanzkriterien nachweisbar geprüft; offene Abweichungen dokumentiert.'],['Integration, Regression, dokumentierter Start'])
  ]});
 }
 

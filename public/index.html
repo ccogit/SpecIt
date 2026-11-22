@@ -227,6 +227,15 @@ main{flex:1;width:100%;max-width:var(--page);margin:0 auto;padding:16px 24px;dis
 .decisions{background:var(--error-container);color:var(--on-error-container);border-radius:6px;border-left:4px solid var(--warn-line);padding:16px 20px}
 .decisions ul{margin:8px 0 0;padding-left:18px}
 .wave{display:flex;flex-direction:column;gap:8px}
+.wave>summary{cursor:pointer;list-style:none;color:var(--ink);font-family:inherit;font-weight:400;letter-spacing:0;text-transform:none}.wave>summary::-webkit-details-marker{display:none}
+.wave>summary::before{content:'▸';color:var(--muted);font-size:12px;width:10px}.wave[open]>summary::before{content:'▾'}
+.wave:not([open])>summary{padding-bottom:6px}.wave[open]>summary{margin-bottom:8px}
+.wavehead .peek{flex:1;min-width:0;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wave[open] .peek{display:none}
+.foldall{align-self:flex-start;font-size:13px}
+.taskhead.fold{cursor:pointer}.taskhead.fold::before{content:'▾';color:var(--muted);font-size:12px;width:10px}
+.task.closed .taskhead.fold::before{content:'▸'}
+.task.closed .taskmain>:not(.taskhead),.task.closed .taskacts{display:none}
+#phase3 .task.closed{padding:7px 14px}
 .wavehead{display:flex;align-items:center;gap:10px;padding-bottom:6px;border-bottom:1px solid var(--outline-soft)}
 .wavegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:8px;align-items:start}
 .toolbar{background:var(--surface-low);border-radius:8px;padding:10px 12px}
@@ -627,6 +636,24 @@ kbd{font-family:var(--mono);font-size:10px;line-height:14px;padding:1px 6px;bord
 .rungrid{display:grid;grid-template-columns:minmax(260px,1fr) 170px auto;gap:16px;align-items:end;margin-top:16px}
 .runitem{display:flex;align-items:flex-start;gap:12px;padding:10px 14px;border-radius:6px;background:var(--card);font-size:13px}
 .runitem>.chip{width:118px;justify-content:center;flex-shrink:0}
+/* Parallele Umsetzung: je Agent eine Spalte, darüber der zeitliche Verlauf, darunter die Warteschlange */
+.lanes{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:10px;align-items:start}
+.lane{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lanehead{display:flex;align-items:baseline;gap:8px;white-space:nowrap;font:600 12px/1.4 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.lanehead b{color:var(--ink)}.lanehead .now{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:400}
+.lanehead.busy .now{color:var(--go)}
+.lanebar{position:relative;height:6px;border-radius:3px;background:var(--surface-low);overflow:hidden}
+.lanebar i{position:absolute;top:0;bottom:0;min-width:2px;border-radius:3px;background:var(--go);opacity:.55}
+.lanebar i.running{opacity:1;animation:lanepulse 1.6s ease-in-out infinite}.lanebar i.failed,.lanebar i.stopped{background:var(--error)}
+@keyframes lanepulse{50%{opacity:.45}}
+.lane .runitem{flex-direction:column;gap:6px;padding:9px 11px}.lane .runitem>.chip{width:auto;align-self:flex-start}
+.lane .runitem.running{box-shadow:inset 0 0 0 1.5px var(--go)}
+.lane .idle{padding:9px 11px;border-radius:6px;border:1px dashed var(--muted);color:var(--muted);font-size:13px}
+.queuehead{margin:14px 0 6px;font:600 12px/1.4 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.queue{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px}
+.queue .runitem{padding:7px 11px;gap:8px;align-items:baseline}.queue .runitem>.chip{width:auto}.queue .why{color:var(--muted);font-size:12px}
+@media(max-width:760px){.lanes{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.lanebar i.running{animation:none}}
 .runitem .body{flex:1;min-width:0}
 .runitem pre{margin:8px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.6 var(--mono);max-height:260px;overflow:auto;background:var(--surface-low);padding:10px;border-radius:6px}
 @media(max-width:760px){.rungrid{grid-template-columns:1fr}}
@@ -1355,7 +1382,7 @@ body.merged.decqa #decDerive{margin-top:12px}
       <button id="finish" class="btn primary hidden" type="button"></button>
       <div id="doneBox" class="donebox hidden">
         <div id="downloads" class="actions"><span class="eyebrow">Bereitgestellt</span><button id="specDl2" class="btn" type="button">↓ SPEC.md</button><button id="json" class="btn" type="button">↓ tasks.json</button><button id="backlog" class="btn" type="button">↓ BACKLOG.md</button><button id="copyAll" class="btn" type="button">⧉ Alle kopieren</button></div>
-        <div id="runBox"><p id="runStatus" class="status" role="status"></p><div class="actions"><button id="runStop" class="btn hidden" type="button">■ Stoppen</button></div><div id="runList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div></div>
+        <div id="runBox"><p id="runStatus" class="status" role="status"></p><div class="actions"><button id="runStop" class="btn hidden" type="button">■ Stoppen</button><button id="runZip" class="btn primary hidden" type="button">↓ Implementierung (ZIP)</button><button id="runOpen" class="btn hidden" type="button">Ordner öffnen</button><span id="runWhere" class="status"></span></div><div id="runList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div></div>
       </div>
     </div>
       </div>
@@ -2396,6 +2423,15 @@ function statuses(){
   if(specMode==='view')specUI();
   planUI();layoutNote();phasesUI();
 }
+// Welche Stufen ('S0' …) und Aufträge ('T01' …, 'Gesamt') aufgeklappt sind – bleibt über das Neuzeichnen hinweg erhalten
+const planOpen=new Set();
+// Auftrag zugeklappt = nur die Kopfzeile; ein Klick darauf (oder Enter/Leertaste) zeigt Ziel, vollen Auftrag und Knöpfe
+function foldTask(box,head,key){
+  const set=()=>{const open=planOpen.has(key);box.classList.toggle('closed',!open);head.setAttribute('aria-expanded',String(open))};
+  const flip=()=>{planOpen.has(key)?planOpen.delete(key):planOpen.add(key);set()};
+  head.tabIndex=0;head.setAttribute('role','button');head.classList.add('fold');head.onclick=flip;
+  head.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}};set();
+}
 function planUI(){
   const p=s.plan,old=!!stale();
   for(const id of ['json','backlog','copyAll'])$(id).disabled=!p||old;
@@ -2476,13 +2512,17 @@ function planUI(){
     details.ontoggle=()=>{if(details.open&&!details.querySelector('pre'))details.append(node('pre',text()))};
     const copy=button('⧉ Prompt kopieren','btn small',()=>copyText(text(),$('planStatus'))),dl=button('↓ Markdown','btn small',()=>download('AUFTRAG.md',text()));
     copy.disabled=dl.disabled=old;row.append(copy,dl);
-    main.append(top,ol,details);box.append(main,row);
+    main.append(top,ol,details);box.append(main,row);foldTask(box,top,'Gesamt');
     out.append(box);return;
   }
   const byId=new Map(p.tasks.map(t=>[t.id,t]));
+  // Stufen und Aufträge sind im Standard zugeklappt; ein Knopf klappt alles auf einmal auf oder zu
+  const keys=[...p.waves.map((w,i)=>'S'+i),...p.tasks.map(t=>t.id)],allOpen=keys.every(k=>planOpen.has(k));
+  const all=button(allOpen?'▾ Alles zuklappen':'▸ Alles aufklappen','link',()=>{for(const k of keys)allOpen?planOpen.delete(k):planOpen.add(k);planUI()});all.classList.add('foldall');out.append(all);
   p.waves.forEach((w,i)=>{
-    const wave=node('section',undefined,'wave'),head=node('div',undefined,'wavehead'),grid=node('div',undefined,'wavegrid');
-    head.append(node('h2','Stufe '+(i+1)),node('span',plural(w.length,'Aufgabe','Aufgaben'),'chip'));head.title='Gleiche Stufe bedeutet nur potenziell parallel. Dateikonflikte und Schnittstellen vor Start prüfen.';wave.append(head,grid);
+    const wave=node('details',undefined,'wave'),head=node('summary',undefined,'wavehead'),grid=node('div',undefined,'wavegrid');
+    wave.open=planOpen.has('S'+i);wave.ontoggle=()=>{wave.open?planOpen.add('S'+i):planOpen.delete('S'+i)};
+    head.append(node('h2','Stufe '+(i+1)),node('span',plural(w.length,'Aufgabe','Aufgaben'),'chip'),node('span',w.map(id=>id+' '+byId.get(id).title).join(' · '),'peek'));head.title='Gleiche Stufe bedeutet nur potenziell parallel. Dateikonflikte und Schnittstellen vor Start prüfen.';wave.append(head,grid);
     for(const id of w){
       const t=byId.get(id),blocked=p.blocked.includes(t.id),box=node('article',undefined,'card task'),top=node('div',undefined,'taskhead'),main=node('div',undefined,'taskmain'),details=node('details'),row=node('div',undefined,'taskacts'),goal=node('p',t.goal,'muted');
       top.append(node('span',t.id,'id'),node('h3',t.title));if(blocked)top.append(node('span','BLOCKIERT','chip warn'));
@@ -2492,7 +2532,7 @@ function planUI(){
       details.append(node('summary','Vollständiger Agent-Auftrag'));
       details.ontoggle=()=>{if(details.open&&!details.querySelector('pre'))details.append(node('pre',text()))};
       const copy=button('⧉ Prompt kopieren','btn small',()=>copyText(text(),$('planStatus'))),dl=button('↓ Markdown','btn small',()=>download(t.id+'.md',text()));
-      copy.disabled=dl.disabled=old;row.append(copy,dl);main.append(top,goal,details);box.append(main,row);grid.append(box);
+      copy.disabled=dl.disabled=old;row.append(copy,dl);main.append(top,goal,details);box.append(main,row);foldTask(box,top,t.id);grid.append(box);
     }
     out.append(wave);
   });
@@ -2516,7 +2556,9 @@ function working(text,since){
   // Erst nach einem Augenblick einblenden: Antworten ohne KI kommen sofort und sollen nicht aufblitzen.
   tick();workTimer=setInterval(tick,1000);showTimer=setTimeout(()=>{bar.classList.remove('hidden');document.title='⏳ '+who+' – '+pageTitle},250);
 }
-function lock(v,text){active=v;aborter=v?new AbortController():null;for(const id of ['derive','more','generate','plan'])$(id).disabled=v;navUI();working(v?text||'Anfrage läuft':'');if(!v&&runBusy)pollRun()}
+function lock(v,text){active=v;aborter=v?new AbortController():null;for(const id of ['derive','more','generate','plan'])$(id).disabled=v;
+  // Der Abschluss-Knopf hängt davon ab, ob gerade eine Anfrage läuft: mit jedem Wechsel neu bestimmen, sonst bleibt er nach „Plan erstellen“ gesperrt
+  reviewUI(s.plan&&!stale()?s.plan:null,agentsNow());navUI();working(v?text||'Anfrage läuft':'');if(!v&&runBusy)pollRun()}
 // Schließen oder Neuladen während einer laufenden Anfrage nur nach Rückfrage des Browsers
 $('workingStop').onclick=()=>{
   if(aborter)aborter.abort();else if(layoutAbort)layoutAbort.abort();else if(runBusy)$('runStop').click();
@@ -3748,6 +3790,8 @@ function adviceUI(p,agents){
     rec.fits===true?'Voraussichtlich '+hm(rec.minutes)+' – passt in die Zielvorgabe ('+hm(target)+').'
     :rec.fits===false?'Voraussichtlich '+hm(rec.minutes)+' – über der Zielvorgabe ('+hm(target)+'). Mehr Agenten helfen nicht; dafür müsste der Umfang kleiner werden.'
     :'Voraussichtlich '+hm(rec.minutes)+'.'));
+  // Woran die Schätzung ausgerichtet ist: an gemessenen Läufen oder nur an Richtwerten
+  const cal=run&&run.calib&&run.calib.plan;line.append(node('span',' '+(cal&&cal.runs?'Schätzung an '+plural(cal.runs,'gemessenen Lauf','gemessenen Läufen')+' ausgerichtet.':'Noch kein gemessener Lauf – die Schätzung beruht auf Richtwerten.'),'muted'));
   for(const o of rec.options){const b=button((o.agents===1?'1 Agent':o.agents+' Agenten')+' ≈ '+hm(o.minutes),'chip pickchip'+(o.agents===agents?' ok':''),()=>{s.featAgents=o.agents;renderAll()});b.setAttribute('aria-pressed',String(o.agents===agents));opts.append(b)}
   box.append(line,opts);box.title='Grundlage: geschätzte Bearbeitungszeit je Auftrag ('+(s.planSource==='claude'?'von Claude geschätzt':'Demo-Annahmen')+') und die Abhängigkeiten im Plan'+(rec.fits===null?'; ohne Ziel-Entwicklungsdauer ist die Empfehlung die kleinste Zahl, die kaum langsamer ist als die schnellste':'')+'. Die tatsächliche Dauer kann deutlich abweichen.';
 }
@@ -3787,7 +3831,7 @@ $('finish').onclick=async()=>{
   if(!s.runDir.trim()){$('finishHint').textContent='Bitte einen Zielordner angeben.';$('runDir').focus();return}
   $('finish').disabled=true;$('finishHint').textContent='Umsetzung wird gestartet …';runOpen.clear();
   try{
-    run=await post('/api/run',{action:'start',dir:s.runDir,agents:agentsNow(),shell:s.runShell,model:s.runModel,plan:p,spec:s.planSpec,repo:s.repo,reuse:selectedReuse(),...(s.logos[s.logoChosen]?{logo:cleanSvg(s.logos[s.logoChosen].svg)}:{}),...(layoutActive()?{layoutUrl:s.layout.url,...(chosenLayout()?{layoutChoice:chosenLayout().label,layoutHtmls:chosenLayout().htmls}:{})}:{})});
+    run=await post('/api/run',{action:'start',featRaw:s.features.filter(f=>f.on).every(f=>f.raw>0)?s.features.filter(f=>f.on).reduce((n,f)=>n+f.raw,0):0,dir:s.runDir,agents:agentsNow(),shell:s.runShell,model:s.runModel,plan:p,spec:s.planSpec,repo:s.repo,reuse:selectedReuse(),...(s.logos[s.logoChosen]?{logo:cleanSvg(s.logos[s.logoChosen].svg)}:{}),...(layoutActive()?{layoutUrl:s.layout.url,...(chosenLayout()?{layoutChoice:chosenLayout().label,layoutHtmls:chosenLayout().htmls}:{})}:{})});
     s.finished=finishKey();save();runBusy=true;renderAll();pollRun();$('doneBox').scrollIntoView({block:'nearest'});
   }catch(e){renderAll();$('finishHint').textContent=e.message}
 };
@@ -3814,7 +3858,8 @@ $('wishRun').onclick=adjustSpec;
 $('wish').onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();adjustSpec()}};
 
 /* ---------- Direkte Umsetzung über Claude Code ---------- */
-const hm=min=>{const h=Math.floor(min/60),m=Math.round(min%60);return (h?h+' h':'')+(h&&m?' ':'')+(m||!h?m+' min':'')};
+// Unter einer Minute in Sekunden, bis zehn Minuten mit einer Nachkommastelle – sonst ginge die Genauigkeit kurzer Laufzeiten verloren
+const hm=min=>{if(min>0&&min<0.95)return Math.max(1,Math.round(min*60))+' s';if(min<9.95&&Math.round(min*10)%10)return (Math.round(min*10)/10).toLocaleString('de-DE')+' min';min=Math.round(min);const h=Math.floor(min/60),m=min%60;return (h?h+' h':'')+(h&&m?' ':'')+(m||!h?m+' min':'')};
 // Ziel-Entwicklungsdauer in Minuten (Stufen siehe durations)
 const targetMinutes=()=>durations[s.durLevel][1];
 const dur=sec=>sec<60?sec+' s':hm(sec/60);
@@ -3822,14 +3867,36 @@ const stateNames={waiting:'wartet',running:'läuft',done:'fertig',failed:'Fehler
 function runUI(){
   const r=run,busyRun=!!(r&&r.active),list=$('runList');list.replaceChildren();
   $('runStop').classList.toggle('hidden',!busyRun);
+  // Übergabe: Sobald ein Lauf beendet ist (auch nach einem Neustart), lässt sich das Ergebnis laden und der Ordner öffnen
+  const handover=!busyRun&&s.nextStep==='run'&&!!s.runDir.trim()&&(!!(r&&r.items.length)||s.finished===finishKey());
+  $('runZip').classList.toggle('hidden',!handover);$('runOpen').classList.toggle('hidden',!handover);$('runWhere').textContent=handover?'Ergebnis in '+((r&&r.dir)||s.runDir.trim()):'';
   if(!r||!r.items.length){$('runStatus').textContent='';return}
   const done=r.items.filter(x=>x.state==='done').length,bad=r.items.filter(x=>['failed','skipped'].includes(x.state)).length;
   $('runStatus').textContent=(r.active?'Umsetzung läuft':r.stopped?'Umsetzung gestoppt':bad?'Umsetzung beendet – nicht alles abgeschlossen':'Umsetzung abgeschlossen')+' · '+done+' von '+r.items.length+' fertig'+(bad?' · '+bad+' nicht abgeschlossen':'')+' · '+(r.agents===1?'1 Agent, nacheinander':r.agents+' Agenten parallel')+' · '+dur(r.seconds)+' · '+r.dir;
-  for(const it of r.items){
-    const row=node('div',undefined,'runitem'),body=node('div',undefined,'body'),head=node('div');
+  const item=it=>{
+    const row=node('div',undefined,'runitem '+it.state),body=node('div',undefined,'body'),head=node('div');
     head.append(node('b',it.id+' · '),it.title+(it.seconds?' · '+dur(it.seconds):''));body.append(head);
     if(it.note&&it.state!=='running'){const d=node('details');d.open=runOpen.has(it.id);d.ontoggle=()=>{d.open?runOpen.add(it.id):runOpen.delete(it.id)};d.append(node('summary','Bericht des Agenten'),node('pre',it.note));body.append(d)}
-    row.append(node('span',stateNames[it.state]||it.state,'chip'+(it.state==='done'?' ok':['failed','skipped'].includes(it.state)?' warn':'')),body);list.append(row);
+    row.append(node('span',stateNames[it.state]||it.state,'chip'+(it.state==='done'?' ok':['failed','skipped'].includes(it.state)?' warn':'')),body);return row;
+  };
+  // Ein Agent: schlichte Liste. Mehrere: je Agent eine Spalte mit dem, woran er arbeitet und was er erledigt hat
+  if(r.agents<2||!r.items.some(x=>x.agent)&&!r.active){for(const it of r.items)list.append(item(it));return}
+  const lanes=node('div',undefined,'lanes'),total=Math.max(1,r.seconds);lanes.style.setProperty('--n',r.agents);
+  for(let n=1;n<=r.agents;n++){
+    const mine=r.items.filter(x=>x.agent===n).sort((a,b)=>b.from-a.from),now=mine.find(x=>x.state==='running'),lane=node('div',undefined,'lane'),head=node('div',undefined,'lanehead'+(now?' busy':'')),bar=node('div',undefined,'lanebar');
+    head.append(node('b','Agent '+n),node('span',mine.filter(x=>x.state==='done').length+' fertig'),node('span',now?'arbeitet an '+now.id:r.active?'frei':'','now'));
+    for(const it of mine){const seg=node('i',undefined,it.state);seg.style.left=(it.from/total*100)+'%';seg.style.width=(Math.max(1,it.seconds)/total*100)+'%';seg.title=it.id+' · '+dur(it.seconds);bar.append(seg)}
+    lane.append(head,bar);if(!now&&r.active)lane.append(node('div','wartet auf den nächsten freien Auftrag','idle'));
+    for(const it of mine)lane.append(item(it));
+    lanes.append(lane);
+  }
+  list.append(lanes);
+  // Was noch keinem Agenten zugeteilt ist: mit dem Grund, worauf es wartet
+  const rest=r.items.filter(x=>!x.agent);
+  if(rest.length){
+    const q=node('div',undefined,'queue');
+    for(const it of rest){const row=node('div',undefined,'runitem '+it.state),b=node('span');b.append(node('b',it.id+' · '),it.title);row.append(node('span',stateNames[it.state]||it.state,'chip'+(['failed','skipped'].includes(it.state)?' warn':'')),b);if(it.state==='waiting')row.append(node('span',(it.waitsFor||[]).length?'nach '+it.waitsFor.join(', '):'sobald ein Agent frei ist','why'));q.append(row)}
+    list.append(node('div',r.active?'Warteschlange · '+rest.length:'Nicht begonnen · '+rest.length,'queuehead'),q);
   }
 }
 let run=null,runTimer=0,agentsOk=false;const runOpen=new Set();
@@ -3849,6 +3916,16 @@ async function pollRun(){
 }
 $('runDir').oninput=e=>{s.runDir=e.target.value;save();reviewUI(s.plan&&!stale()?s.plan:null,agentsNow());navUI()};
 $('runShell').onchange=e=>{s.runShell=e.target.checked;save();reviewUI(s.plan&&!stale()?s.plan:null,agentsNow());navUI()};
+$('runZip').onclick=async()=>{
+  const b=$('runZip'),dir=(run&&run.dir)||s.runDir.trim();b.disabled=true;
+  try{
+    const res=await fetch('/api/run/download',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dir})});
+    if(!res.ok)throw Error((await res.json().catch(()=>({}))).error||'Download nicht möglich.');
+    const url=URL.createObjectURL(await res.blob()),a=node('a');a.href=url;a.download=(repoSlug()||'implementierung')+'.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }catch(e){$('runWhere').textContent=e.message}
+  b.disabled=false;
+};
+$('runOpen').onclick=async()=>{try{await post('/api/run',{action:'open',dir:(run&&run.dir)||s.runDir.trim()})}catch(e){$('runWhere').textContent=e.message}};
 $('runStop').onclick=async()=>{try{run=await post('/api/run',{action:'stop'})}catch(e){$('runStatus').textContent=e.message}pollRun()};
 
 function replaceState(next){revision++;next.autonomy=s.autonomy;next.layoutOn=s.layoutOn;next.layoutCount=s.layoutCount;next.layoutDevice=s.layoutDevice;next.layoutTheme=s.layoutTheme;s=next;pick=[];custom='';customOpen=false;change=null;catOpen=-1;renderAll()}
