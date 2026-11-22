@@ -594,11 +594,11 @@ http.createServer(async(req,res)=>{
    if(strategy.id==='gpu'||strategy.id==='diffusion'){
     const backend=externalBackends[strategy.id];
     const text=await streamChatCompletion({
-     backend,system,instruction:withSkills('final',finalPrompt(data)+conceptNote(data))+corePrompt(frame),
+     backend,system,instruction:withSkills('final',finalPrompt(data)+conceptNote(data)+'\nReferenziere in „Funktionale Anforderungen“ jeden ausgewählten Feature-Namen aus features mindestens einmal wörtlich.')+corePrompt(frame),
      data:{...brief(data),fixedSections:frame.tail},maxTokens:16000,
      onText:t=>row({t}),signal:currentAbort?.signal,store:meter.getStore()
     });
-    const core=validateExternalCore(text.trim());
+    const core=validateExternalCore(text.trim(),data.scope);
     row({t:frame.tail});
     row({done:true,source:strategy.id,strategy:strategy.id,model:backend.model,
       markdown:withToc(frame.head+core+frame.tail),usage:meter.getStore()});
