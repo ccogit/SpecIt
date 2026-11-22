@@ -7,6 +7,7 @@ import { mkdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validatePlan, renderTask, renderSingle } from './planner.mjs';
+import './agentskill.mjs';
 import { cleanSelections } from './reuse.mjs';
 import { isFileName, downloadFile } from './stitch.mjs';
 import { scanArtifacts } from './artifacts.mjs';

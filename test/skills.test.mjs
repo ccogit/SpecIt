@@ -32,6 +32,7 @@ test('all operational stages have a concrete skill and a phase-specific quality 
 });
 
 test('coding agent skill is included in single tasks and overall execution, but only once in a backlog', async () => {
+  await import('../agentskill.mjs');
   const { demoPlan, renderTask, renderSingle, renderBacklog } = await import('../planner.mjs');
   const spec = 'Ziel: Nutzende können Einträge anlegen.';
   const plan = demoPlan(spec);
@@ -42,6 +43,12 @@ test('coding agent skill is included in single tasks and overall execution, but 
   assert.match(single,/### Skill: implementation/);
   assert.equal(backlog.split('### Skill: implementation').length-1,1);
   assert.match(task,/Validierung \(ausgeführt\/nicht ausgeführt\/fehlgeschlagen\)/);
+});
+
+test('the planner stays loadable in the browser: it reads no files itself', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const planner = await readFile(new URL('../planner.mjs',import.meta.url),'utf8');
+  assert.ok(!/^import /m.test(planner), 'planner.mjs is served to the page and must not import server-only modules');
 });
 
 test('server applies dedicated concept and review skills on actual AI calls', async () => {

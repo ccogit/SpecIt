@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { tmpdir, homedir } from 'node:os';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { validatePlan, demoPlan } from './planner.mjs';
+import { agentSkill } from './agentskill.mjs';
 import { factor, scale, info as calibInfo } from './calibration.mjs';
 import { zip, collect } from './zip.mjs';
 // Schätzungen an gemessenen Läufen ausrichten: raw behält den Wert der KI, minutes ist der umgerechnete
@@ -468,7 +469,7 @@ http.createServer(async(req,res)=>{
   return res.end(req.url==='/'?html:modules[req.url]);
  }
  if(req.method==='GET'&&req.url==='/api/alive')return alive(req,res);
- if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,stitch:!!stitchKey(),agents:cliOk,reviewers,models:cliOk?claudeModels:[],github:ghOk,projectsDir,pathSep:path.sep});
+ if(req.method==='GET'&&req.url==='/api/status')return send(res,200,{available:!!key||hasCli,provider:key?'api':hasCli?'claude-code':null,model:key?model:hasCli?cliModel:null,stitch:!!stitchKey(),agents:cliOk,agentSkill,reviewers,models:cliOk?claudeModels:[],github:ghOk,projectsDir,pathSep:path.sep});
  if(req.method==='GET'&&req.url==='/api/run')return send(res,200,{...runStatus(),calib:calibInfo()});
  if(req.method==='GET'&&req.url.startsWith('/api/layout/file?')){
   const query=new URL(req.url,'http://'+host).searchParams,name=query.get('name');

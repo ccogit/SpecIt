@@ -1427,7 +1427,7 @@ if(theme!=='dark'&&theme!=='light')theme=matchMedia('(prefers-color-scheme: dark
 function applyTheme(){document.documentElement.dataset.theme=theme;const b=document.getElementById('theme');b.textContent=theme==='dark'?'☼':'☾';b.title=theme==='dark'?'Helles Thema':'Dunkles Thema';b.setAttribute('aria-pressed',String(theme==='dark'));b.setAttribute('aria-label','Zum '+(theme==='dark'?'hellen':'dunklen')+' Thema wechseln')}
 applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('specit-theme',theme)}catch{}applyTheme()};
 
-import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate} from '/planner.mjs';
+import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate,setAgentSkill} from '/planner.mjs';
 import { modulators, cleanSvg, cleanLogos,topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
 import {balance} from '/balance.mjs';
@@ -4000,7 +4000,7 @@ if(MERGED){
 if(inQuestions()&&s.active<0)activate(firstOpen(),false);else if(s.active>=0)activate(s.active,false);
 renderAll();
 fetch('/api/status').then(r=>r.json()).then(r=>{
-  available=!!r.available;provider=r.provider||null;statusLoaded=true;stitch=!!r.stitch;agentsOk=!!r.agents;reviewers=Array.isArray(r.reviewers)?r.reviewers:[];agentModels=Array.isArray(r.models)?r.models:[];runModelUI();projectsDir=typeof r.projectsDir==='string'?r.projectsDir:'';pathSep=r.pathSep==='/'?'/':'\\';suggestRunDir();$('repoNew').disabled=!r.github;$('repoNew').title=r.github?'Legt über die GitHub-CLI ein leeres Repository in deinem Konto an.':'Dafür die GitHub-CLI einrichten: im Terminal „gh auth login“, dann SpecIt neu starten.';reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
+  available=!!r.available;provider=r.provider||null;statusLoaded=true;stitch=!!r.stitch;agentsOk=!!r.agents;setAgentSkill(r.agentSkill);reviewers=Array.isArray(r.reviewers)?r.reviewers:[];agentModels=Array.isArray(r.models)?r.models:[];runModelUI();projectsDir=typeof r.projectsDir==='string'?r.projectsDir:'';pathSep=r.pathSep==='/'?'/':'\\';suggestRunDir();$('repoNew').disabled=!r.github;$('repoNew').title=r.github?'Legt über die GitHub-CLI ein leeres Repository in deinem Konto an.':'Dafür die GitHub-CLI einrichten: im Terminal „gh auth login“, dann SpecIt neu starten.';reviewChoiceUI();specReviewUI();pollRun();setTimeout(ensureFeatures,0);
   let wanted=false;try{wanted=localStorage.getItem('specit-ai')==='1'}catch{}
   $('ai').checked=available&&wanted;aiUI();
   if(!stitch)$('layoutHint').textContent='Kein STITCH_API_KEY konfiguriert. Schlüssel in .env setzen und neu starten, siehe README.';
