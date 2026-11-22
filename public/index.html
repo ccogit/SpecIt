@@ -167,11 +167,12 @@ main{flex:1;width:100%;max-width:var(--page);margin:0 auto;padding:16px 24px;dis
 .md.writing>:last-child::after{content:"▍";margin-left:2px;color:var(--secondary);animation:blink 1s steps(2,start) infinite}
 @keyframes blink{to{visibility:hidden}}
 /* Geänderte Tabellenzeile: Zellen einfärben statt die Zeile zu umranden – sonst zeichnen sich Linien und Kanten ab */
-/* Geänderte Stellen: ein Balken am linken Rand, zusammenhängende Stellen als ein Balken, pulsiert dauerhaft */
-.md .marks{position:absolute;inset:0 auto 0 0;width:28px;pointer-events:none}
-.md .marks i{position:absolute;left:9px;width:8px;border-radius:4px;background:var(--secondary);filter:blur(1.5px);animation:markpulse 1.8s ease-in-out infinite}
-@keyframes markpulse{0%,100%{opacity:.45;box-shadow:0 0 6px 1px var(--secondary)}50%{opacity:1;box-shadow:0 0 18px 5px var(--secondary)}}
-@media(prefers-reduced-motion:reduce){.md .marks i{animation:none;opacity:1}}
+/* Geänderte Stellen: Der geänderte Text selbst ist durchscheinend grün hinterlegt und pulsiert leicht */
+.md .chg{background:color-mix(in srgb,var(--go) 16%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--go) 16%,transparent);border-radius:3px;animation:chgpulse 2.2s ease-in-out infinite}
+.md h1.chg,.md h2.chg,.md h3.chg,.md h4.chg{width:fit-content}
+@keyframes chgpulse{0%,100%{background-color:color-mix(in srgb,var(--go) 9%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--go) 9%,transparent)}50%{background-color:color-mix(in srgb,var(--go) 24%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--go) 24%,transparent)}}
+@media(prefers-reduced-motion:reduce){.md .chg{animation:none}}
+@media print{.md .chg{background:none;box-shadow:none;animation:none}}
 .changesum{flex-basis:100%;max-height:38vh;overflow-y:auto;margin:4px 0 0;padding:8px 0 0;list-style:none;border-top:1px solid var(--outline-soft);display:flex;flex-direction:column;gap:8px}
 .changesum ul{list-style:none;margin:2px 0 0;padding:0 0 0 12px;display:flex;flex-direction:column;gap:2px}
 .changesum button{all:unset;cursor:pointer;display:block}
@@ -858,10 +859,13 @@ body{padding-bottom:62px}
 .md .speclogo{float:right;margin:0 0 10px 18px}
 .md .speclogo svg{display:block;border-radius:10px}
 /* Nach einer Änderung pulsiert der Knopf, der den Stand wieder aktuell macht – ruhig, ohne zu blinken */
-.btn.nudge{position:relative;box-shadow:inset 0 0 0 1.5px var(--go);animation:nudge 2s ease-in-out infinite}
-@keyframes nudge{0%,100%{box-shadow:inset 0 0 0 1.5px var(--go),0 0 0 0 color-mix(in srgb,var(--go) 45%,transparent)}55%{box-shadow:inset 0 0 0 1.5px var(--go),0 0 0 7px color-mix(in srgb,var(--go) 0%,transparent)}}
-.btn.nudge:disabled{animation:none}
-@media(prefers-reduced-motion:reduce){.btn.nudge{animation:none}}
+/* Aufmerksamkeit – der eine Mechanismus der ganzen Anwendung: Was als Nächstes bedient werden sollte, trägt eine feine grüne
+   Kontur, von der langsam ein Ring ausgeht. Gilt für jedes bedienbare Element (Klasse „nudge“), nie für Gesperrtes. Rot („need“)
+   bleibt dem vorbehalten, was fehlt. */
+.nudge{box-shadow:inset 0 0 0 1.5px var(--go);animation:nudge 2.6s ease-in-out infinite}
+@keyframes nudge{0%,100%{box-shadow:inset 0 0 0 1.5px var(--go),0 0 0 0 color-mix(in srgb,var(--go) 38%,transparent)}60%{box-shadow:inset 0 0 0 1.5px var(--go),0 0 0 6px color-mix(in srgb,var(--go) 0%,transparent)}}
+.nudge:disabled{animation:none;box-shadow:none}
+@media(prefers-reduced-motion:reduce){.nudge{animation:none}}
 .need{box-shadow:0 0 0 2px var(--error)!important}
 /* Fehlende Pflichtangabe: rote Kontur am Feld, „fehlt“ an der Beschriftung, deutlicher Hinweis mit Sprung zur Stelle */
 .field-label:has(+.need)::after{content:" · fehlt";color:var(--error);font-weight:700}
@@ -879,6 +883,11 @@ body{padding-bottom:62px}
 .reuseitem .switch{margin-top:4px}
 .featsum{display:flex;flex-direction:column;gap:2px;margin-top:12px;padding:12px 14px;border-radius:6px;border-left:4px solid transparent;background:var(--surface-low)}
 .featsum b{font-size:26px;line-height:32px;color:var(--heading);font-variant-numeric:tabular-nums}
+.featline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.featline .chip{margin-left:auto;align-self:center}
+.splitbar.tall{height:30px;border-radius:8px}.splitbar.tall .base{border-radius:8px 0 0 8px}
+.splitbar .free{border:1.5px dashed var(--go);border-left-width:0;border-radius:0 8px 8px 0;background:var(--hl);color:var(--heading);font:600 12px/1 var(--mono);letter-spacing:.02em;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px;min-width:0;transition:background .15s}
+.splitbar .free:hover:not(:disabled),.splitbar .free:focus-visible{background:var(--hl2)}
+.splitbar .free:disabled{cursor:default;border-color:var(--outline-soft);background:none;color:var(--ink-soft)}
 .featsum.over{border-left-color:var(--warn-line);background:var(--error-container)}
 .featsum.over b,.featsum.over .meta,.featsum.over .eyebrow{color:var(--on-error-container)}
 /* Parallelisierung und Schaubild der Work Breakdown Structure */
@@ -1715,9 +1724,9 @@ function navUI(){
   if(target){next.textContent=s.phase===0?$('deriveLabel').textContent:target.textContent;next.disabled=target.disabled}
   // Grün heißt überall: Das Nötige für den nächsten Schritt ist da. Sonst bleibt der Knopf neutral (ein Klick zeigt, was fehlt).
   const open=s.questions.some(q=>q.state==='open'),okNow=[!!s.idea.trim()&&!scaleMissing().length,s.questions.length>0&&!open,!!s.spec.trim()&&!s.dirty&&!open&&!s.features.some(f=>f.on!==f.inSpec),!!s.plan&&!stale()&&!s.finished&&(s.nextStep!=='run'||!!s.runDir.trim())][s.phase];
-  next.classList.toggle('ready',!!okNow&&!!target&&!target.disabled&&!active);
+  next.classList.toggle('ready',!!okNow&&!!target&&!target.disabled&&!active);next.classList.toggle('nudge',next.classList.contains('ready'));
   // Derselbe Grundsatz über dem leeren Dokument: „Spezifikation erstellen“ wird grün, sobald der Umfang steht und in die Zielzeit passt
-  $('generate').classList.toggle('nudge',!!s.spec.trim()&&!!s.dirty&&!active);
+  {const can=!s.spec.trim()&&s.features.length>0&&!open&&!overTarget();$('generate').classList.toggle('nudge',(can||(!!s.spec.trim()&&!!s.dirty))&&!active)}
   $('generate').classList.toggle('ready',!s.spec.trim()&&s.features.length>0&&!open&&!overTarget()&&!active);
   suggestRunDir();
   sketchUI();
@@ -1735,7 +1744,7 @@ $('navBack').onclick=()=>{if(s.phase)setPhase(MERGED&&s.phase===2?0:s.phase-1)};
 function ideaUI(){
   $('ideaCount').textContent=plural(words(s.idea),'Wort','Wörter');
   const same=s.questions.length>0&&s.idea.trim()===s.askedIdea;
-  $('deriveLabel').textContent=same?(MERGED?'Weiter zur Spezifikation →':'Weiter zu den Fragen →'):s.autonomy===100?'✦ Spezifikation erstellen →':s.questions.length?'✦ Fragen neu ableiten →':conceptLive()?'✦ Ausarbeiten →':'✦ Fragen ableiten →';
+  $('deriveLabel').textContent=same?(MERGED?'Weiter zur Spezifikation →':'Weiter zu den Fragen →'):s.autonomy===100?'✦ Weiter zur Spezifikation →':s.questions.length?'✦ Fragen neu ableiten →':conceptLive()?'✦ Ausarbeiten →':'✦ Fragen ableiten →';
   // Modus als Stufe mit Bedeutung statt als Prozentwert
   const level=s.autonomy/20,[title,text]=levels[level],n=s.questions.length,ask=Math.round(n*(1-s.autonomy/100)),who=$('ai').checked?'Claude':'SpecIt';
   levelMark('autonomyValue',level+1,levels.length,(level+1)+'/'+levels.length,'Stufe '+(level+1)+' von '+levels.length);
@@ -1835,7 +1844,8 @@ async function derive(more){
     s.questions=applyAutonomy(s.questions,s.autonomy);auto=!more&&firstOpen()<0;
     s.qSource=r.source;s.phase=auto||MERGED?2:1;activate(firstOpen(),false);renderAll();if(!more)window.scrollTo({top:0});
   }catch(e){status.textContent=e.message}finally{lock(false)}
-  if(auto)startSpec();
+  // Auch im Auto-Modus wird nur der Umfang ermittelt; geschrieben wird erst auf „Spezifikation erstellen“
+  if(auto)startSpec(false);
 }
 $('idea').oninput=e=>{s.idea=e.target.value;revision++;if(s.spec)s.dirty=true;ideaUI();statuses();save()};
 $('idea').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();derive(false)}};
@@ -1872,7 +1882,7 @@ function specChanges(){
   for(const x of now.x)if(!xOld.has(x))out.push('Neue Zusatzanforderung: '+x);
   for(const x of xOld)if(!xNow.has(x))out.push('Die Zusatzanforderung „'+x+'“ entfällt.');
   if(b.d!==now.d)out.push('Ziel-Entwicklungsdauer: bisher '+(b.d||'keine Vorgabe')+', jetzt '+(now.d||'keine Vorgabe'));
-  for(const f of s.features)if(f.on!==f.inSpec)out.push('Feature „'+f.name+'“ '+(f.on?'gehört jetzt zum Umfang':'entfällt aus dem Umfang'));
+  for(const f of s.features)if(f.on!==f.inSpec)out.push('Feature „'+f.name+'“ '+(f.on?'gehört jetzt zum Umfang'+(f.note?' ('+f.note+')':''):'entfällt aus dem Umfang'));
   // Nur der Name oder nichts Erfassbares: Dann genügt der frische Rahmen – es sei denn, es ist etwas anderes verstellt (Ton, Kreativität)
   if(!out.length&&!(b.n!==now.n))return null;
   return out;
@@ -2160,17 +2170,14 @@ function markChanges(view,oldSpec,show){
   let gone=0;for(const n of left.values())gone+=n;
   return {hits,removed:Math.max(0,gone-hits.length)};
 }
-// Balken am linken Rand zeichnen; überlappende oder direkt benachbarte Stellen (auch verschachtelte Listenpunkte) ergeben einen Balken
+// Geänderte Stellen hinterlegen; steckt eine Stelle in einer anderen (verschachtelte Listenpunkte), wird nur die äußere hinterlegt
 let markHits=[];
 function drawMarks(view,hits){
-  view.querySelector(':scope>.marks')?.remove();markHits=hits;if(!hits.length)return;
-  const base=view.getBoundingClientRect(),layer=node('div',undefined,'marks'),merged=[];
-  const spans=hits.map(e=>{const r=e.getBoundingClientRect();return [r.top-base.top,r.bottom-base.top]}).filter(([a,b])=>b>a).sort((x,y)=>x[0]-y[0]);
-  for(const sp of spans){const last=merged[merged.length-1];if(last&&sp[0]<=last[1]+10)last[1]=Math.max(last[1],sp[1]);else merged.push([...sp])}
-  for(const [a,b] of merged){const bar=node('i');bar.style.top=a+'px';bar.style.height=(b-a)+'px';layer.append(bar)}
-  layer.setAttribute('aria-hidden','true');view.append(layer);
+  for(const e of view.querySelectorAll('.chg'))e.classList.remove('chg');
+  markHits=hits;const set=new Set(hits);
+  for(const e of hits){let p=e.parentElement,inner=false;while(p&&p!==view){if(set.has(p)){inner=true;break}p=p.parentElement}if(!inner)e.classList.add('chg')}
 }
-new ResizeObserver(()=>{const v=$('specView');if(markHits.length&&markHits[0].isConnected)drawMarks(v,markHits)}).observe($('specView'));
+
 // Zusammenfassung: geänderte Stellen je Kapitel, jeweils mit dem Anfang des Textes; ein Klick springt dorthin
 function changeSummary(view,hits){
   const set=new Set(hits.filter(e=>!hits.some(h=>h!==e&&e.contains(h)))),groups=[];let head=null,cur=null;
@@ -2234,7 +2241,8 @@ function ensureFits(next){
   $('askYes').textContent='Trotzdem für diesen Umfang erstellen';
   if(!$('askBox').open)$('askBox').showModal();
 }
-async function startSpec(){
+// write=false: nur den Umfang (Features, Namen) vorbereiten – die Spezifikation selbst entsteht nie ohne Klick
+async function startSpec(write=true){
   if(active)return;
   if(!s.idea.trim()){generate();return}
   const basis=scopeBasis();
@@ -2245,9 +2253,9 @@ async function startSpec(){
     s.featBasis=basis;save();
     if(overTarget())await proposeFit();
     await deriveNames(false);
-    // Nur im Auto-Modus und wenn der Umfang passt, geht es ohne Rückfrage weiter
     if(overTarget()||fitProposal){renderAll();specNote('Umfang ermittelt: Features und Zielzeit rechts prüfen, dann „Spezifikation erstellen“.');return}
   }
+  if(!write){renderAll();if(!s.spec.trim())specNote('Umfang ermittelt: Features rechts prüfen, dann „Spezifikation erstellen“.');return}
   ensureFits(generate);
 }
 function ensureDecided(next){
@@ -2326,7 +2334,9 @@ function chaptersUI(view){
   if(overview){
     const ids=[...new Set(s.spec.match(/\b(?:FR|NFR)-\d{3}\b/g)||[])],fr=ids.filter(x=>x.startsWith('FR')).length,sum=summary(s.questions),feats=s.features.filter(f=>f.on);
     const box=node('div',undefined,'specsum'),find=re=>(list.find(c=>re.test(c.title))||{}).title;
-    const tile=(n,label,target,warn)=>{const b=node('button',undefined,warn?'warn':'');b.type='button';b.append(node('b',String(n)),node('span',label));if(target)b.onclick=()=>go(target);else b.disabled=true;box.append(b)};
+    const tile=(n,label,target,warn)=>{const b=node('button',undefined,warn?'warn':'');b.type='button';b.append(node('b',String(n)),node('span',label));if(target)b.onclick=()=>go(target);else b.disabled=true;box.append(b);return b};
+    // Geschätzte Dauer der gewählten Features neben der Zielvorgabe: Beides zusammen zeigt, wie viel Zeit frei bleibt oder fehlt
+    if(feats.length){const fd=featDuration(),tm=targetMinutes();tile(hm(fd.total),'geschätzte Entwicklungsdauer'+(fd.agents>1?' · '+fd.agents+' Agenten':''),find(/^Umfang/),!!tm&&fd.total>tm).id='estTile'}
     tile(duration()||'–','Ziel-Entwicklungsdauer',find(/^Rahmen/));
     if(feats.length)tile(feats.filter(f=>f.core).length+' + '+feats.filter(f=>!f.core).length,'Basis-Features + Erweiterungen',find(/^Umfang/));
     tile(fr,fr===1?'funktionale Anforderung':'funktionale Anforderungen',find(/^Funktionale Anforderungen/));
@@ -2806,23 +2816,47 @@ async function applyScope(){
   change={ids:moved.map(a=>a.index),title:'Feature-Auswahl übernommen:',detail:[remove.length?remove.length+' abgewählt':'',restore.length?restore.length+' wieder aufgenommen':'',moved.length?plural(moved.length,'Entscheidung angepasst','Entscheidungen angepasst'):''].filter(Boolean).join(', '),prev,old:prev.spec,until:0,scroll:false};
   renderAll();flash();
 }
+// Freie Zeit nutzen: Die KI schlägt weitere Features vor; übernommen wird der Reihe nach, was zusätzlich in die Zielzeit passt
+async function extendFeatures(){
+  if(active)return;
+  const target=targetMinutes(),fd=featDuration(),free=target-fd.total;if(!(free>0))return;
+  const rev=revision;lock(true,'Weitere Features werden gesucht');featNote='';
+  try{
+    const r=await call({mode:'extend',project:s.project,idea:s.idea,spec:s.spec,features:s.features,target,free,maxAgents:fd.agents,ai:$('ai').checked});
+    if(rev!==revision){featNote='Eingaben geändert. Erneut starten.';return}
+    const known=new Set(s.features.map(f=>f.name.toLowerCase())),added=[];let list=s.features;
+    for(const f of Array.isArray(r.features)?r.features:[]){
+      if(!f||typeof f.name!=='string'||known.has(f.name.toLowerCase()))continue;
+      // Die Kennung kommt fortlaufend vom Server; in der Spezifikation steht das Feature noch nicht (inSpec=false) – „Spezifikation aktualisieren“ arbeitet es ein
+      const trial=cleanFeatures([...list,{...f,core:false,own:true,on:true,inSpec:false}]);
+      if(featureDuration(trial,fd.agents)>target)continue;
+      list=trial;added.push(f.name);known.add(f.name.toLowerCase());
+    }
+    if(added.length){s.features=list;revision++;if(s.spec.trim())s.dirty=true;featNote=plural(added.length,'Feature','Features')+' ergänzt (als Erweiterung, abwählbar): '+added.join(', ')+'.'+(s.spec.trim()?' „Spezifikation aktualisieren“ arbeitet sie ein.':'');save()}
+    else featNote=r.source==='demo'?'Weitere Features schlägt nur Claude vor (Schalter oben rechts).':'Kein weiteres Feature gefunden, das sinnvoll ist und noch in die Zielzeit passt.';
+  }catch(e){featNote=e.message}finally{lock(false);renderAll()}
+}
 function featuresUI(){
   // Solange es keine Spezifikation gibt, ist die Auswahl selbst der Umfang – es gibt nichts einzuarbeiten
   if(!s.spec.trim()&&s.features.some(f=>f.on!==f.inSpec))s.features=s.features.map(f=>({...f,inSpec:f.on}));
   const box=$('featBox'),list=s.features;box.replaceChildren();
   // Kopfzeile: geplante Dauer, die Zahl der Agenten, mit der sie gerechnet ist, die Zielvorgabe und der Umfang
   const fdHead=list.length?featDuration():null,tHead=targetMinutes();
-  $('featCount').textContent=list.length?'Geschätzt '+hm(fdHead.total)+(tHead?' / Soll '+hm(tHead):'')+' · '+(fdHead.agents===1?'1 Agent':fdHead.agents+' Agenten parallel')+' · '+list.filter(f=>f.core).length+' Basis · '+list.filter(f=>!f.core&&f.on).length+' von '+list.filter(f=>!f.core).length+' Erweiterungen':'';
+  $('featCount').textContent=list.length?hm(fdHead.total)+(tHead?' von '+hm(tHead):'')+' · '+list.filter(f=>f.core).length+' Basis · '+list.filter(f=>!f.core&&f.on).length+'/'+list.filter(f=>!f.core).length+' Erweiterungen':'';
   if(!list.length){
     box.append(node('p',s.spec.trim()?'Für diese Spezifikation sind noch keine Features ermittelt.':'Die Features erscheinen, sobald eine Spezifikation erstellt ist.','meta'));
-    if(s.spec.trim()){const get=button('✦ Features und Aufwand ermitteln','btn small',deriveFeatures);get.style.marginTop='10px';get.disabled=active;box.append(get)}
+    if(s.spec.trim()){const get=button('✦ Features und Aufwand ermitteln','btn small nudge',deriveFeatures);get.style.marginTop='10px';get.disabled=active;box.append(get)}
     return;
   }
   // Gesamtdauer der gewählten Features, verglichen mit der Ziel-Entwicklungsdauer
   // Dauer nach der Work Breakdown Structure: so viele Agenten wie gewählt, höchstens so viele, wie Pakete gleichzeitig bereitstehen
   const fd=featDuration(),total=fd.total,target=targetMinutes(),over=target>0&&total>target,sum=node('div',undefined,'featsum'+(over?' over':'')),acts=node('div',undefined,'catacts'),par=node('div',undefined,'featpar'),pick=node('div',undefined,'seg');
-  sum.append(node('span','Geschätzte Entwicklungsdauer · '+(fd.agents===1?'ein Agent':fd.agents+' parallele Agenten'),'eyebrow'),node('b',hm(total)),node('span',!target?'Keine Ziel-Entwicklungsdauer angegeben (Schritt 1).':over?'Überschreitet die Zielvorgabe von '+duration()+' ('+hm(target)+') um '+hm(total-target)+'.':'Passt in die Zielvorgabe von '+duration()+' ('+hm(target)+').','meta'),
-    node('span','Arbeitsaufwand gesamt '+hm(fd.effort)+' · '+plural(fd.wbs.tasks.length,'Arbeitspaket','Arbeitspakete')+' in '+plural(fd.wbs.waves.length,'Stufe','Stufen'),'meta'));
+  // Die Kachel im Überblick der Spezifikation zeigt dieselbe Schätzung und zieht bei jeder Änderung mit
+  {const e=$('estTile');if(e){e.querySelector('b').textContent=hm(total);e.querySelector('span').textContent='geschätzte Entwicklungsdauer'+(fd.agents>1?' · '+fd.agents+' Agenten':'');e.classList.toggle('warn',over)}}
+  const head=node('div',undefined,'featline'),state=!target?null:node('span',over?hm(total-target)+' über dem Ziel':'passt','chip '+(over?'warn':'ok'));
+  head.append(node('b',hm(total)),node('span',target?'von '+hm(target):'ohne Zielvorgabe','meta'));if(state)head.append(state);
+  head.title='Geschätzte Entwicklungsdauer mit '+(fd.agents===1?'einem Agenten':fd.agents+' parallelen Agenten')+' · Arbeitsaufwand gesamt '+hm(fd.effort)+' · '+plural(fd.wbs.tasks.length,'Arbeitspaket','Arbeitspakete')+' in '+plural(fd.wbs.waves.length,'Stufe','Stufen');
+  sum.append(head);
   // Aufteilung: Zeit für die Basis-Features allein und der Zuschlag durch die gewählten Erweiterungen, gemessen an der Zielvorgabe
   const baseMin=Math.min(total,featureDuration(list.map(f=>({...f,on:f.core})),fd.agents)),extMin=total-baseMin,span=Math.max(total,target,1),bar=node('div',undefined,'splitbar'),legend=node('div',undefined,'splitlegend');
   const seg=(cls,min)=>{const e=node('span',undefined,cls);e.style.width=(min/span*100)+'%';return e};
@@ -2830,8 +2864,15 @@ function featuresUI(){
   if(target){const mark=node('span',undefined,'goal');mark.style.left=Math.min(100,target/span*100)+'%';mark.title='Zielvorgabe: '+hm(target);bar.append(mark)}
   bar.setAttribute('role','img');bar.setAttribute('aria-label','Basis-Features '+hm(baseMin)+', Erweiterungen '+hm(extMin)+(target?', Zielvorgabe '+hm(target):''));
   const key=(cls,label,min)=>{const e=node('span');e.append(node('i',undefined,cls),label+' ',node('b',hm(min)));return e};
-  legend.append(key('base',list.filter(f=>f.core).length+' Basis-Features',baseMin),key('ext',list.filter(f=>!f.core&&f.on).length+' von '+list.filter(f=>!f.core).length+' Erweiterungen +',extMin));if(target)legend.append(key('goal','Ziel',target));
+  legend.append(key('base','Basis',baseMin),key('ext','Erweiterungen',extMin));if(target)legend.append(key('goal','Ziel',target));
   sum.append(bar,legend);
+  // Bleibt in der Zielzeit spürbar Luft, ist das freie Stück des Zeitstrahls ein Knopf: Die KI ergänzt Features, die zusätzlich hineinpassen
+  if(target&&!over&&target-total>=Math.max(0.3,target*0.1)){
+    const share=(target-total)/span,more=button(share>.45?'＋ '+hm(target-total)+' frei · Features ergänzen':share>.2?'＋ '+hm(target-total)+' frei':'＋','free',extendFeatures);
+    more.style.width=(share*100)+'%';more.disabled=active||!$('ai').checked;more.setAttribute('aria-label',hm(target-total)+' frei: weitere Features ergänzen');
+    more.title=$('ai').checked?hm(target-total)+' frei: Claude schlägt weitere nützliche Features vor, die zusätzlich in die Zielzeit passen. Sie kommen als abwählbare Erweiterungen dazu.':hm(target-total)+' frei. Zum Ergänzen weiterer Features Claude einschalten (Schalter oben rechts).';
+    more.classList.toggle('nudge',!more.disabled);bar.classList.add('tall');bar.removeAttribute('role');bar.insertBefore(more,bar.querySelector('.goal'));
+  }
   // Zielvorgabe direkt hier ändern: Die Rechnung passt sich sofort an; die Spezifikation nennt die Vorgabe als Rahmen
   // und wird deshalb erst auf Wunsch nachgezogen.
   const goal=node('div',undefined,'goalpick'),gHead=node('div',undefined,'spread'),gNow=node('span',durations[s.durLevel][0],'chip'),gIn=node('input');
@@ -2847,13 +2888,13 @@ function featuresUI(){
   }
   par.className='parbox';
   pair.append(agentSlider(fd.agents,fd.max,n=>{s.featAgents=n;featuresUI();ideaUI();save()}));
-  par.append(node('span',fd.max<2?'Die Arbeitspakete bauen aufeinander auf; es kann nur nacheinander gearbeitet werden.':'Höchstens '+fd.max+': So viele Arbeitspakete sind unabhängig voneinander und lassen sich gleichzeitig entwickeln.','note'));
+  pair.lastElementChild.title=fd.max<2?'Die Arbeitspakete bauen aufeinander auf; es kann nur nacheinander gearbeitet werden.':'Höchstens '+fd.max+': So viele Arbeitspakete sind unabhängig voneinander und lassen sich gleichzeitig entwickeln.';
   const allOn=button('✓ Alle Erweiterungen','btn small',()=>{featNote='';setFeatures(()=>true)}),allOff=button('✕ Keine Erweiterungen','btn small',()=>{featNote='';setFeatures(()=>false)});
   allOn.disabled=list.every(f=>f.on);allOff.disabled=list.every(f=>f.core||!f.on);
   // Vorschlag: Basis gesetzt, Erweiterungen der Reihe nach, solange die Zielzeit reicht
   const propose=button('✦ Vorschlag für die Zielzeit','btn small',proposeFit);
   const canPropose=!!target&&(goalChanged||over)&&!active;propose.disabled=!canPropose;propose.classList.toggle('primary',canPropose);
-  propose.title=!target?'Dafür eine Zielvorgabe wählen.':!(goalChanged||over)?'Die Auswahl passt in die Zielvorgabe. Aktiv, sobald die Zielvorgabe geändert oder überschritten wird.':'Sucht eine Lösung, die in die Zielvorgabe passt: mehr parallele Agenten, passende Erweiterungen – und wenn die Basis zu groß ist, ein verschlankter Umfang.';const show=button('▤ Struktur anzeigen','btn small',showWbs);show.title='Work Breakdown Structure: Arbeitspakete, Stufen und Abhängigkeiten als Schaubild';acts.append(propose,allOn,allOff,show);box.append(sum,par,acts);
+  propose.title=!target?'Dafür eine Zielvorgabe wählen.':!(goalChanged||over)?'Die Auswahl passt in die Zielvorgabe. Aktiv, sobald die Zielvorgabe geändert oder überschritten wird.':'Sucht eine Lösung, die in die Zielvorgabe passt: mehr parallele Agenten, passende Erweiterungen – und wenn die Basis zu groß ist, ein verschlankter Umfang.';const show=button('▤ Struktur anzeigen','btn small',showWbs);show.title='Work Breakdown Structure: Arbeitspakete, Stufen und Abhängigkeiten als Schaubild';if(canPropose)acts.append(propose);if(!allOn.disabled)acts.append(allOn);if(!allOff.disabled)acts.append(allOff);acts.append(show);box.append(sum,acts);
   if(featNote)box.append(node('p',featNote,'featnote'));
   // Lösungsvorschlag von Claude: Maßnahmen, Ergebnis und die Entscheidung des Nutzers
   if(fitProposal){
@@ -3869,7 +3910,7 @@ function runUI(){
   $('runStop').classList.toggle('hidden',!busyRun);
   // Übergabe: Sobald ein Lauf beendet ist (auch nach einem Neustart), lässt sich das Ergebnis laden und der Ordner öffnen
   const handover=!busyRun&&s.nextStep==='run'&&!!s.runDir.trim()&&(!!(r&&r.items.length)||s.finished===finishKey());
-  $('runZip').classList.toggle('hidden',!handover);$('runOpen').classList.toggle('hidden',!handover);$('runWhere').textContent=handover?'Ergebnis in '+((r&&r.dir)||s.runDir.trim()):'';
+  $('runZip').classList.toggle('hidden',!handover);$('runZip').classList.toggle('nudge',handover&&zipTaken!==((r&&r.dir)||s.runDir.trim()));$('runOpen').classList.toggle('hidden',!handover);$('runWhere').textContent=handover?'Ergebnis in '+((r&&r.dir)||s.runDir.trim()):'';
   if(!r||!r.items.length){$('runStatus').textContent='';return}
   const done=r.items.filter(x=>x.state==='done').length,bad=r.items.filter(x=>['failed','skipped'].includes(x.state)).length;
   $('runStatus').textContent=(r.active?'Umsetzung läuft':r.stopped?'Umsetzung gestoppt':bad?'Umsetzung beendet – nicht alles abgeschlossen':'Umsetzung abgeschlossen')+' · '+done+' von '+r.items.length+' fertig'+(bad?' · '+bad+' nicht abgeschlossen':'')+' · '+(r.agents===1?'1 Agent, nacheinander':r.agents+' Agenten parallel')+' · '+dur(r.seconds)+' · '+r.dir;
@@ -3916,12 +3957,13 @@ async function pollRun(){
 }
 $('runDir').oninput=e=>{s.runDir=e.target.value;save();reviewUI(s.plan&&!stale()?s.plan:null,agentsNow());navUI()};
 $('runShell').onchange=e=>{s.runShell=e.target.checked;save();reviewUI(s.plan&&!stale()?s.plan:null,agentsNow());navUI()};
+let zipTaken='';
 $('runZip').onclick=async()=>{
   const b=$('runZip'),dir=(run&&run.dir)||s.runDir.trim();b.disabled=true;
   try{
     const res=await fetch('/api/run/download',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({dir})});
     if(!res.ok)throw Error((await res.json().catch(()=>({}))).error||'Download nicht möglich.');
-    const url=URL.createObjectURL(await res.blob()),a=node('a');a.href=url;a.download=(repoSlug()||'implementierung')+'.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const url=URL.createObjectURL(await res.blob()),a=node('a');a.href=url;a.download=(repoSlug()||'implementierung')+'.zip';a.click();zipTaken=dir;b.classList.remove('nudge');setTimeout(()=>URL.revokeObjectURL(url),1000);
   }catch(e){$('runWhere').textContent=e.message}
   b.disabled=false;
 };
