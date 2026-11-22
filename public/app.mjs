@@ -65,7 +65,7 @@ const toneNames=[
   ['Eher formell, berufliches Umfeld','Sachliche Formulierungen, klare, ruhige Gestaltung. Beschreibender Name, kein Humor.'],
   ['Formell und arbeitsbezogen','Förmliche Ansprache (Sie), nüchterne, seriöse Gestaltung mit hoher Informationsdichte.']
 ];
-const blank=()=>({ideaTidy:null,time:{req:0,spec:0,impl:0},aiLedger:{spec:{w:0,ms:0},impl:{w:0,ms:0}},concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,proto:null,featPool:[],runOutput:null,own:{},sketch:null,logoCount:1,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:1,names:[],nameAuto:'',featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:40,durLevel:0,durCustom:null,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',repoOn:true,agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
+const blank=()=>({ideaTidy:null,time:{req:0,spec:0,impl:0},aiLedger:{spec:{w:0,ms:0},impl:{w:0,ms:0}},concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,proto:null,featPool:[],runOutput:null,own:{},sketch:null,logoCount:1,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:1,names:[],nameAuto:'',featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:100,durLevel:0,durCustom:null,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',repoOn:true,agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
 let s=blank();
 try{
@@ -447,6 +447,8 @@ const ideaSame=()=>s.questions.length>0&&s.idea.trim()===s.askedIdea;
 const needConcept=()=>$('ai').checked&&atIdea()&&!(s.concept&&s.concept.key===conceptKey())&&(!ideaSame()||!!s.concept);
 const draftStale=()=>needConcept()&&!!s.concept;
 function mainUI(){
+  // Der Entscheidungsmodus steht sichtbar bei der Idee; ein Klick öffnet die Einstellungen an dieser Stelle
+  {const i=Math.max(0,Math.min(shortAutonomy.length-1,Math.round(s.autonomy/20))),t=shortAutonomy[i];if($('modeLineVal').textContent!==t)$('modeLineVal').textContent=t}
   const b=$('derive'),l=$('deriveLabel'),e=$('elaborate'),busy=!!conceptJob,ai=$('ai').checked,need=needConcept();
   const next=ideaSame()?(s.spec.trim()?'Zur Spezifikation ←':'Zu den Entscheidungen ↓'):s.autonomy===100?'✦ Spezifikation erstellen →':'✦ Spezifikation ausarbeiten →';
   const nextTitle=ideaSame()?'':s.autonomy===100?'SpecIt entscheidet alles selbst und schreibt die Spezifikation.':'Arbeitet den Grobentwurf aus: leitet die Features und die noch offenen Fragen ab. Sind sie beantwortet, entsteht aus dem Gerüst die vollständige Spezifikation.';
@@ -462,7 +464,9 @@ function mainUI(){
   const specReady=!atIdea()&&typeof streamText!=='string'&&specMode!=='edit'&&!!s.spec.trim(),upd=specReady&&!!s.dirty;
   // Spezifikation steht: erst eine geänderte Feature-Auswahl übernehmen, sonst weiter zur Umsetzung (in der Umsetzungsansicht und nach dem Abschluss entfällt der Knopf – zwischen den Ansichten wechselt allein der Umschalter oben)
   const pend=specReady&&!upd&&s.features.some(f=>f.on!==f.inSpec),planOk=!!s.plan&&!stale(),doneImpl=planOk&&s.finished===finishKey();
-  const goImpl=specReady&&!upd&&!pend&&!doneImpl&&!document.body.classList.contains('runview');
+  const implShown=$('implPanel').open&&!$('implPanel').classList.contains('hidden');
+  // Ohne Plan führt der Knopf nur zum Umsetzungsblock: Steht der schon offen da, entfällt er – dort wählt man eine der drei Aktionen
+  const goImpl=specReady&&!upd&&!pend&&!doneImpl&&!document.body.classList.contains('runview')&&(planOk||!implShown);
   const make=ideaSame(),show=(atIdea()&&specMode!=='edit')||upd||pend||goImpl,old=draftStale();e.classList.toggle('hidden',!show);e.classList.toggle('specact',upd||pend||goImpl);e.dataset.act=upd?'update':pend?'apply':goImpl?'impl':'';
   e.textContent=pend?'✓ Feature-Auswahl in die Spezifikation übernehmen':goImpl?(planOk?(s.nextStep==='run'?'▸ Plan freigeben und Umsetzung starten':'✓ Plan bestätigen und Dateien bereitstellen'):'▸ Weiter zur Umsetzung'):upd?'↻ Spezifikation aktualisieren – Eingaben oder Antworten wurden geändert':busy?'Entwurf entsteht …':old?'↻ Entwurf aktualisieren – Idee oder Einstellungen wurden geändert':need?'✦ Entwurf erstellen':make?'✦ Spezifikation erstellen →':next;
   e.title=upd?'Die Spezifikation passt nicht mehr zu deinen Eingaben. Die geänderten Kapitel werden neu geschrieben.':busy?'':old?'Der Entwurf passt nicht mehr zu Idee oder Einstellungen. Erst wenn er aktualisiert ist, fließen die Änderungen in die Spezifikation ein.':need?(empty?'Zuerst links die Idee eingeben und die Zeit wählen.':'Claude schreibt aus deiner Idee und den Einstellungen den Grobentwurf der Spezifikation.'):make?'Schreibt aus Entwurf, Entscheidungen und Features die vollständige Spezifikation.':nextTitle;
@@ -2769,6 +2773,7 @@ function durInput(){
 }
 $('durNum').addEventListener('input',durInput);$('durUnit').addEventListener('change',durInput);
 function settingsOpen(){settingsBuild();const d=$('setDlg');if(!d.open)d.showModal()}
+$('modeLine').onclick=()=>{settingsOpen();const r=document.querySelector('#setBody .setcard[data-id=autonomy] .setrange');if(r){r.scrollIntoView({block:'center'});r.focus({preventScroll:true})}};
 $('setClose').onclick=()=>$('setDlg').close();$('setDlg').onclick=e=>{if(e.target===$('setDlg'))$('setDlg').close()};
 const scaleMissing=()=>scaleRows.filter(([,key])=>scaleState(key)==='missing').map(([,,name])=>name);
 function scaleDots(){
@@ -3121,6 +3126,7 @@ $('planAgain').onclick=()=>$('plan').onclick();
 $('goDownload').onclick=()=>goFlow('download');$('goApprove').onclick=()=>goFlow('approve');$('goDirect').onclick=()=>goFlow('direct');
 // Klappt in der Gruppe etwas auf, öffnet sich auch die Gruppe
 for(const id of ['featPanel','decPanel'])$(id).addEventListener('toggle',()=>{if($(id).open)$('specGroup').open=true});
+$('implPanel').addEventListener('toggle',()=>mainUI());
 $('finish').onclick=async()=>{
   const p=s.plan&&!stale()?s.plan:null;if(!p||active||runBusy)return;
   if(s.nextStep!=='run'){s.finished=finishKey();save();renderAll();$('doneBox').scrollIntoView({block:'nearest'});return}
@@ -3392,8 +3398,7 @@ function cancelSessionWork(){
   for(const kind of Object.keys(diagBusy)){diagBusy[kind]=false;diagTried[kind]='';diagNote[kind]=''}
   working('');
 }
-// Zurücksetzen bleibt widerrufbar; aktive Coding-Agenten müssen zuvor ausdrücklich gestoppt werden.
-let undoTimer=0;
+// Zurücksetzen gilt sofort und ohne Meldung; aktive Coding-Agenten müssen zuvor ausdrücklich gestoppt werden.
 $('reset').onclick=()=>{
   if(runBusy||runStarting){
     $('implPanel').open=true;
@@ -3401,11 +3406,7 @@ $('reset').onclick=()=>{
     if(runBusy)$('runStop').focus();
     return;
   }
-  const before=s,fresh=blank(),toast=$('toast');
-  cancelSessionWork();replaceState(fresh);lock(false);s.autonomy=blank().autonomy;s.phase=0;catGroups.clear();renderAll();window.scrollTo({top:0});$('idea').focus();
-  const undo=button('↶ Rückgängig','btn small',()=>{clearTimeout(undoTimer);toast.classList.add('hidden');revision++;s=before;change=null;catOpen=-1;if(s.active>=0)activate(s.active,false);renderAll()});
-  toast.replaceChildren(node('span','Alles zurückgesetzt.'),undo);toast.classList.remove('hidden');
-  clearTimeout(undoTimer);undoTimer=setTimeout(()=>toast.classList.add('hidden'),20000);
+  cancelSessionWork();replaceState(blank());lock(false);s.autonomy=blank().autonomy;s.phase=0;catGroups.clear();renderAll();window.scrollTo({top:0});$('idea').focus();
 };
 
 function renderAll(){
