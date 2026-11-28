@@ -76,7 +76,7 @@ function checkManifest(m) {
   schema(hash(m.spec_sha256)&&hash(m.requirements_sha256)&& (m.revision===1?m.previous_manifest_sha256===null:hash(m.previous_manifest_sha256)),'manifest hashes');
   schema(m.target_minutes===null?m.target_minutes_reason==='not_available':minute(m.target_minutes,1e9)&&!Object.hasOwn(m,'target_minutes_reason'),'target minutes');
   checkPlan(m.plan);
-  schema(plain(m.tasks)&&Array.isArray(m.blockers)&&Array.isArray(m.artifacts)&&Array.isArray(m.draft_files),'manifest mappings');
+  schema(plain(m.tasks)&&Array.isArray(m.blockers)&&m.blockers.every(plain)&&Array.isArray(m.artifacts)&&Array.isArray(m.draft_files),'manifest mappings');
   const order=[...m.blockers.map(b=>b.id),...m.plan.waves.flatMap(w=>[...w].sort(codepointCompare))];
   identity(order.length<=99&&new Set(order).size===order.length&&Object.keys(m.tasks).length===m.plan.tasks.length&&m.plan.tasks.every(t=>Object.hasOwn(m.tasks,t.id)),'manifest identities');
   schema(strictlySorted(m.blockers,'id'),'blocker order');
@@ -233,6 +233,13 @@ function validateHistory(input, identities) {
   const active=new Set(identities.active),retired=new Map(requirements.retired_ids.map(x=>[x.id,x])),priorActive=new Set(prior.identities.active),priorRetired=new Set(prior.identities.retired);
   history(prior.identities.active.every(id=>active.has(id)||retired.has(id))&&old.retired_ids.every(x=>retired.has(x.id)&&equal(x,retired.get(x.id))),'identity continuity');
   history(requirements.retired_ids.every(x=>priorRetired.has(x.id)||priorActive.has(x.id)&&x.retired_revision===revision),'new tombstone continuity');
+  // Removing an old B link cannot by itself release a surviving task. A
+  // replacement open blocker may preserve the block; otherwise retain the
+  // link until Decision Acceptance is handled by the coordinator in Aira.
+  const survivingTasks=new Set(input.plan.tasks.map(t=>t.id));
+  for(const d of old.decisions)for(const task of d.task_ids)if(survivingTasks.has(task)){
+    history(requirements.decisions.some(n=>n.task_ids.includes(task)&&(n.id===d.id||n.state==='open'&&!priorActive.has(n.id))),'decision link removed without replacement: '+d.id);
+  }
   for(const id of identities.active)if(!priorActive.has(id)){
     const [ns,n]=Object.entries(restoreRequirementHighWater({},[id],[]))[0];
     identity(n>(prior.identities.counters[ns]??0),'reused identity: '+id);
@@ -441,6 +448,8 @@ export function verifyAiraV2(files, historyEntries=[]) {
     return [a.path,files[a.path]];
   }));
   let previous=null;
+  const migration=Array.isArray(historyEntries)?null:historyEntries?.migration??null;
+  if(!Array.isArray(historyEntries))historyEntries=historyEntries?.history;
   history(Array.isArray(historyEntries),'history list');
   if(historyEntries.length){
     const last=historyEntries.at(-1);
@@ -448,7 +457,12 @@ export function verifyAiraV2(files, historyEntries=[]) {
   }
   const input={schema_version:2,plan_id:manifest.plan_id,repo:manifest.repo,revision:manifest.revision,plan:manifest.plan,target_minutes:manifest.target_minutes,
     previous_manifest_sha256:manifest.previous_manifest_sha256,previous,requirements,confirmed_points,spec:files['SPEC.md'],artifacts,
-    spec_sha256:manifest.spec_sha256,requirements_sha256:manifest.requirements_sha256,draft_files:manifest.draft_files};
+    spec_sha256:manifest.spec_sha256,requirements_sha256:manifest.requirements_sha256,draft_files:manifest.draft_files,...(migration?{migration}:{})};
+  if(migration){
+    const verified=verifyV1Migration(migration,input);
+    history(!previous&&manifest.revision===1,'migration must accompany initial revision');
+    try{confirmRequirementRevision(manifest.plan,requirements,{confirmedIds:activeIds(manifest.plan,requirements),migration:verified});}catch{history(false,'migration identity mapping');}
+  }
   const generated=projectV2(input,{archived:{manifest,manifestBytes:m.raw,requirementsBytes:r.raw}});
   requireValue(equal(Object.keys(generated.files).sort(),Object.keys(files).sort()),'INVALID_PATH','package files');
   for(const path of Object.keys(generated.files)){

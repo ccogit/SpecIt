@@ -4,7 +4,11 @@ import test from 'node:test';
 import {sha256,exportAira,previewAira,verifyAira} from '../aira-export.mjs';
 import {airaZip} from '../aira-zip.mjs';
 import {inflateRawSync} from 'node:zlib';
-import {buildAiraV2Export} from '../aira-v2-export.mjs';
+import {buildAiraV2Export,validateV2Restore} from '../aira-v2-export.mjs';
+import {restoreRequirementHighWater} from '../aira-requirement-identities.mjs';
+import {verifyV1Migration} from '../aira-v1-migration.mjs';
+import {demoPlan,proposeRequirementPlan} from '../planner.mjs';
+import {confirmRequirementRevision} from '../aira-requirement-revisions.mjs';
 
 const read = name => readFileSync(new URL('./fixtures/aira-v2/' + name, import.meta.url));
 const fixture = name => JSON.parse(read(name));
@@ -80,6 +84,12 @@ for (const variant of invalid.cases) {
     assert.throws(() => exportAira(input), {code: variant.expected});
     assert.throws(() => previewAira(input), {code: variant.expected});
     assert.throws(() => airaZip(input), {code: variant.expected});
+    // Apply the same fixture mutation directly to original package bytes.
+    const archived={...fixture(variant.base ?? invalid.base).expected_files};
+    const value=JSON.parse(archived[variant.path]);
+    replaceField(value,variant.field,variant.value);
+    archived[variant.path]=JSON.stringify(value,null,2)+'\n';
+    assert.throws(()=>verifyAira(archived,input.previous?[input.previous]:[]),{code:variant.expected});
   });
 }
 
@@ -180,4 +190,56 @@ test('V2 exact projection rejects drift, missing verification and extra fields',
   assert.throws(()=>exportAira(missing),{code:'INVALID_SCHEMA'});
   const files=exportAira(input);files['draft/01-T01.md']=Buffer.from('changed');
   assert.throws(()=>verifyAira(files),{code:'INVALID_HASH'});
+});
+
+test('V2 restore verifies original binding, byte hash and identity snapshot',()=>{
+  const {input}=source('linear.json'),p=previewAira(input);
+  const active=input.confirmed_ids;
+  const record={repo:input.repo,manifest_bytes:p.manifest_bytes,requirements_bytes:p.requirements_bytes,manifest_sha256:p.manifest_sha256,
+    mapping:{key:active[0]},snapshot:{plan:input.plan,requirements:input.requirements,highWater:restoreRequirementHighWater({},active,[])}};
+  assert.equal(validateV2Restore(record,input),true);
+  assert.throws(()=>validateV2Restore({...record,manifest_sha256:'0'.repeat(64)},input),{code:'HISTORY_CONFLICT'});
+  const bad=structuredClone(record);bad.snapshot.highWater.T=900;
+  assert.throws(()=>validateV2Restore(bad,input),{code:'HISTORY_CONFLICT'});
+});
+
+test('a B tombstone cannot release surviving tasks without an open replacement',()=>{
+  const {input}=source('blocked.json'),files=exportAira(input);
+  const next=structuredClone(input);next.revision=2;next.requirements.revision=2;
+  next.previous={manifest_bytes:files['manifest.json'],requirements_bytes:files['requirements.json']};next.previous_manifest_sha256=sha256(files['manifest.json']);
+  next.requirements.retired_ids=[{id:'AC-B01-001',kind:'criterion',reason:'retired',retired_revision:2},{id:'B01',kind:'decision',reason:'retired',retired_revision:2},{id:'TC-B01-001',kind:'test',reason:'retired',retired_revision:2}];
+  next.requirements.decisions=[];next.requirements.criteria=next.requirements.criteria.filter(x=>x.task_id!=='B01');next.requirements.tests=next.requirements.tests.filter(x=>x.task_id!=='B01');
+  delete next.confirmed_points.B01;next.confirmed_ids=next.confirmed_ids.filter(x=>!x.includes('B01'));next.plan.tasks.forEach(t=>t.blockedBy=[]);next.plan.blocked=[];
+  assert.throws(()=>exportAira(next),{code:'HISTORY_CONFLICT'});
+});
+
+test('V1 original package migration reaches a reviewed V2 export without reusing retired IDs',()=>{
+  const fixture=JSON.parse(readFileSync(new URL('./fixtures/specit_v1/linear.json',import.meta.url),'utf8'));
+  const {plan_id,repo,plan}=fixture.source;
+  const packageBytes=Object.fromEntries(Object.entries(fixture.expected_files).map(([k,v])=>[k,Buffer.from(v).toString('base64')]));
+  const migration=verifyV1Migration({target:'local target',evidence_ref:'local/migration.json',confirmed:true,
+    packages:[packageBytes],mapping:[{id:'T01',action:'retain'},{id:'T02',action:'retire'}]},{plan_id,repo});
+  const current=plan.tasks.find(t=>t.id==='T01'),draft={...plan,tasks:[current]};
+  const proposal=proposeRequirementPlan(draft,{plan_id,migration,mapping:{[JSON.stringify(['T',current.id,current.title,current.goal])]:'T01'}});
+  proposal.requirements.retired_ids.find(x=>x.id==='T02').reason='Semantisch ersetzt';
+  const input={plan_id,repo,schema_version:2,revision:1,plan:proposal.plan,requirements:proposal.requirements,migration,
+    confirmed_ids:Object.values(proposal.mapping),confirmed_points:{T01:5},target_minutes:null,spec:fixture.expected_files['SPEC.md'],approved:true,changes_approved:true,previous_manifest_sha256:null};
+  const files=exportAira(input);
+  assert.equal(verifyAira(files,{history:[],migration}),true);
+  assert.equal(JSON.parse(files['requirements.json']).retired_ids[0].id,'T02');
+  assert.throws(()=>exportAira({...input,migration:{...migration,packages:[{...packageBytes,'SPEC.md':Buffer.from('changed').toString('base64')}]}}),{code:'HISTORY_CONFLICT'});
+  assert.throws(()=>verifyAira(files),{code:'HISTORY_CONFLICT'});
+});
+
+test('planner review and reordering preserve mapped identities; a rename still needs confirmation',()=>{
+  const draft=demoPlan('Synthetic'),a=proposeRequirementPlan(draft,{plan_id:'stable'});
+  const previous=confirmRequirementRevision(a.plan,a.requirements,{confirmedIds:Object.values(a.mapping)});
+  const changed=structuredClone(draft);changed.tasks.reverse();const t=changed.tasks.find(t=>t.id==='T01');
+  const oldKey=JSON.stringify(['T',t.id,t.title,t.goal]);t.title='New title';
+  const mapping={...a.mapping,[JSON.stringify(['T',t.id,t.title,t.goal])]:a.mapping[oldKey]};
+  const next=proposeRequirementPlan(changed,{plan_id:'stable',previous,mapping});
+  assert.equal(next.plan.tasks.find(t=>t.title==='New title').id,a.mapping[oldKey]);
+  assert.deepEqual(next.requirements.retired_ids,[]);
+  assert.throws(()=>confirmRequirementRevision(next.plan,next.requirements,{previous}),/Unconfirmed identity change/);
+  assert.deepEqual(confirmRequirementRevision(next.plan,next.requirements,{previous,confirmedIds:Object.values(next.mapping)}).highWater,previous.highWater);
 });
