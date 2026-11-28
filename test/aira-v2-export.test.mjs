@@ -6,6 +6,9 @@ import {airaZip} from '../aira-zip.mjs';
 import {inflateRawSync} from 'node:zlib';
 import {buildAiraV2Export,validateV2Restore} from '../aira-v2-export.mjs';
 import {restoreRequirementHighWater} from '../aira-requirement-identities.mjs';
+import {verifyV1Migration} from '../aira-v1-migration.mjs';
+import {demoPlan,proposeRequirementPlan} from '../planner.mjs';
+import {confirmRequirementRevision} from '../aira-requirement-revisions.mjs';
 
 const read = name => readFileSync(new URL('./fixtures/aira-v2/' + name, import.meta.url));
 const fixture = name => JSON.parse(read(name));
@@ -208,4 +211,35 @@ test('a B tombstone cannot release surviving tasks without an open replacement',
   next.requirements.decisions=[];next.requirements.criteria=next.requirements.criteria.filter(x=>x.task_id!=='B01');next.requirements.tests=next.requirements.tests.filter(x=>x.task_id!=='B01');
   delete next.confirmed_points.B01;next.confirmed_ids=next.confirmed_ids.filter(x=>!x.includes('B01'));next.plan.tasks.forEach(t=>t.blockedBy=[]);next.plan.blocked=[];
   assert.throws(()=>exportAira(next),{code:'HISTORY_CONFLICT'});
+});
+
+test('V1 original package migration reaches a reviewed V2 export without reusing retired IDs',()=>{
+  const fixture=JSON.parse(readFileSync(new URL('./fixtures/specit_v1/linear.json',import.meta.url),'utf8'));
+  const {plan_id,repo,plan}=fixture.source;
+  const packageBytes=Object.fromEntries(Object.entries(fixture.expected_files).map(([k,v])=>[k,Buffer.from(v).toString('base64')]));
+  const migration=verifyV1Migration({target:'local target',evidence_ref:'local/migration.json',confirmed:true,
+    packages:[packageBytes],mapping:[{id:'T01',action:'retain'},{id:'T02',action:'retire'}]},{plan_id,repo});
+  const current=plan.tasks.find(t=>t.id==='T01'),draft={...plan,tasks:[current]};
+  const proposal=proposeRequirementPlan(draft,{plan_id,migration,mapping:{[JSON.stringify(['T',current.id,current.title,current.goal])]:'T01'}});
+  proposal.requirements.retired_ids.find(x=>x.id==='T02').reason='Semantisch ersetzt';
+  const input={plan_id,repo,schema_version:2,revision:1,plan:proposal.plan,requirements:proposal.requirements,migration,
+    confirmed_ids:Object.values(proposal.mapping),confirmed_points:{T01:5},target_minutes:null,spec:fixture.expected_files['SPEC.md'],approved:true,changes_approved:true,previous_manifest_sha256:null};
+  const files=exportAira(input);
+  assert.equal(verifyAira(files,{history:[],migration}),true);
+  assert.equal(JSON.parse(files['requirements.json']).retired_ids[0].id,'T02');
+  assert.throws(()=>exportAira({...input,migration:{...migration,packages:[{...packageBytes,'SPEC.md':Buffer.from('changed').toString('base64')}]}}),{code:'HISTORY_CONFLICT'});
+  assert.throws(()=>verifyAira(files),{code:'HISTORY_CONFLICT'});
+});
+
+test('planner review and reordering preserve mapped identities; a rename still needs confirmation',()=>{
+  const draft=demoPlan('Synthetic'),a=proposeRequirementPlan(draft,{plan_id:'stable'});
+  const previous=confirmRequirementRevision(a.plan,a.requirements,{confirmedIds:Object.values(a.mapping)});
+  const changed=structuredClone(draft);changed.tasks.reverse();const t=changed.tasks.find(t=>t.id==='T01');
+  const oldKey=JSON.stringify(['T',t.id,t.title,t.goal]);t.title='New title';
+  const mapping={...a.mapping,[JSON.stringify(['T',t.id,t.title,t.goal])]:a.mapping[oldKey]};
+  const next=proposeRequirementPlan(changed,{plan_id:'stable',previous,mapping});
+  assert.equal(next.plan.tasks.find(t=>t.title==='New title').id,a.mapping[oldKey]);
+  assert.deepEqual(next.requirements.retired_ids,[]);
+  assert.throws(()=>confirmRequirementRevision(next.plan,next.requirements,{previous}),/Unconfirmed identity change/);
+  assert.deepEqual(confirmRequirementRevision(next.plan,next.requirements,{previous,confirmedIds:Object.values(next.mapping)}).highWater,previous.highWater);
 });
