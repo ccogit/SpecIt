@@ -3,6 +3,7 @@ import {proposeRequirementPlan} from '/aira-plan-proposal.mjs';
 import {interviewDecisionDrafts} from '/interview.mjs';
 import {confirmRequirementRevision,requirementCoverageReport} from '/aira-requirement-revisions.mjs';
 import {parseAiraJson,sameManifest} from '/aira-identities.mjs';
+import {mountFeedbackPanel} from '/aira-feedback-ui.mjs';
 
 const json=value=>JSON.stringify(value,null,2);
 const read=element=>parseAiraJson(element.value);
@@ -12,7 +13,7 @@ import {readV1PackageDirectories} from '/aira-v2-ui.mjs';
 
 export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy,notice,getStandaloneContext,onModeChange=()=>{}}){
   const dialog=byId('airaV2Dialog'),id=byId('airaV2PlanId'),repo=byId('airaV2Repo'),editor=byId('airaV2Draft'),mapping=byId('airaV2Mapping'),links=byId('airaV2Links'),migration=byId('airaV2Migration'),points=byId('airaV2Points'),status=byId('airaV2Status'),approval=byId('airaV2Approve'),download=byId('airaV2Download'),review=byId('airaV2Review'),coverage=byId('airaV2Coverage'),confirmations=byId('airaV2Confirmations'),first=byId('airaV2First'),previewButton=byId('airaV2Preview');
-  let source=null,questions=[],preview=null,context=null,selection=null,version=0,working=false;
+  let source=null,questions=[],preview=null,context=null,selection=null,version=0,working=false,feedbackApproval=null;
   const bind=byId('airaV2Bind'),modeStatus=byId('airaProjectModeStatus');
   const binding=()=>{
     if(!/^[A-Za-z0-9][A-Za-z0-9-]{0,23}$/.test(id.value)||!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo.value))error('Gültige Plan-ID und Zielrepository erforderlich.');
@@ -23,7 +24,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
   function revoke(p){if(p)void request('/api/aira/preview/invalidate',{...p.context,preview_id:p.result.preview_id}).catch(()=>{});}
   function invalidate(){const p=preview;preview=null;version++;approval.checked=false;download.disabled=true;review.textContent='';byId('airaV2Conflict').textContent='';revoke(p);}
   function clearContext(){
-    invalidate();context=null;editor.value='';mapping.value='{}';links.value='[]';migration.value='';points.value='{}';confirmations.value='';first.checked=false;coverage.textContent='';
+    invalidate();context=null;feedbackApproval=null;feedbackPanel.clear();editor.value='';mapping.value='{}';links.value='[]';migration.value='';points.value='{}';confirmations.value='';first.checked=false;coverage.textContent='';
     byId('airaV2MigrationIds').textContent='';byId('airaV2ProposalKeys').textContent='';byId('airaV2PointRows').replaceChildren();byId('airaV2History').textContent='';
     byId('airaV2ExportStatus').textContent='Exportstatus: Stand nicht geladen';byId('airaV2ReceiptStatus').textContent='Letzte bekannte Aira-Quittung: unbekannt';
     updateActions();
@@ -89,7 +90,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
   async function loadHistory(selected,reset=true){
     const h=await (await request('/api/aira/history',contextBody(selected))).json();
     if(!dialog.open||binding().plan_id!==h.project.binding.plan_id||binding().repo!==h.project.binding.repo)error('Bindung geändert.');
-    context=h;setSelection({...selected,project:h.project});showHistory(h);
+    context=h;feedbackApproval=null;setSelection({...selected,project:h.project});showHistory(h);
     if(reset&&h.record){
       migration.value='';confirmations.value='';first.checked=false;byId('airaV2MigrationIds').textContent='';byId('airaV2ProposalKeys').textContent='';
       const next=structuredClone(h.record.snapshot);next.requirements.revision++;
@@ -97,7 +98,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
       points.value=json(Object.fromEntries([...next.plan.tasks,...next.requirements.decisions].map(x=>[x.id,null])));
       showCoverage();showPoints();
     }
-    updateActions();return h;
+    await feedbackPanel.load();updateActions();return h;
   }
   const readMigration=()=>migration.value.trim()?read(migration):null;
   const showCoverage=()=>{
@@ -133,6 +134,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
   byId('airaV2Close').onclick=()=>dialog.close();
   dialog.addEventListener('close',()=>{source=null;questions=[];clearContext()});
   dialog.addEventListener('input',event=>{
+    if(event.target.closest?.('#airaV2Feedback'))return;
     if(event.target===approval){if(!approval.checked&&preview)invalidate();updateActions();return;}
     if(event.target===bind)return;
     if(event.target===id||event.target===repo){clearContext();bind.checked=false;status.textContent='Stand für diese Bindung neu laden.';return;}
@@ -199,7 +201,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
     const chosen=context.proposalMapping??read(mapping);
     const active=new Set([...snapshot.plan.tasks,...snapshot.requirements.requirements,...snapshot.requirements.criteria,...snapshot.requirements.tests,...snapshot.requirements.decisions].map(x=>x.id));
     const mapped=Object.fromEntries(Object.entries(chosen).filter(([,value])=>active.has(value)));
-    return {snapshot, payload:{...contextBody(),...b,mapping:mapped,schema_version:2,revision:draft.requirements.revision,plan,requirements:draft.requirements,spec:current.spec,target_minutes:current.target_minutes,confirmed_points:read(points),confirmed_ids:confirmedIds,...(m?{migration:m}:{})}};
+    return {snapshot, payload:{...contextBody(),...b,mapping:mapped,schema_version:2,revision:draft.requirements.revision,plan,requirements:draft.requirements,spec:current.spec,target_minutes:current.target_minutes,confirmed_points:read(points),confirmed_ids:confirmedIds,...(feedbackApproval?{feedback_approval:feedbackApproval}:{}),...(m?{migration:m}:{})}};
   }
   previewButton.onclick=attempt(async()=>{
     invalidate();const state=input(),fingerprint=JSON.stringify(state.payload),v=version,c=contextBody();
@@ -238,6 +240,24 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
     const backup={schema_version:2,...h.project.binding,packages:h.packages,records:h.records};
     saveBlob(new Blob([json(backup)],{type:'application/json'}),'specit-v2-'+h.project.binding.plan_id+'-history.json');
   });
+  const feedbackPanel=mountFeedbackPanel({root:byId('airaV2Feedback'),
+    getContext:()=>context?{body:contextBody(),record:context.record,canEdit:!!source&&!!context.record}:null,
+    request,parseBackup:parseAiraJson,
+    onStatus:text=>{byId('airaV2ReceiptStatus').textContent=text;},
+    onChanged:()=>{feedbackApproval=null;invalidate();},
+    saveBackup:backup=>saveBlob(new Blob([json(backup)],{type:'application/json'}),'specit-aira-'+id.value+'-feedback.json'),
+    onCandidate:result=>{
+      if(working)error('Übergabe läuft; Diff erneut prüfen.');
+      const record=ensureContext();if(!record)error('Keine archivierte Ausgangsrevision.');
+      const base=structuredClone(record.snapshot);base.requirements.revision++;
+      if(!sameManifest(read(editor),{plan:base.plan,requirements:base.requirements}))error('Der Entwurf enthält andere Änderungen. Bitte separat sichern und den Archivstand neu laden.');
+      const plan=projectRequirementsPlan(base.plan,result.requirements);
+      confirmRequirementRevision(plan,result.requirements,{previous:record.snapshot,confirmedIds:result.confirmed_ids});
+      invalidate();feedbackApproval=result.approval_id;
+      editor.value=json({plan,requirements:result.requirements});confirmations.value=result.confirmed_ids.join(' ');
+      points.value=json(Object.fromEntries([...plan.tasks,...result.requirements.decisions].map(t=>[t.id,null])));
+      showCoverage();showPoints();status.textContent='Fachlich bestätigter Entscheidungsdiff als neuer Entwurf. Punkte, Vorschau und Exportfreigabe separat bestätigen; kein automatischer Writeback oder Jira-Release.';
+    }});
   void refresh().catch(()=>setSelection(null));
   return {blocksRun:()=>!selection||selection.project?.mode==='aira',sync(){
     if(dialog.open&&(source!==getCurrent()||json(questions)!==json(getQuestions())||isBusy())){
