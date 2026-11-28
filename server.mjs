@@ -12,6 +12,7 @@ import { zip, collect } from './zip.mjs';
 import { airaZip } from './aira-zip.mjs';
 import { previewAira } from './aira-export.mjs';
 import { verifyV1Migration } from './aira-v1-migration.mjs';
+import { validateV2Restore } from './aira-v2-export.mjs';
 import { pointSuggestions, parseAiraJson } from './aira-identities.mjs';
 import { flowPrompt, cleanFlow, archPrompt, cleanArch } from './diagrams.mjs';
 import { protoPrompt, protoBrief, cleanProto } from './prototype.mjs';
@@ -604,20 +605,24 @@ http.createServer(async(req,res)=>{
   let body;try{body=JSON.parse(raw)}catch{return send(res,400,{error:'Ungültige Anfrage.'})}
   try{return send(res,200,await createRepo(body))}catch(e){return send(res,400,{error:e.message||'Das Repository konnte nicht angelegt werden.'})}
  }
+ if(req.url==='/api/aira/v2/restore'){
+  try{const body=parseAiraJson(raw);validateV2Restore(body.record,body);return send(res,200,{ok:true})}
+  catch(e){return send(res,400,{error:'Aira-Export: ungültige V2-Sicherung.',code:e.code||'HISTORY_CONFLICT'})}
+ }
  if(req.url==='/api/aira/migration'){
   try{const body=parseAiraJson(raw);return send(res,200,verifyV1Migration(body.migration,body))}
   catch(e){return send(res,400,{error:'Aira-Export: ungültiges V1-Originalpaket oder Migrationsnachweis.',code:'HISTORY_CONFLICT'})}
  }
  if(req.url==='/api/aira/preview'){
   try{return send(res,200,previewAira(parseAiraJson(raw)))}
-  catch(e){return send(res,400,{error:e instanceof Error&&e.message.startsWith('Aira-Export:')?e.message:'Aira-Export: ungültige Anfrage.'})}
+  catch(e){return send(res,400,{error:e instanceof Error&&e.message.startsWith('Aira-Export:')?e.message:'Aira-Export: ungültige Anfrage.',...(e.code?{code:e.code}:{})})}
  }
  if(req.url==='/api/aira/export'){
   try {
    const body=airaZip(parseAiraJson(raw));
    res.writeHead(200,{'Content-Type':'application/zip','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
    return res.end(body);
-  } catch(e) { return send(res,400,{error:e instanceof Error&&e.message.startsWith('Aira-Export:')?e.message:'Aira-Export: ungültige Anfrage.'}); }
+  } catch(e) { return send(res,400,{error:e instanceof Error&&e.message.startsWith('Aira-Export:')?e.message:'Aira-Export: ungültige Anfrage.',...(e.code?{code:e.code}:{})}); }
  }
  if(req.url==='/api/run/download'){
   // Übergabe: der Zielordner einer direkten Umsetzung als ZIP-Archiv

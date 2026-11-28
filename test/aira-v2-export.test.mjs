@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
-import {sha256} from '../aira-export.mjs';
+import {sha256,exportAira,previewAira,verifyAira} from '../aira-export.mjs';
+import {airaZip} from '../aira-zip.mjs';
+import {inflateRawSync} from 'node:zlib';
 import {buildAiraV2Export} from '../aira-v2-export.mjs';
 
 const read = name => readFileSync(new URL('./fixtures/aira-v2/' + name, import.meta.url));
@@ -17,11 +19,12 @@ function source(name) {
   const input = {
     schema_version, plan_id, repo, revision, plan, target_minutes, previous_manifest_sha256,
     requirements, spec: files['SPEC.md'],
+    approved:true,changes_approved:true,confirmed_ids:[...plan.tasks,...requirements.requirements,...requirements.criteria,...requirements.tests,...requirements.decisions].map(x=>x.id),
     confirmed_points: Object.fromEntries(entries.map(([id, entry]) => [id, entry.points])),
   };
   if (base) {
-    const predecessor = source(base);
-    input.previous = {manifest: predecessor.manifest, requirements: predecessor.input.requirements};
+    const predecessor=fixture(base).expected_files;
+    input.previous={manifest_bytes:predecessor['manifest.json'],requirements_bytes:predecessor['requirements.json']};
   }
   return {input, manifest};
 }
@@ -39,10 +42,23 @@ for (const name of ['linear.json', 'branched.json', 'blocked.json', 'revised.jso
     }
     if (expected_order) assert.deepEqual(order, expected_order);
     assert.deepEqual(buildAiraV2Export(input).files, files);
+    assert.deepEqual(exportAira(input),files);
+    assert.equal(previewAira({...input,approved:false}).manifest_sha256,sha256(files['manifest.json']));
+    assert.equal(verifyAira(files,input.previous?[input.previous]:[]),true);
+    const archive=airaZip(input);assert.deepEqual(archive,airaZip(input));assert.deepEqual(unzip(archive),Object.fromEntries(Object.entries(files)));
     assert.deepEqual(input, snapshot);
   });
 }
 
+function unzip(buf) {
+  const result={};let i=0;
+  while(buf.readUInt32LE(i)===0x04034b50){
+    const method=buf.readUInt16LE(i+8),size=buf.readUInt32LE(i+18),len=buf.readUInt16LE(i+26),extra=buf.readUInt16LE(i+28);
+    const name=buf.subarray(i+30,i+30+len).toString(),start=i+30+len+extra,data=buf.subarray(start,start+size);
+    result[name]=method===8?inflateRawSync(data):Buffer.from(data);i=start+size;
+  }
+  return result;
+}
 function replaceField(target, path, value) {
   const keys = path.split('/');
   const key = keys.pop();
@@ -61,6 +77,9 @@ for (const variant of invalid.cases) {
     }
     assert.equal(variant.expected, catalog['invalid.json'].expected[variant.id]);
     assert.throws(() => buildAiraV2Export(input), {code: variant.expected});
+    assert.throws(() => exportAira(input), {code: variant.expected});
+    assert.throws(() => previewAira(input), {code: variant.expected});
+    assert.throws(() => airaZip(input), {code: variant.expected});
   });
 }
 
@@ -69,6 +88,9 @@ for (const variant of fixture('revised.json').negative) {
     const {input} = source('revised.json');
     replaceField(input, variant.field, variant.value);
     assert.throws(() => buildAiraV2Export(input), {code: variant.expected});
+    assert.throws(() => exportAira(input), {code: variant.expected});
+    assert.throws(() => previewAira(input), {code: variant.expected});
+    assert.throws(() => airaZip(input), {code: variant.expected});
   });
 }
 
@@ -112,4 +134,50 @@ test('V2 rejects reactivation of a retired criterion', () => {
   const {input} = source('revised.json');
   input.requirements.criteria[0].id = input.requirements.retired_ids[0].id;
   assert.throws(() => buildAiraV2Export(input), {code: 'ID_CONFLICT'});
+});
+
+test('V2 requires explicit approval, points, identity confirmation and exact preview hash',()=>{
+  const {input}=source('linear.json');
+  assert.throws(()=>exportAira({...input,approved:false}),{code:'APPROVAL_REQUIRED'});
+  assert.throws(()=>exportAira({...input,confirmed_ids:[]}),{code:'APPROVAL_REQUIRED'});
+  assert.throws(()=>exportAira({...input,confirmed_points:{}}),{code:'INVALID_SCHEMA'});
+  assert.throws(()=>exportAira({...input,expected_manifest_sha256:'0'.repeat(64)}),{code:'APPROVAL_STALE'});
+  const {input:revised}=source('revised.json');
+  assert.throws(()=>exportAira({...revised,changes_approved:false}),{code:'APPROVAL_REQUIRED'});
+});
+
+test('V2 predecessor hash is over original bytes, not reserialized JSON',()=>{
+  const {input}=source('revised.json');
+  const raw=' '+input.previous.manifest_bytes;
+  assert.throws(()=>exportAira({...input,previous:{...input.previous,manifest_bytes:raw}}),{code:'HISTORY_CONFLICT'});
+  const next={...input,previous:{...input.previous,manifest_bytes:raw},previous_manifest_sha256:sha256(raw)};
+  assert.equal(JSON.parse(exportAira(next)['manifest.json']).previous_manifest_sha256,sha256(raw));
+  assert.throws(()=>exportAira({...input,previous:{manifest:JSON.parse(raw),requirements:JSON.parse(input.previous.requirements_bytes)}}),{code:'HISTORY_CONFLICT'});
+  assert.throws(()=>exportAira({...input,previous:{...input.previous,requirements_bytes:' '+input.previous.requirements_bytes}}),{code:'HISTORY_CONFLICT'});
+});
+
+test('unchanged revision returns the original package; resolved blocker remains linked',()=>{
+  const {input}=source('linear.json'),first=exportAira(input);
+  const next={...input,revision:2,requirements:{...input.requirements,revision:2},
+    previous:{manifest_bytes:first['manifest.json'],requirements_bytes:first['requirements.json']},
+    previous_manifest_sha256:sha256(first['manifest.json']),confirmed_ids:[]};
+  assert.equal(previewAira(next).unchanged,true);
+  assert.deepEqual(exportAira(next),first);
+  const blocked=source('blocked.json').input,d=blocked.requirements.decisions[0];
+  Object.assign(d,{state:'resolved',resolution:'Confirmed',evidence_ref:'local/evidence',confirmed_by:'actor',confirmed_at:'2026-01-01T00:00:00Z'});
+  blocked.plan.tasks.forEach(t=>t.blockedBy=[]);blocked.plan.blocked=[];
+  const files=exportAira(blocked),m=JSON.parse(files['manifest.json']);
+  assert.equal(m.blockers[0].id,'B01');assert.match(files['draft/EPICS.md'].toString(),/T01[^|]+\| SpecIt [^|]+ B01/);
+});
+
+test('V2 exact projection rejects drift, missing verification and extra fields',()=>{
+  const {input}=source('linear.json');
+  const bad=structuredClone(input);bad.plan.tasks[0].acceptance=['Different'];
+  assert.throws(()=>exportAira(bad),{code:'INVALID_SCHEMA'});
+  const extra=structuredClone(input);extra.requirements.criteria[0].unexpected=true;
+  assert.throws(()=>exportAira(extra),{code:'INVALID_SCHEMA'});
+  const missing=structuredClone(input);missing.requirements.tests=[];missing.plan.tasks[0].tests=['Different'];
+  assert.throws(()=>exportAira(missing),{code:'INVALID_SCHEMA'});
+  const files=exportAira(input);files['draft/01-T01.md']=Buffer.from('changed');
+  assert.throws(()=>verifyAira(files),{code:'INVALID_HASH'});
 });

@@ -168,7 +168,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
     const result=await (await request('/api/aira/preview',state.payload)).json();
     if(fingerprint!==JSON.stringify(input().payload))error('Eingaben geändert; erneut prüfen.');
     preview={fingerprint,result,snapshot:state.snapshot,raw:context.raw};
-    review.textContent='Revision '+result.manifest.revision+' · '+(result.unchanged?'unveränderte Wiederholung':'neuer Export')+'\nSHA-256 SPEC: '+result.manifest.spec_sha256+'\nSHA-256 Manifest: '+result.manifest_sha256+'\nSHA-256 Requirements: '+result.manifest.requirements_sha256+'\n'+json(result.manifest)+'\n'+result.requirements_bytes;
+    review.textContent='Revision '+result.manifest.revision+' · '+(result.unchanged?'unveränderte Wiederholung':'neuer Export')+'\nSHA-256 SPEC: '+result.manifest.spec_sha256+'\nSHA-256 Manifest: '+result.manifest_sha256+'\nSHA-256 Requirements: '+result.manifest.requirements_sha256+'\n'+json(result.manifest)+'\n'+result.requirements_bytes+'\n'+Object.entries(result.drafts).map(([path,body])=>path+'\n'+body).join('\n\n');
     status.textContent='Exakte Projektion prüfen und fachlich freigeben.';download.disabled=true;
   });
   download.onclick=attempt(async()=>{
