@@ -1,15 +1,12 @@
 import { createHash } from 'node:crypto';
 import { validatePlan } from './planner.mjs';
+import { codepointCompare as cmp, decisionsFor, identityConflicts } from './aira-identities.mjs';
+export { decisionsFor } from './aira-identities.mjs';
 
 const fail = field => { throw new Error('Aira-Export: ungültig oder nicht bestätigt: '+field); };
 const obj = x => x !== null && typeof x === 'object' && !Array.isArray(x) && (Object.getPrototypeOf(x) === Object.prototype || Object.getPrototypeOf(x) === null);
 const keys = (x, required, optional=[]) => {
   if (!obj(x) || required.some(k=>!Object.hasOwn(x,k)) || Object.keys(x).some(k=>!required.includes(k)&&!optional.includes(k))) fail('Felder');
-};
-const cmp = (a,b) => {
-  const aa=Array.from(a,c=>c.codePointAt(0)),bb=Array.from(b,c=>c.codePointAt(0));
-  for(let i=0;i<Math.min(aa.length,bb.length);i++) if(aa[i]!==bb[i]) return aa[i]-bb[i];
-  return aa.length-bb.length;
 };
 function canonical(x) {
   if (Array.isArray(x)) return x.map(canonical);
@@ -38,10 +35,8 @@ function normalizedPlan(plan) {
     if(new Set(t.blockedBy).size!==t.blockedBy.length) fail('doppelte offene Entscheidung');
   }
   // Generated Markdown must use LF; never repair or silently drop input.
-  if (JSON.stringify(plan).includes('\\r') && JSON.stringify(plan).includes('\\r')) {
-    const check=x=>typeof x==='string'?x.includes('\r'):Array.isArray(x)?x.some(check):obj(x)?Object.values(x).some(check):false;
-    if(check(plan)) fail('Zeilenenden im Plan');
-  }
+  const hasCR=x=>typeof x==='string'?x.includes('\r'):Array.isArray(x)?x.some(hasCR):obj(x)?Object.values(x).some(hasCR):false;
+  if(hasCR(plan)) fail('Zeilenenden im Plan');
 }
 export function artifactPath(path) {
   if(typeof path!=='string'||path.length>240||!path.startsWith('artifacts/')||
@@ -51,31 +46,81 @@ export function artifactPath(path) {
 const bullets = xs => xs.length?xs.map(x=>'- '+x).join('\n'):'- (keine)';
 const section = ([name,value]) => '## '+name+'\n\n'+(Array.isArray(value)?bullets(value):value);
 const prefix = (planId,id) => 'SpecIt '+planId+' '+id+' – ';
-const bId = n => 'B'+String(n).padStart(2,'0');
-
-export function decisionsFor(plan) {
-  return [...new Set(plan.tasks.flatMap(t=>t.blockedBy))].sort(cmp).map((decision,i)=>({id:bId(i+1),decision}));
+const manifestKeys=['schema_version','plan_id','revision','repo','spec_sha256','target_minutes','plan','tasks','blockers','artifacts'];
+const point = v => [1,2,3,5,8].includes(v);
+const hash = v => typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
+const contentOf = ({revision,...rest}) => rest;
+function validateHistory(history,plan_id,repo) {
+  if(!Array.isArray(history))fail('Identitätshistorie');
+  for(const [i,m] of history.entries()){
+    keys(m,manifestKeys,['target_minutes_reason']);
+    if(m.schema_version!==1||m.plan_id!==plan_id||m.repo!==repo||m.revision!==i+1||!hash(m.spec_sha256))fail('lückenhafte oder konkurrierende Historie');
+    if(m.target_minutes===null?m.target_minutes_reason!=='not_available':!(Number.isFinite(m.target_minutes)&&m.target_minutes>0)||Object.hasOwn(m,'target_minutes_reason'))fail('Historie Zielzeit');
+    normalizedPlan(m.plan);
+    const earlier=history.slice(0,i),previous=earlier.at(-1);
+    if(identityConflicts(m.plan,previous).length)fail('Identitätskonflikt in Historie');
+    const decisions=decisionsFor(m.plan,earlier);
+    const ids=[...decisions.map(d=>d.id),...m.plan.waves.flatMap(w=>[...w].sort(cmp))];
+    if(ids.length>99||!Array.isArray(m.blockers)||m.blockers.length!==decisions.length||!Array.isArray(m.artifacts))fail('Historie Zuordnungen');
+    keys(m.tasks,m.plan.tasks.map(t=>t.id));
+    for(const [j,id] of ids.entries()){
+      const t=m.plan.tasks.find(t=>t.id===id),d=decisions.find(d=>d.id===id);
+      const mapping=t?m.tasks[id]:m.blockers.find(x=>x.id===id);
+      keys(mapping,t?['epic_title','item_title','file','points']:['id','decision','epic_title','item_title','file','points']);
+      const p=prefix(plan_id,id);
+      if(!point(mapping.points)||mapping.epic_title!==p+(t?t.title:'Entscheidung klären')||mapping.item_title!==p+(t?'Umsetzung: '+t.title:'Entscheidung dokumentieren')||mapping.file!=='draft/'+String(j+1).padStart(2,'0')+'-'+id+'.md'||(!t&&mapping.decision!==d.decision))fail('Historie Mapping');
+    }
+    const paths=new Set();
+    for(const a of m.artifacts){keys(a,['path','sha256']);artifactPath(a.path);if(!hash(a.sha256)||paths.has(a.path.toLowerCase()))fail('Historie Artefakt');paths.add(a.path.toLowerCase());}
+    if(previous&&same(contentOf(m),contentOf(previous)))fail('leere Historienrevision');
+  }
+}
+function changesBetween(m,prev){
+  if(!prev)return ['Erstexport'];
+  const changes=[];
+  if(m.spec_sha256!==prev.spec_sha256)changes.push('SPEC.md geändert (SHA-256)');
+  if(m.target_minutes!==prev.target_minutes)changes.push('Zielzeit geändert');
+  if(!same(m.artifacts,prev.artifacts))changes.push('Artefakte geändert');
+  if(m.plan.summary!==prev.plan.summary||!same(m.plan.decisions,prev.plan.decisions))changes.push('Ausgangslage/Festlegungen geändert');
+  for(const t of m.plan.tasks){
+    const old=prev.plan.tasks.find(x=>x.id===t.id);
+    if(!old)changes.push(t.id+': neuer Task');
+    else for(const field of Object.keys(t).concat(Object.keys(old).filter(k=>!Object.hasOwn(t,k)))){
+      if(!Object.hasOwn(t,field)||!Object.hasOwn(old,field)||!same(t[field],old[field]))changes.push(t.id+': '+field+' geändert');
+    }
+    if(prev.tasks[t.id]&&m.tasks[t.id].points!==prev.tasks[t.id].points)changes.push(t.id+': Punkte geändert');
+  }
+  for(const d of m.blockers){const old=prev.blockers.find(x=>x.id===d.id);if(!old)changes.push(d.id+': neue Entscheidung');else if(old.points!==d.points)changes.push(d.id+': Punkte geändert')}
+  if(!same(m.plan.waves,prev.plan.waves)||!same(m.plan.tasks.map(t=>t.id),prev.plan.tasks.map(t=>t.id)))changes.push('Planreihenfolge geändert');
+  return changes;
 }
 
 /** Pure in-memory projection. The caller must explicitly approve the complete input.
  * No filesystem paths are opened, no network or runner is invoked.
  */
-export function exportAira(input) {
-  keys(input,['plan_id','revision','repo','plan','target_minutes','confirmed_points','approved','spec'],['schema_version','spec_sha256','artifacts']);
-  const {plan_id,revision,repo,plan,target_minutes,confirmed_points,approved}=input;
-  if(approved!==true) fail('fachliche Freigabe');
+function projectAira(input) {
+  keys(input,['plan_id','revision','repo','plan','target_minutes','confirmed_points','approved','spec'],['schema_version','spec_sha256','artifacts','history','changes_approved']);
+  const {plan_id,revision,repo,plan,target_minutes,confirmed_points}=input;
+  const history=Object.hasOwn(input,'history')?input.history:[];
+  if(typeof input.approved!=='boolean')fail('Freigabetyp');
+  if(Object.hasOwn(input,'changes_approved')&&typeof input.changes_approved!=='boolean')fail('Änderungsfreigabe');
   if(Object.hasOwn(input,'schema_version')&&input.schema_version!==1) fail('Schema-Version');
   if(typeof plan_id!=='string'||! /^[A-Za-z0-9][A-Za-z0-9-]{0,23}$/.test(plan_id)) fail('Plan-ID');
-  if(revision!==1) fail('Revision ohne Identitätshistorie');
+  if(!Number.isSafeInteger(revision)||revision<1) fail('Revision');
   if(typeof repo!=='string'||! /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)||repo.split('/').some(p=>p==='.'||p==='..')||/\.git$/i.test(repo)) fail('Zielrepo owner/name');
   if(target_minutes!==null&&!(Number.isFinite(target_minutes)&&target_minutes>0)) fail('Zielzeit');
   normalizedPlan(plan);
+  validateHistory(history,plan_id,repo);
+  const prev=history.at(-1);
+  if(!prev&&revision!==1||prev&&revision!==prev.revision&&revision!==prev.revision+1)fail('Revision ohne passende Identitätshistorie');
+  const conflicts=identityConflicts(plan,prev);
+  if(conflicts.length)fail('Migration mit Coordinator erforderlich: '+conflicts.join('; '));
   const spec=bytes(input.spec);
   try { new TextDecoder('utf-8',{fatal:true}).decode(spec); } catch { fail('SPEC UTF-8'); }
   if(spec.subarray(0,3).equals(Buffer.from([239,187,191]))) fail('SPEC BOM');
   const spec_sha256=sha256(spec);
   if(Object.hasOwn(input,'spec_sha256')&&input.spec_sha256!==spec_sha256) fail('SPEC Hash');
-  const sources=input.artifacts??{};
+  const sources=Object.hasOwn(input,'artifacts')?input.artifacts:{};
   if(!obj(sources)) fail('Artefakte');
   const paths=Object.keys(sources).sort(cmp);
   if(new Set(paths.map(p=>p.toLowerCase())).size!==paths.length) fail('kollidierende Artefaktpfade');
@@ -87,11 +132,12 @@ export function exportAira(input) {
     files[path]=bytes(sources[path]);
     return {path,sha256:sha256(files[path])};
   });
-  const decisions=decisionsFor(plan);
+  const decisions=decisionsFor(plan,history);
   const order=[...decisions.map(d=>d.id),...plan.waves.flatMap(w=>[...w].sort(cmp))];
   if(order.length>99) fail('maximal 99 Work items');
+  if(!obj(confirmed_points))fail('bestätigte Punkte');
+  for(const id of order) if(!Object.hasOwn(confirmed_points,id)||!point(confirmed_points[id])) fail('Punkte für '+id);
   keys(confirmed_points,order);
-  for(const id of order) if(![1,2,3,5,8].includes(confirmed_points[id])) fail('Punkte für '+id);
   const refs=['../SPEC.md (SHA-256: '+spec_sha256+')','../manifest.json',...artifacts.map(a=>'../'+a.path+' (SHA-256: '+a.sha256+')')];
   const tasks={},blockers=[],byId=new Map(),decisionIds=new Map(decisions.map(d=>[d.decision,d.id]));
   for(const [index,id] of order.entries()) {
@@ -117,14 +163,38 @@ export function exportAira(input) {
   });
   files['draft/EPICS.md']=Buffer.from(['| Epic | Blocked by | Status |','| --- | --- | --- |',...epics].join('\n')+'\n');
   const manifest={schema_version:1,plan_id,revision,repo,spec_sha256,target_minutes,...(target_minutes===null?{target_minutes_reason:'not_available'}:{}),plan,tasks,blockers,artifacts};
+  const unchanged=!!prev&&same(contentOf(manifest),contentOf(prev));
+  const requiredRevision=prev?(unchanged?prev.revision:prev.revision+1):1;
+  if(revision!==requiredRevision)fail('konkurrierende oder falsche Revision; erwartet '+requiredRevision);
   files['manifest.json']=Buffer.from(json(manifest));
-  return files;
+  return {files,manifest,changes:unchanged?[]:changesBetween(manifest,prev),unchanged};
+}
+
+export function exportAira(input) {
+  if(input?.approved!==true)fail('fachliche Freigabe');
+  const result=projectAira(input);
+  if(input.history?.length&&!result.unchanged&&input.changes_approved!==true)fail('Änderungsplan ausdrücklich freigeben');
+  return result.files;
+}
+
+// Preview contains no ZIP and authorizes nothing. Revision derives from exact content.
+export function previewAira(input) {
+  const history=input?.history??[];
+  if(!Array.isArray(history))fail('Identitätshistorie');
+  const last=history.at(-1);
+  let result;
+  if(last){
+    try{result=projectAira({...input,revision:last.revision});}
+    catch(e){if(e.message!=='Aira-Export: ungültig oder nicht bestätigt: konkurrierende oder falsche Revision; erwartet '+(last.revision+1))throw e;
+      result=projectAira({...input,revision:last.revision+1});}
+  }else result=projectAira({...input,revision:1});
+  return {manifest:result.manifest,changes:result.changes,unchanged:result.unchanged};
 }
 
 /** Verify an existing initial package against the projection, without writing/importing it.
  * Comparing the canonical manifest bytes also rejects duplicate JSON keys.
  */
-export function verifyAira(files) {
+export function verifyAira(files,history=[]) {
   let m;
   try { m=JSON.parse(bytes(files['manifest.json']).toString('utf8')); } catch { fail('Manifest JSON'); }
   keys(m,['schema_version','plan_id','revision','repo','spec_sha256','target_minutes','plan','tasks','blockers','artifacts'],['target_minutes_reason']);
@@ -134,7 +204,7 @@ export function verifyAira(files) {
   for(const [id,t] of Object.entries(m.tasks)) points[id]=t.points;
   for(const t of m.blockers) points[t.id]=t.points;
   for(const a of m.artifacts) { artifactPath(a.path); artifacts[a.path]=files[a.path]; }
-  const generated=exportAira({schema_version:m.schema_version,plan_id:m.plan_id,revision:m.revision,repo:m.repo,plan:m.plan,target_minutes:m.target_minutes,confirmed_points:points,approved:true,spec:files['SPEC.md'],spec_sha256:m.spec_sha256,artifacts});
+  const generated=exportAira({schema_version:m.schema_version,plan_id:m.plan_id,revision:m.revision,repo:m.repo,plan:m.plan,target_minutes:m.target_minutes,confirmed_points:points,approved:true,spec:files['SPEC.md'],spec_sha256:m.spec_sha256,artifacts,history,changes_approved:true});
   if(!same(Object.keys(generated).sort(),Object.keys(files).sort())) fail('Paketdateien');
   for(const p of Object.keys(generated)) if(!generated[p].equals(bytes(files[p]))) fail('Hash oder Markdown-/Manifest-Projektion');
   return true;
