@@ -1,3 +1,4 @@
+import {parseAiraJson} from './aira-identities.mjs';
 import {restoreRequirementHighWater, checkRequirementCoverage} from './aira-requirement-identities.mjs';
 
 const kindPatterns = {
@@ -37,7 +38,7 @@ function migrationRecords(migration, data) {
   let repo;
   for (const [i, bytes] of migration.manifest_bytes.entries()) {
     assert(typeof bytes === 'string', 'Missing original V1 manifest bytes');
-    const m = JSON.parse(bytes);
+    const m = parseAiraJson(bytes);
     assert(m.schema_version === 1 && m.revision === i + 1 && m.plan_id === data.plan_id
       && text(m.repo) && (i === 0 || repo === m.repo)
       && Array.isArray(m.plan?.tasks) && Array.isArray(m.blockers), 'Invalid V1 migration history');
@@ -92,6 +93,16 @@ export function confirmRequirementRevision(plan, data, {previous = null, confirm
   }
   const oldCounters = restoreRequirementHighWater(previous?.highWater ?? {}, [...known.keys()], priorRetired.map(x => x.id));
   const highWater = restoreRequirementHighWater(oldCounters, [...active.keys()], [...retired.keys()]);
+  const allocated = new Map();
+  for (const id of active.keys()) if(!known.has(id)) {
+    const [ns,n]=Object.entries(restoreRequirementHighWater({},[id],[]))[0];
+    if(!allocated.has(ns))allocated.set(ns,[]);
+    allocated.get(ns).push(n);
+  }
+  for(const [ns,values] of allocated) {
+    values.sort((a,b)=>a-b);
+    assert(values.every((n,i)=>n===(oldCounters[ns]??0)+i+1),'Identity must use the next namespace counter: '+ns);
+  }
   for (const tombstone of priorRetired) assert(equal(retired.get(tombstone.id), tombstone), 'Changed or missing tombstone: ' + tombstone.id);
   for (const [id, value] of known) {
     if (!active.has(id)) assert(retired.get(id)?.retired_revision === data.revision && retired.get(id).kind === value.kind, 'Missing tombstone: ' + id);
