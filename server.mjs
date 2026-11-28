@@ -12,6 +12,7 @@ import { zip, collect } from './zip.mjs';
 import { airaZip } from './aira-zip.mjs';
 import { previewAira, exportAira } from './aira-export.mjs';
 import { createFeedbackApi, feedbackRoute } from './aira-feedback-api.mjs';
+import { createWorkspaceHttp } from './aira-workspace-http.mjs';
 import { createProjectStore } from './aira-project-store.mjs';
 import { createProjectApi, projectRoutes, projectError } from './aira-project-api.mjs';
 import { makeProjectRecord, verifyProjectPackage, zipProjectFiles } from './aira-project-package.mjs';
@@ -398,6 +399,8 @@ function createRepo(b){
 const projectsDir=path.resolve(process.env.SPECIT_PROJECTS_DIR||path.join(homedir(),'SpecIt-Projekte'));
 const projectArchiveDir=path.resolve(process.env.SPECIT_AIRA_STORE_DIR||path.join(homedir(),'.specit','aira-projects'));
 const projectStore=createProjectStore(projectArchiveDir,{validatePackage:verifyProjectPackage});
+const workspaceConfig=process.env.SPECIT_WORKSPACE_CONFIG;
+const workspaceHttp=workspaceConfig?createWorkspaceHttp({store:projectStore,configFile:path.resolve(workspaceConfig),stageDir:path.resolve(process.env.SPECIT_WORKSPACE_STAGE_DIR||path.join(projectArchiveDir,'workspace-stage')),zipFiles:zipProjectFiles,host:host+':'+port}):null;
 const feedbackApi=createFeedbackApi({store:projectStore,root:projectArchiveDir,owner:process.env.SPECIT_AIRA_FEEDBACK_OWNER});
 const projectApi=createProjectApi({store:projectStore,runStatus,normalizePlan:validatePlan,preview:previewAira,buildFiles:input=>buildAiraV2Export(input).files,
  exportFiles:exportAira,zipFiles:zipProjectFiles,makeRecord:makeProjectRecord,validateRecord:validateV2Restore});
@@ -588,6 +591,7 @@ function alive(req,res){
  });
 }
 http.createServer(async(req,res)=>{
+ if(workspaceHttp)return workspaceHttp(req,res);
  meter.enterWith({context:0,out:0,calls:0,timings:[],mode:''});
  if(![host+':'+port,'localhost:'+port].includes(req.headers.host))return send(res,403,{error:'Host nicht erlaubt.'});
  if(req.method==='GET'&&(req.url==='/'||modules[req.url])){
