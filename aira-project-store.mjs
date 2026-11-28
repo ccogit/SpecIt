@@ -168,7 +168,7 @@ export function createProjectStore(root, { validatePackage } = {}) {
   }
   function summary(p) {
     return { project_id: p.project_id, mode: p.mode, binding: structuredClone(p.binding), generation: p.generation,
-      revision: p.history.length, manifest_sha256: latest(p) };
+      revision: p.history.length, manifest_sha256: latest(p), export_epoch: p.export_epoch ?? 0 };
   }
   function active(state) {
     return { selection: state.selection, project: state.active_project_id === null ? null : summary(get(state, state.active_project_id)),
@@ -313,12 +313,13 @@ export function createProjectStore(root, { validatePackage } = {}) {
     history(project_id) {
       return get(read(), project_id).history.map(entry => ({ manifest_sha256: entry.manifest_sha256, files: decode(entry.files), ...(entry.record ? { record: structuredClone(entry.record) } : {}) }));
     },
-    restore(project_id, { packages, records, expected_generation, expected_head, expected_selection }) {
+    restore(project_id, { packages, records, expected_generation, expected_head, expected_selection, expected_export_epoch }) {
       return transaction(state => {
         const p = get(state, project_id);
         check(p.mode === 'aira' && p.binding, 'WRONG_TARGET');
         if (expected_selection !== undefined) check(state.active_project_id === project_id && state.selection === expected_selection, 'HISTORY_CONFLICT');
         check(p.generation === expected_generation && latest(p) === expected_head, 'HISTORY_CONFLICT');
+        if (expected_export_epoch !== undefined) check((p.export_epoch ?? 0) === expected_export_epoch, 'APPROVAL_STALE');
         check(Array.isArray(packages) && packages.length >= p.history.length && packages.length > 0, 'HISTORY_CONFLICT');
         const candidate = [];
         for (const [i, files] of packages.entries()) {
@@ -330,25 +331,29 @@ export function createProjectStore(root, { validatePackage } = {}) {
         chain(candidate, p.binding);
         check(p.history.every((entry, i) => equal(entry, candidate[i])), 'HISTORY_CONFLICT');
         p.history = candidate;
+        p.export_epoch = (p.export_epoch ?? 0) + 1;
         return summary(p);
       });
     },
-    append(project_id, { files, record, expected_generation, expected_head, expected_selection }) {
+    append(project_id, { files, record, expected_generation, expected_head, expected_selection, expected_export_epoch }) {
       return transaction(state => {
         const p = get(state, project_id);
         check(p.mode === 'aira' && p.binding, 'WRONG_TARGET');
         if (expected_selection !== undefined) check(state.active_project_id === project_id && state.selection === expected_selection, 'HISTORY_CONFLICT');
         check(p.generation === expected_generation && latest(p) === expected_head, 'HISTORY_CONFLICT');
+        if (expected_export_epoch !== undefined) check((p.export_epoch ?? 0) === expected_export_epoch, 'APPROVAL_STALE');
         const copy = decode(encode(files)), current = inspect(copy, p.binding);
         const entry = { manifest_sha256: current.manifest_sha256, files: encode(copy), ...(record ? { record: structuredClone(record) } : {}) };
         const previous = p.history.at(-1);
         if (previous && equal(previous.files, entry.files)) {
           check(!record || equal(previous.record, entry.record), 'HISTORY_CONFLICT');
+          p.export_epoch = (p.export_epoch ?? 0) + 1;
           return summary(p);
         }
         validate(copy, previous ? decode(previous.files) : null, record);
         chain([...p.history, entry], p.binding);
         p.history.push(entry);
+        p.export_epoch = (p.export_epoch ?? 0) + 1;
         return summary(p);
       });
     },
