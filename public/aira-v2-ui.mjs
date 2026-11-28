@@ -52,7 +52,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
   };
   function invalidate(){preview=null;approval.checked=false;download.disabled=true;review.textContent='';}
   function clearContext(){
-    context=null;editor.value='';mapping.value='{}';links.value='[]';migration.value='';points.value='{}';confirmations.value='';first.checked=false;coverage.textContent='';invalidate();
+    context=null;editor.value='';mapping.value='{}';links.value='[]';migration.value='';points.value='{}';confirmations.value='';first.checked=false;coverage.textContent='';byId('airaV2MigrationIds').textContent='';byId('airaV2ProposalKeys').textContent='';invalidate();
   }
   const ensureCurrent=()=>{
     if(!dialog.open||source!==getCurrent()||isBusy()||json(questions)!==json(getQuestions()))error('Plan, Spezifikation oder Interview geändert. Dialog erneut öffnen.');

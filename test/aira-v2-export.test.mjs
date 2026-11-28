@@ -4,7 +4,8 @@ import test from 'node:test';
 import {sha256,exportAira,previewAira,verifyAira} from '../aira-export.mjs';
 import {airaZip} from '../aira-zip.mjs';
 import {inflateRawSync} from 'node:zlib';
-import {buildAiraV2Export} from '../aira-v2-export.mjs';
+import {buildAiraV2Export,validateV2Restore} from '../aira-v2-export.mjs';
+import {restoreRequirementHighWater} from '../aira-requirement-identities.mjs';
 
 const read = name => readFileSync(new URL('./fixtures/aira-v2/' + name, import.meta.url));
 const fixture = name => JSON.parse(read(name));
@@ -80,6 +81,12 @@ for (const variant of invalid.cases) {
     assert.throws(() => exportAira(input), {code: variant.expected});
     assert.throws(() => previewAira(input), {code: variant.expected});
     assert.throws(() => airaZip(input), {code: variant.expected});
+    // Apply the same fixture mutation directly to original package bytes.
+    const archived={...fixture(variant.base ?? invalid.base).expected_files};
+    const value=JSON.parse(archived[variant.path]);
+    replaceField(value,variant.field,variant.value);
+    archived[variant.path]=JSON.stringify(value,null,2)+'\n';
+    assert.throws(()=>verifyAira(archived,input.previous?[input.previous]:[]),{code:variant.expected});
   });
 }
 
@@ -180,4 +187,25 @@ test('V2 exact projection rejects drift, missing verification and extra fields',
   assert.throws(()=>exportAira(missing),{code:'INVALID_SCHEMA'});
   const files=exportAira(input);files['draft/01-T01.md']=Buffer.from('changed');
   assert.throws(()=>verifyAira(files),{code:'INVALID_HASH'});
+});
+
+test('V2 restore verifies original binding, byte hash and identity snapshot',()=>{
+  const {input}=source('linear.json'),p=previewAira(input);
+  const active=input.confirmed_ids;
+  const record={repo:input.repo,manifest_bytes:p.manifest_bytes,requirements_bytes:p.requirements_bytes,manifest_sha256:p.manifest_sha256,
+    mapping:{key:active[0]},snapshot:{plan:input.plan,requirements:input.requirements,highWater:restoreRequirementHighWater({},active,[])}};
+  assert.equal(validateV2Restore(record,input),true);
+  assert.throws(()=>validateV2Restore({...record,manifest_sha256:'0'.repeat(64)},input),{code:'HISTORY_CONFLICT'});
+  const bad=structuredClone(record);bad.snapshot.highWater.T=900;
+  assert.throws(()=>validateV2Restore(bad,input),{code:'HISTORY_CONFLICT'});
+});
+
+test('a B tombstone cannot release surviving tasks without an open replacement',()=>{
+  const {input}=source('blocked.json'),files=exportAira(input);
+  const next=structuredClone(input);next.revision=2;next.requirements.revision=2;
+  next.previous={manifest_bytes:files['manifest.json'],requirements_bytes:files['requirements.json']};next.previous_manifest_sha256=sha256(files['manifest.json']);
+  next.requirements.retired_ids=[{id:'AC-B01-001',kind:'criterion',reason:'retired',retired_revision:2},{id:'B01',kind:'decision',reason:'retired',retired_revision:2},{id:'TC-B01-001',kind:'test',reason:'retired',retired_revision:2}];
+  next.requirements.decisions=[];next.requirements.criteria=next.requirements.criteria.filter(x=>x.task_id!=='B01');next.requirements.tests=next.requirements.tests.filter(x=>x.task_id!=='B01');
+  delete next.confirmed_points.B01;next.confirmed_ids=next.confirmed_ids.filter(x=>!x.includes('B01'));next.plan.tasks.forEach(t=>t.blockedBy=[]);next.plan.blocked=[];
+  assert.throws(()=>exportAira(next),{code:'HISTORY_CONFLICT'});
 });

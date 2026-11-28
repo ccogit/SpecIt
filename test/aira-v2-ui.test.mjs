@@ -8,5 +8,7 @@ test('V2 UI is separate from V1 and uses explicit mapping, revision storage, pre
   assert.match(app,/mountAiraV2\(\{getCurrent:airaCurrent/);
   for(const fn of ['proposeRequirementPlan','interviewDecisionDrafts','confirmRequirementRevision','requirementCoverageReport','navigator.locks.request','localStorage.setItem','/api/aira/preview','/api/aira/export','/api/aira/migration'])assert.ok(ui.includes(fn),fn);
   assert.doesNotMatch(ui,/\/api\/run|\/api\/repo|startRun/);
+  const postAllowlist=server.split('\n').find(line=>line.includes("req.method!=='POST'"));
+  for(const route of ['/api/aira/migration','/api/aira/v2/restore'])assert.ok(postAllowlist?.includes("'"+route+"'"),route);
   assert.match(server,/verifyV1Migration\(body.migration,body\)/);
 });
