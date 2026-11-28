@@ -1,0 +1,179 @@
+{
+  "base": "linear.json",
+  "description": "Jeder Fall ersetzt genau einen JSON-Wert in einer unabhängigen Kopie des Basispakets (RFC-6901 pointer in source bzw. im dekodierten manifest.json). Vor jedem Export/Import ablehnen, keine Dateien oder Jira-Änderungen. Keine automatische Korrektur. Die Markdown-Dateien bleiben beim Import unverändert.",
+  "cases": [
+    {
+      "id": "cycle",
+      "stage": "export",
+      "pointer": "/source/plan/tasks/1/dependsOn",
+      "value": [
+        "T02"
+      ],
+      "expected": "cycle"
+    },
+    {
+      "id": "self_cycle",
+      "stage": "export",
+      "pointer": "/source/plan/tasks/1/dependsOn",
+      "value": [
+        "T01"
+      ],
+      "expected": "self_dependency"
+    },
+    {
+      "id": "missing_dependency",
+      "stage": "export",
+      "pointer": "/source/plan/tasks/0/dependsOn",
+      "value": [
+        "T99"
+      ],
+      "expected": "unknown_dependency"
+    },
+    {
+      "id": "duplicate_dependency",
+      "stage": "export",
+      "pointer": "/source/plan/tasks/0/dependsOn",
+      "value": [
+        "T01",
+        "T01"
+      ],
+      "expected": "duplicate_dependency"
+    },
+    {
+      "id": "duplicate_id",
+      "stage": "export",
+      "pointer": "/source/plan/tasks/0/id",
+      "value": "T01",
+      "expected": "duplicate_id"
+    },
+    {
+      "id": "pipe_title",
+      "stage": "export",
+      "pointer": "/source/plan/tasks/0/title",
+      "value": "Titel | Spalte",
+      "expected": "invalid_title"
+    },
+    {
+      "id": "semicolon_title",
+      "stage": "export",
+      "pointer": "/source/plan/tasks/0/title",
+      "value": "Titel; Blocker",
+      "expected": "invalid_title"
+    },
+    {
+      "id": "newline_title",
+      "stage": "export",
+      "pointer": "/source/plan/tasks/0/title",
+      "value": "Titel\nEpic: anderes",
+      "expected": "invalid_title"
+    },
+    {
+      "id": "empty_title",
+      "stage": "export",
+      "pointer": "/source/plan/tasks/0/title",
+      "value": "",
+      "expected": "invalid_title"
+    },
+    {
+      "id": "long_title",
+      "stage": "export",
+      "pointer": "/source/plan/tasks/0/title",
+      "value": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "expected": "invalid_title"
+    },
+    {
+      "id": "invalid_points",
+      "stage": "export",
+      "pointer": "/source/confirmed_points/T01",
+      "value": 4,
+      "expected": "invalid_points"
+    },
+    {
+      "id": "zero_points",
+      "stage": "export",
+      "pointer": "/source/confirmed_points/T01",
+      "value": 0,
+      "expected": "invalid_points"
+    },
+    {
+      "id": "boolean_points",
+      "stage": "export",
+      "pointer": "/source/confirmed_points/T01",
+      "value": true,
+      "expected": "invalid_points"
+    },
+    {
+      "id": "missing_confirmation",
+      "stage": "export",
+      "pointer": "/source/confirmed_points/T01",
+      "value": null,
+      "expected": "invalid_points"
+    },
+    {
+      "id": "traversal",
+      "stage": "import",
+      "pointer": "/manifest/tasks/T01/file",
+      "value": "draft/../SPEC.md",
+      "expected": "invalid_path"
+    },
+    {
+      "id": "absolute_path",
+      "stage": "import",
+      "pointer": "/manifest/tasks/T01/file",
+      "value": "/tmp/01-T01.md",
+      "expected": "invalid_path"
+    },
+    {
+      "id": "windows_path",
+      "stage": "import",
+      "pointer": "/manifest/tasks/T01/file",
+      "value": "C:\\temp\\01-T01.md",
+      "expected": "invalid_path"
+    },
+    {
+      "id": "artifact_traversal",
+      "stage": "import",
+      "pointer": "/manifest/artifacts",
+      "value": [
+        {
+          "path": "artifacts/../SPEC.md",
+          "sha256": "8c596da79fb08026c67873c10bb547198dfefc150695a8013042426f361e0cd8"
+        }
+      ],
+      "expected": "invalid_path"
+    },
+    {
+      "id": "artifact_device",
+      "stage": "import",
+      "pointer": "/manifest/artifacts",
+      "value": [
+        {
+          "path": "artifacts/CON.txt",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expected": "invalid_path"
+    },
+    {
+      "id": "unknown_version",
+      "stage": "import",
+      "pointer": "/manifest/schema_version",
+      "value": 2,
+      "expected": "unsupported_version"
+    },
+    {
+      "id": "wrong_spec_hash",
+      "stage": "import",
+      "pointer": "/manifest/spec_sha256",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000",
+      "expected": "hash_mismatch"
+    },
+    {
+      "id": "changed_criterion",
+      "stage": "import",
+      "pointer": "/manifest/plan/tasks/0/acceptance/0",
+      "value": "Anderes Kriterium",
+      "expected": "projection_mismatch"
+    }
+  ]
+}

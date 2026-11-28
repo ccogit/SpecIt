@@ -1,0 +1,187 @@
+{
+  "expected_files": {
+    "SPEC.md": "# Synthetische Spezifikation\n\nFR-01: Einträge lokal prüfen.\n",
+    "artifacts/layout.txt": "Synthetische Layoutreferenz.\n",
+    "draft/01-T01.md": "# SpecIt fixture-branched T01 – Umsetzung: Start\nEpic: SpecIt fixture-branched T01 – Start\nUmfang: 2\n\n## Ziel\n\nEinträge lokal prüfen.\n\n## Ausgangslage\n\nSynthetischer Plan: lokale Verarbeitung.\n\n## Anforderungen\n\n- FR-01: Prüfe `a|b` unverändert.\n- NFR-01: Umlaute ä, ö und ß erhalten.\n\n## Features\n\n- F01\n\n## Umfang\n\n- Lokale Verarbeitung\n\n## Nicht im Umfang\n\n- (keine)\n\n## Schnittstellen\n\n- Eingabe: UTF-8\n\n## Liefergegenstände\n\n- Prüfbericht\n\n## Acceptance\n\n- FR-01: `a|b` bleibt exakt erhalten.\n- Mehrzeiliges Kriterium:\n  **kein** Verlust.\n\n## Tests\n\n- Normalfall und Fehlerfall\n\n## Festlegungen\n\n- Nur Standardbibliothek.\n- Zeichen * _ # | ` bleiben Daten.\n\n## Offene Entscheidungen\n\n- (keine)\n\n## Abhängigkeiten\n\n- (keine)\n\n## Referenzen\n\n- ../SPEC.md (SHA-256: 8c596da79fb08026c67873c10bb547198dfefc150695a8013042426f361e0cd8)\n- ../manifest.json\n- ../artifacts/layout.txt (SHA-256: 48693cd0f8edb685307f8b05d34e4be564d6e4b94a89a369049b4ebbc8a42975)\n",
+    "draft/02-T02.md": "# SpecIt fixture-branched T02 – Umsetzung: Zweig A\nEpic: SpecIt fixture-branched T02 – Zweig A\nUmfang: 3\n\n## Ziel\n\nEinträge lokal prüfen.\n\n## Ausgangslage\n\nSynthetischer Plan: lokale Verarbeitung.\n\n## Anforderungen\n\n- FR-01: Prüfe `a|b` unverändert.\n- NFR-01: Umlaute ä, ö und ß erhalten.\n\n## Features\n\n- F01\n\n## Umfang\n\n- Lokale Verarbeitung\n\n## Nicht im Umfang\n\n- (keine)\n\n## Schnittstellen\n\n- Eingabe: UTF-8\n\n## Liefergegenstände\n\n- Prüfbericht\n\n## Acceptance\n\n- FR-01: `a|b` bleibt exakt erhalten.\n- Mehrzeiliges Kriterium:\n  **kein** Verlust.\n\n## Tests\n\n- Normalfall und Fehlerfall\n\n## Festlegungen\n\n- Nur Standardbibliothek.\n- Zeichen * _ # | ` bleiben Daten.\n\n## Offene Entscheidungen\n\n- (keine)\n\n## Abhängigkeiten\n\n- T01\n\n## Referenzen\n\n- ../SPEC.md (SHA-256: 8c596da79fb08026c67873c10bb547198dfefc150695a8013042426f361e0cd8)\n- ../manifest.json\n- ../artifacts/layout.txt (SHA-256: 48693cd0f8edb685307f8b05d34e4be564d6e4b94a89a369049b4ebbc8a42975)\n",
+    "draft/03-T03.md": "# SpecIt fixture-branched T03 – Umsetzung: Zweig B\nEpic: SpecIt fixture-branched T03 – Zweig B\nUmfang: 8\n\n## Ziel\n\nEinträge lokal prüfen.\n\n## Ausgangslage\n\nSynthetischer Plan: lokale Verarbeitung.\n\n## Anforderungen\n\n- FR-01: Prüfe `a|b` unverändert.\n- NFR-01: Umlaute ä, ö und ß erhalten.\n\n## Features\n\n- F01\n\n## Umfang\n\n- Lokale Verarbeitung\n\n## Nicht im Umfang\n\n- (keine)\n\n## Schnittstellen\n\n- Eingabe: UTF-8\n\n## Liefergegenstände\n\n- Prüfbericht\n\n## Acceptance\n\n- FR-01: `a|b` bleibt exakt erhalten.\n- Mehrzeiliges Kriterium:\n  **kein** Verlust.\n\n## Tests\n\n- Normalfall und Fehlerfall\n\n## Festlegungen\n\n- Nur Standardbibliothek.\n- Zeichen * _ # | ` bleiben Daten.\n\n## Offene Entscheidungen\n\n- (keine)\n\n## Abhängigkeiten\n\n- T01\n\n## Referenzen\n\n- ../SPEC.md (SHA-256: 8c596da79fb08026c67873c10bb547198dfefc150695a8013042426f361e0cd8)\n- ../manifest.json\n- ../artifacts/layout.txt (SHA-256: 48693cd0f8edb685307f8b05d34e4be564d6e4b94a89a369049b4ebbc8a42975)\n",
+    "draft/04-T04.md": "# SpecIt fixture-branched T04 – Umsetzung: Zusammenführen\nEpic: SpecIt fixture-branched T04 – Zusammenführen\nUmfang: 5\n\n## Ziel\n\nEinträge lokal prüfen.\n\n## Ausgangslage\n\nSynthetischer Plan: lokale Verarbeitung.\n\n## Anforderungen\n\n- FR-01: Prüfe `a|b` unverändert.\n- NFR-01: Umlaute ä, ö und ß erhalten.\n\n## Features\n\n- F01\n\n## Umfang\n\n- Lokale Verarbeitung\n\n## Nicht im Umfang\n\n- (keine)\n\n## Schnittstellen\n\n- Eingabe: UTF-8\n\n## Liefergegenstände\n\n- Prüfbericht\n\n## Acceptance\n\n- FR-01: `a|b` bleibt exakt erhalten.\n- Mehrzeiliges Kriterium:\n  **kein** Verlust.\n\n## Tests\n\n- Normalfall und Fehlerfall\n\n## Festlegungen\n\n- Nur Standardbibliothek.\n- Zeichen * _ # | ` bleiben Daten.\n\n## Offene Entscheidungen\n\n- (keine)\n\n## Abhängigkeiten\n\n- T03\n- T02\n\n## Referenzen\n\n- ../SPEC.md (SHA-256: 8c596da79fb08026c67873c10bb547198dfefc150695a8013042426f361e0cd8)\n- ../manifest.json\n- ../artifacts/layout.txt (SHA-256: 48693cd0f8edb685307f8b05d34e4be564d6e4b94a89a369049b4ebbc8a42975)\n",
+    "draft/EPICS.md": "| Epic | Blocked by | Status |\n| --- | --- | --- |\n| SpecIt fixture-branched T01 – Start | – | – |\n| SpecIt fixture-branched T02 – Zweig A | SpecIt fixture-branched T01 – Start | – |\n| SpecIt fixture-branched T03 – Zweig B | SpecIt fixture-branched T01 – Start | – |\n| SpecIt fixture-branched T04 – Zusammenführen | SpecIt fixture-branched T02 – Zweig A; SpecIt fixture-branched T03 – Zweig B | – |\n",
+    "manifest.json": "{\n  \"artifacts\": [\n    {\n      \"path\": \"artifacts/layout.txt\",\n      \"sha256\": \"48693cd0f8edb685307f8b05d34e4be564d6e4b94a89a369049b4ebbc8a42975\"\n    }\n  ],\n  \"blockers\": [],\n  \"plan\": {\n    \"blocked\": [],\n    \"decisions\": [\n      \"Nur Standardbibliothek.\",\n      \"Zeichen * _ # | ` bleiben Daten.\"\n    ],\n    \"summary\": \"Synthetischer Plan: lokale Verarbeitung.\",\n    \"tasks\": [\n      {\n        \"acceptance\": [\n          \"FR-01: `a|b` bleibt exakt erhalten.\",\n          \"Mehrzeiliges Kriterium:\\n  **kein** Verlust.\"\n        ],\n        \"blockedBy\": [],\n        \"deliverables\": [\n          \"Prüfbericht\"\n        ],\n        \"dependsOn\": [\n          \"T03\",\n          \"T02\"\n        ],\n        \"features\": [\n          \"F01\"\n        ],\n        \"goal\": \"Einträge lokal prüfen.\",\n        \"id\": \"T04\",\n        \"interfaces\": [\n          \"Eingabe: UTF-8\"\n        ],\n        \"minutes\": 12.5,\n        \"outOfScope\": [],\n        \"requirements\": [\n          \"FR-01: Prüfe `a|b` unverändert.\",\n          \"NFR-01: Umlaute ä, ö und ß erhalten.\"\n        ],\n        \"scope\": [\n          \"Lokale Verarbeitung\"\n        ],\n        \"tests\": [\n          \"Normalfall und Fehlerfall\"\n        ],\n        \"title\": \"Zusammenführen\"\n      },\n      {\n        \"acceptance\": [\n          \"FR-01: `a|b` bleibt exakt erhalten.\",\n          \"Mehrzeiliges Kriterium:\\n  **kein** Verlust.\"\n        ],\n        \"blockedBy\": [],\n        \"deliverables\": [\n          \"Prüfbericht\"\n        ],\n        \"dependsOn\": [\n          \"T01\"\n        ],\n        \"features\": [\n          \"F01\"\n        ],\n        \"goal\": \"Einträge lokal prüfen.\",\n        \"id\": \"T03\",\n        \"interfaces\": [\n          \"Eingabe: UTF-8\"\n        ],\n        \"minutes\": 12.5,\n        \"outOfScope\": [],\n        \"requirements\": [\n          \"FR-01: Prüfe `a|b` unverändert.\",\n          \"NFR-01: Umlaute ä, ö und ß erhalten.\"\n        ],\n        \"scope\": [\n          \"Lokale Verarbeitung\"\n        ],\n        \"tests\": [\n          \"Normalfall und Fehlerfall\"\n        ],\n        \"title\": \"Zweig B\"\n      },\n      {\n        \"acceptance\": [\n          \"FR-01: `a|b` bleibt exakt erhalten.\",\n          \"Mehrzeiliges Kriterium:\\n  **kein** Verlust.\"\n        ],\n        \"blockedBy\": [],\n        \"deliverables\": [\n          \"Prüfbericht\"\n        ],\n        \"dependsOn\": [],\n        \"features\": [\n          \"F01\"\n        ],\n        \"goal\": \"Einträge lokal prüfen.\",\n        \"id\": \"T01\",\n        \"interfaces\": [\n          \"Eingabe: UTF-8\"\n        ],\n        \"minutes\": 12.5,\n        \"outOfScope\": [],\n        \"requirements\": [\n          \"FR-01: Prüfe `a|b` unverändert.\",\n          \"NFR-01: Umlaute ä, ö und ß erhalten.\"\n        ],\n        \"scope\": [\n          \"Lokale Verarbeitung\"\n        ],\n        \"tests\": [\n          \"Normalfall und Fehlerfall\"\n        ],\n        \"title\": \"Start\"\n      },\n      {\n        \"acceptance\": [\n          \"FR-01: `a|b` bleibt exakt erhalten.\",\n          \"Mehrzeiliges Kriterium:\\n  **kein** Verlust.\"\n        ],\n        \"blockedBy\": [],\n        \"deliverables\": [\n          \"Prüfbericht\"\n        ],\n        \"dependsOn\": [\n          \"T01\"\n        ],\n        \"features\": [\n          \"F01\"\n        ],\n        \"goal\": \"Einträge lokal prüfen.\",\n        \"id\": \"T02\",\n        \"interfaces\": [\n          \"Eingabe: UTF-8\"\n        ],\n        \"minutes\": 12.5,\n        \"outOfScope\": [],\n        \"requirements\": [\n          \"FR-01: Prüfe `a|b` unverändert.\",\n          \"NFR-01: Umlaute ä, ö und ß erhalten.\"\n        ],\n        \"scope\": [\n          \"Lokale Verarbeitung\"\n        ],\n        \"tests\": [\n          \"Normalfall und Fehlerfall\"\n        ],\n        \"title\": \"Zweig A\"\n      }\n    ],\n    \"waves\": [\n      [\n        \"T01\"\n      ],\n      [\n        \"T03\",\n        \"T02\"\n      ],\n      [\n        \"T04\"\n      ]\n    ]\n  },\n  \"plan_id\": \"fixture-branched\",\n  \"repo\": \"example/synthetic\",\n  \"revision\": 1,\n  \"schema_version\": 1,\n  \"spec_sha256\": \"8c596da79fb08026c67873c10bb547198dfefc150695a8013042426f361e0cd8\",\n  \"target_minutes\": 30,\n  \"tasks\": {\n    \"T01\": {\n      \"epic_title\": \"SpecIt fixture-branched T01 – Start\",\n      \"file\": \"draft/01-T01.md\",\n      \"item_title\": \"SpecIt fixture-branched T01 – Umsetzung: Start\",\n      \"points\": 2\n    },\n    \"T02\": {\n      \"epic_title\": \"SpecIt fixture-branched T02 – Zweig A\",\n      \"file\": \"draft/02-T02.md\",\n      \"item_title\": \"SpecIt fixture-branched T02 – Umsetzung: Zweig A\",\n      \"points\": 3\n    },\n    \"T03\": {\n      \"epic_title\": \"SpecIt fixture-branched T03 – Zweig B\",\n      \"file\": \"draft/03-T03.md\",\n      \"item_title\": \"SpecIt fixture-branched T03 – Umsetzung: Zweig B\",\n      \"points\": 8\n    },\n    \"T04\": {\n      \"epic_title\": \"SpecIt fixture-branched T04 – Zusammenführen\",\n      \"file\": \"draft/04-T04.md\",\n      \"item_title\": \"SpecIt fixture-branched T04 – Umsetzung: Zusammenführen\",\n      \"points\": 5\n    }\n  }\n}\n"
+  },
+  "expected_order": [
+    "T01",
+    "T02",
+    "T03",
+    "T04"
+  ],
+  "source": {
+    "confirmed_points": {
+      "T01": 2,
+      "T02": 3,
+      "T03": 8,
+      "T04": 5
+    },
+    "plan": {
+      "blocked": [],
+      "decisions": [
+        "Nur Standardbibliothek.",
+        "Zeichen * _ # | ` bleiben Daten."
+      ],
+      "summary": "Synthetischer Plan: lokale Verarbeitung.",
+      "tasks": [
+        {
+          "acceptance": [
+            "FR-01: `a|b` bleibt exakt erhalten.",
+            "Mehrzeiliges Kriterium:\n  **kein** Verlust."
+          ],
+          "blockedBy": [],
+          "deliverables": [
+            "Prüfbericht"
+          ],
+          "dependsOn": [
+            "T03",
+            "T02"
+          ],
+          "features": [
+            "F01"
+          ],
+          "goal": "Einträge lokal prüfen.",
+          "id": "T04",
+          "interfaces": [
+            "Eingabe: UTF-8"
+          ],
+          "minutes": 12.5,
+          "outOfScope": [],
+          "requirements": [
+            "FR-01: Prüfe `a|b` unverändert.",
+            "NFR-01: Umlaute ä, ö und ß erhalten."
+          ],
+          "scope": [
+            "Lokale Verarbeitung"
+          ],
+          "tests": [
+            "Normalfall und Fehlerfall"
+          ],
+          "title": "Zusammenführen"
+        },
+        {
+          "acceptance": [
+            "FR-01: `a|b` bleibt exakt erhalten.",
+            "Mehrzeiliges Kriterium:\n  **kein** Verlust."
+          ],
+          "blockedBy": [],
+          "deliverables": [
+            "Prüfbericht"
+          ],
+          "dependsOn": [
+            "T01"
+          ],
+          "features": [
+            "F01"
+          ],
+          "goal": "Einträge lokal prüfen.",
+          "id": "T03",
+          "interfaces": [
+            "Eingabe: UTF-8"
+          ],
+          "minutes": 12.5,
+          "outOfScope": [],
+          "requirements": [
+            "FR-01: Prüfe `a|b` unverändert.",
+            "NFR-01: Umlaute ä, ö und ß erhalten."
+          ],
+          "scope": [
+            "Lokale Verarbeitung"
+          ],
+          "tests": [
+            "Normalfall und Fehlerfall"
+          ],
+          "title": "Zweig B"
+        },
+        {
+          "acceptance": [
+            "FR-01: `a|b` bleibt exakt erhalten.",
+            "Mehrzeiliges Kriterium:\n  **kein** Verlust."
+          ],
+          "blockedBy": [],
+          "deliverables": [
+            "Prüfbericht"
+          ],
+          "dependsOn": [],
+          "features": [
+            "F01"
+          ],
+          "goal": "Einträge lokal prüfen.",
+          "id": "T01",
+          "interfaces": [
+            "Eingabe: UTF-8"
+          ],
+          "minutes": 12.5,
+          "outOfScope": [],
+          "requirements": [
+            "FR-01: Prüfe `a|b` unverändert.",
+            "NFR-01: Umlaute ä, ö und ß erhalten."
+          ],
+          "scope": [
+            "Lokale Verarbeitung"
+          ],
+          "tests": [
+            "Normalfall und Fehlerfall"
+          ],
+          "title": "Start"
+        },
+        {
+          "acceptance": [
+            "FR-01: `a|b` bleibt exakt erhalten.",
+            "Mehrzeiliges Kriterium:\n  **kein** Verlust."
+          ],
+          "blockedBy": [],
+          "deliverables": [
+            "Prüfbericht"
+          ],
+          "dependsOn": [
+            "T01"
+          ],
+          "features": [
+            "F01"
+          ],
+          "goal": "Einträge lokal prüfen.",
+          "id": "T02",
+          "interfaces": [
+            "Eingabe: UTF-8"
+          ],
+          "minutes": 12.5,
+          "outOfScope": [],
+          "requirements": [
+            "FR-01: Prüfe `a|b` unverändert.",
+            "NFR-01: Umlaute ä, ö und ß erhalten."
+          ],
+          "scope": [
+            "Lokale Verarbeitung"
+          ],
+          "tests": [
+            "Normalfall und Fehlerfall"
+          ],
+          "title": "Zweig A"
+        }
+      ],
+      "waves": [
+        [
+          "T01"
+        ],
+        [
+          "T03",
+          "T02"
+        ],
+        [
+          "T04"
+        ]
+      ]
+    },
+    "plan_id": "fixture-branched",
+    "repo": "example/synthetic",
+    "revision": 1,
+    "target_minutes": 30
+  }
+}
