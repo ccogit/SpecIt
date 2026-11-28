@@ -21,7 +21,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
   const contextBody=(c=context)=>({project_id:c.project.project_id,selection:c.selection,...c.project.binding,
     expected_generation:c.project.generation,expected_head:c.project.manifest_sha256,expected_export_epoch:c.project.export_epoch});
   function revoke(p){if(p)void request('/api/aira/preview/invalidate',{...p.context,preview_id:p.result.preview_id}).catch(()=>{});}
-  function invalidate(){const p=preview;preview=null;version++;approval.checked=false;download.disabled=true;review.textContent='';revoke(p);}
+  function invalidate(){const p=preview;preview=null;version++;approval.checked=false;download.disabled=true;review.textContent='';byId('airaV2Conflict').textContent='';revoke(p);}
   function clearContext(){
     invalidate();context=null;editor.value='';mapping.value='{}';links.value='[]';migration.value='';points.value='{}';confirmations.value='';first.checked=false;coverage.textContent='';
     byId('airaV2MigrationIds').textContent='';byId('airaV2ProposalKeys').textContent='';byId('airaV2PointRows').replaceChildren();byId('airaV2History').textContent='';
@@ -91,6 +91,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
     if(!dialog.open||binding().plan_id!==h.project.binding.plan_id||binding().repo!==h.project.binding.repo)error('Bindung geändert.');
     context=h;setSelection({...selected,project:h.project});showHistory(h);
     if(reset&&h.record){
+      migration.value='';confirmations.value='';first.checked=false;byId('airaV2MigrationIds').textContent='';byId('airaV2ProposalKeys').textContent='';
       const next=structuredClone(h.record.snapshot);next.requirements.revision++;
       editor.value=json({plan:next.plan,requirements:next.requirements});mapping.value=json(h.record.mapping);
       points.value=json(Object.fromEntries([...next.plan.tasks,...next.requirements.decisions].map(x=>[x.id,null])));
@@ -110,7 +111,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
     if(!response.ok){const result=await response.json();error(result.error||'Aira-Anfrage fehlgeschlagen.');}
     return response;
   };
-  const attempt=fn=>async()=>{if(working)return;working=true;updateActions();try{await fn()}catch(e){invalidate();status.textContent=e.message;if(!dialog.open)notice(e.message)}finally{working=false;updateActions()}};
+  const attempt=fn=>async()=>{if(working)return;working=true;updateActions();try{await fn()}catch(e){invalidate();status.textContent=e.message;if(dialog.open)byId('airaV2Conflict').textContent=e.message;else notice(e.message)}finally{working=false;updateActions()}};
   const open=attempt(async()=>{
     source=getCurrent();questions=structuredClone(getQuestions());clearContext();bind.checked=false;
     id.value='';repo.value=getRepo();status.textContent='Plan-ID und Repository wählen. Bei neuem Projekt oder Wechsel die Bindung ausdrücklich bestätigen.';
@@ -132,7 +133,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
   byId('airaV2Close').onclick=()=>dialog.close();
   dialog.addEventListener('close',()=>{source=null;questions=[];clearContext()});
   dialog.addEventListener('input',event=>{
-    if(event.target===approval){updateActions();return;}
+    if(event.target===approval){if(!approval.checked&&preview)invalidate();updateActions();return;}
     if(event.target===bind)return;
     if(event.target===id||event.target===repo){clearContext();bind.checked=false;status.textContent='Stand für diese Bindung neu laden.';return;}
     if(event.target.closest?.('#airaV2PointRows'))return;
@@ -224,7 +225,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
     const response=await request('/api/aira/export',{...state.payload,approved:true,changes_approved:true,preview_id:p.result.preview_id,expected_manifest_sha256:p.result.manifest_sha256});
     const blob=await response.blob();
     let current=false;try{current=still()}catch{}
-    if(!current){invalidate();status.textContent='Eingaben geändert; kein Download. Der Server kann die zuvor freigegebene Revision bereits archiviert haben. Stand neu laden.';return;}
+    if(!current){invalidate();if(dialog.open)byId('airaV2ExportStatus').textContent='Exportstatus: neu laden – die zuletzt freigegebene Revision kann bereits archiviert sein';status.textContent='Eingaben geändert; kein Download. Der Server kann die zuvor freigegebene Revision bereits archiviert haben. Stand neu laden.';return;}
     preview=null;invalidate();
     saveBlob(blob,'aira-v2-'+state.payload.plan_id+'-r'+p.result.manifest.revision+'.zip');
     await loadHistory(context);

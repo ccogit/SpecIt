@@ -3306,6 +3306,7 @@ $('goDownload').onclick=()=>goFlow('download');$('goApprove').onclick=()=>goFlow
 for(const id of ['featPanel','decPanel'])$(id).addEventListener('toggle',()=>{if($(id).open)$('specGroup').open=true});
 $('implPanel').addEventListener('toggle',()=>mainUI());
 $('finish').onclick=async()=>{
+  if(s.nextStep==='run'&&airaProjectUI?.blocksRun()){$('finishHint').textContent='Integrierter oder unbekannter Projektmodus: direkte Umsetzung gesperrt.';return}
   const p=s.plan&&!stale()?s.plan:null;if(!p||active||runBusy)return;
   if(s.nextStep!=='run'){s.finished=finishKey();save();renderAll();$('doneBox').scrollIntoView({block:'nearest'});return}
   if(!s.runDir.trim()){$('finishHint').textContent='Bitte einen Zielordner angeben.';$('runDir').focus();return}

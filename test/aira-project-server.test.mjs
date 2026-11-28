@@ -41,7 +41,8 @@ async function withServer(archive,run){
     }
     assert.ok(ready,'SpecIt server failed to start: '+stderr);
     const post=(path,body,origin=base)=>fetch(base+path,{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify(body)});
-    await run(post);
+    const get=path=>fetch(base+path);
+    await run(post,get);
   }finally{cp.kill('SIGTERM');await Promise.race([exited,pause(2000)]);}
 }
 const result=async(res,status=200)=>{assert.equal(res.status,status,await res.clone().text());return res.json()};
@@ -94,7 +95,8 @@ test('T15 production server HTTP: bound run denied, exact V2 archive, restart an
 
 test('T04 real server freezes confirmed V2 bytes and refuses stale approval', {timeout:15000},async t=>{
   const dir=mkdtempSync(join(tmpdir(),'specit-s2-preview-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
-  await withServer(dir,async post=>{
+  await withServer(dir,async (post,get)=>{
+    const before=await result(await get('/api/run'));
     const first=input('linear'),binding={plan_id:first.plan_id,repo:first.repo};
     const active=await result(await select(post,'aira',0,{binding,source:{...binding,plan:first.plan,spec:first.spec}})),c=context(active),payload={...first,...c};
     const preview=await result(await post('/api/aira/preview',payload));
@@ -110,5 +112,26 @@ test('T04 real server freezes confirmed V2 bytes and refuses stale approval', {t
     const h=await result(await post('/api/aira/history',c));
     assert.equal(h.export_status,'archived');assert.equal(h.last_known_receipt,null);assert.equal(h.history.length,1);
     assert.equal((await post('/api/run',{action:'start'})).status,403);
+    const after=await result(await get('/api/run'));
+    assert.deepEqual(after.calib,before.calib);assert.equal(after.active,before.active);assert.deepEqual(after.items,before.items);
+    const same={...first,...context(h),revision:2,requirements:{...first.requirements,revision:2}};
+    const repeat=await result(await post('/api/aira/preview',same));assert.equal(repeat.unchanged,true);
+    const again=await post('/api/aira/export',{...same,approved:true,changes_approved:true,preview_id:repeat.preview_id,expected_manifest_sha256:repeat.manifest_sha256});
+    assert.equal(again.status,200,await again.clone().text());assert.deepEqual(unzip(Buffer.from(await again.arrayBuffer())),fixture('linear').expected_files);
+    const repeated=await result(await post('/api/aira/history',context(h)));assert.equal(repeated.history.length,1);assert.equal(repeated.project.export_epoch,h.project.export_epoch+1);
+  });
+});
+
+test('T04 V1 standalone export remains byte compatible; no calibration or agent changes', {timeout:15000},async t=>{
+  const dir=mkdtempSync(join(tmpdir(),'specit-s2-v1-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  await withServer(dir,async(post,get)=>{
+    const f=JSON.parse(readFileSync(new URL('./fixtures/specit_v1/linear.json',import.meta.url)));
+    const payload={...f.source,spec:f.expected_files['SPEC.md'],approved:true,changes_approved:true,initial_confirmed:true};
+    const before=await result(await get('/api/run'));
+    const p=await post('/api/aira/preview',payload);assert.equal(p.status,200,await p.clone().text());
+    const res=await post('/api/aira/export',payload);assert.equal(res.status,200,await res.clone().text());
+    assert.deepEqual(unzip(Buffer.from(await res.arrayBuffer())),f.expected_files);
+    const after=await result(await get('/api/run'));assert.deepEqual(after,before);
+    assert.equal((await post('/api/run',{action:'start'})).status,503);
   });
 });
