@@ -284,6 +284,7 @@
             <div class="flow3">
         <button id="goDownload" type="button" class="flowbtn" title="Spezifikation, Plan und Aufträge stehen als Dateien bereit – zur Übergabe an Coding-Agenten deiner Wahl."><b>↓ Nur herunterladen</b></button>
         <button id="goApprove" type="button" class="flowbtn" title="Du siehst den Plan und gibst ihn frei. Erst danach starten die Agenten auf diesem Rechner."><b>✓ Prüfen, dann umsetzen</b></button>
+        <button id="goAira" type="button" class="flowbtn"><b>↓ Aira-Entwurf exportieren</b></button>
         <button id="goDirect" type="button" class="flowbtn" title="Die Agenten starten sofort auf diesem Rechner – ohne dass du den Plan bestätigst."><b>▸ Direkt umsetzen</b></button>
       </div>
       <div class="flowrun"><span class="flowcap">Umsetzung auf diesem Rechner</span><div class="agentline" id="agentLine"></div><div id="runPanel" class="hidden runpanel">
@@ -305,6 +306,23 @@
 <div class="card" id="reviewCard">
       <div class="stephead"><span class="stepno">2</span><div><h2>Prüfen und bestätigen</h2><p class="muted">Alle Festlegungen und Ergebnisse auf einen Blick. „Ändern“ führt zur passenden Stelle. Abgeschlossen wird erst mit der Bestätigung unten rechts.</p></div></div>
       <div id="review" class="review"></div>
+      <dialog id="airaDialog" aria-labelledby="airaHeading">
+        <h2 id="airaHeading">Aira-Entwurf exportieren (V1)</h2>
+        <p>Nur Entwurf und Kontext als ZIP. Kein Agentenstart, keine Kalibrierungsmessung, keine Jira-Anmeldung.</p>
+        <p id="airaDemo" class="status"></p>
+        <label>Stabile, projektweit eindeutige Plan-ID <input id="airaPlanId" maxlength="24" type="text" placeholder="projekt-1"></label>
+        <label>Zielrepository (owner/name) <input id="airaRepo" type="text" placeholder="owner/repo"></label>
+        <p class="meta">Bei einem Neu-Export müssen alle bisherigen Manifeste verfügbar sein. Bei Browserwechsel oder fehlender lokaler Historie die Manifeste ab Revision 1 auswählen.</p>
+        <label>Historie wiederherstellen <input id="airaHistoryFiles" type="file" accept=".json,application/json" multiple></label>
+        <button id="airaRestoreHistory" class="btn" type="button">Manifeste für Vorschau übernehmen</button>
+        <label id="airaInitialRow"><input id="airaInitial" type="checkbox"> Erstexport: Diese Plan-ID wurde projektweit noch nie exportiert.</label>
+        <p>Umfangspunkte (1, 2, 3, 5, 8) unabhängig von Laufzeit ausdrücklich bestätigen.</p>
+        <div id="airaPoints"></div>
+        <label><input id="airaApprove" type="checkbox"> Ich habe den Plan, die offenen Entscheidungen, die Punkte, das Zielrepository und die Inhalte fachlich geprüft und freigegeben. Keine Secrets oder echten Kundendaten.</label>
+        <p id="airaChanges" class="status" aria-live="polite" style="white-space:pre-wrap"></p>
+        <p id="airaStatus" class="status" role="status"></p>
+        <div class="actions"><button id="airaPreview" type="button" class="btn">Revision und Änderungen prüfen</button><button id="airaDownload" type="button" class="btn primary">↓ Freigegebenes Aira-ZIP</button><button id="airaClose" type="button" class="btn">Schließen</button></div>
+      </dialog>
       <p id="finishHint" class="status" role="status" style="margin-top:12px"></p>
       <button id="finish" class="btn primary" type="button"></button>
       <div id="doneBox" class="donebox hidden">

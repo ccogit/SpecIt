@@ -1,0 +1,13 @@
+# Aira-Entwurf (V1) herunterladen
+
+1. Aktuelle Spezifikation und Plan erstellen, fachlich prüfen (DEMO ist nur ein generisches Gerüst).
+2. „Aira-Entwurf exportieren“ auswählen. Stabile projektweit eindeutige Plan-ID vergeben, Zielrepository als owner/name eintragen, KI-Vorschläge (sofern für den Plan verfügbar) prüfen und für jeden Task und jede offene Entscheidung den modellunabhängigen Umfang bestätigen (1, 2, 3, 5, 8). Keine Laufzeitumrechnung. Offene Entscheidungen werden als eigene Klärungs-Epics exportiert.
+3. Inhalte, Zielrepo und Punkte freigeben; ZIP herunterladen. Kein Runner, keine direkte Kalibrierung, kein Jira-Login. Die bisherige Standalone-Option bleibt getrennt.
+4. ZIP in einen neuen leeren Ordner entpacken. Niemals bestehende Dateien überschreiben. SPEC.md ist der exakte Text, auf dem der Plan beruht. Manifest, SPEC.md und optionale Artefakte für Acceptance aufbewahren. Keine automatischen Netzabrufe.
+5. Coordinator erhält nur draft/ als Eingabe für Aira (drafts.read, Import-Vorschau und explizite Bestätigung). SPEC.md im Zielrepo bereitstellen und Verfügbarkeit der Referenzen sicherstellen. Status und Vergabe bestimmt Aira, Klärungen erst nach dokumentierter Entscheidung durch Coordinator freigeben.
+
+## Revisionen
+
+Bei Erstexport bestätigen, dass die Plan-ID noch nie vergeben wurde. Bei fehlender lokaler Historie alle früheren Manifestdateien ab Revision 1 auswählen und „Manifeste für Vorschau übernehmen“. Vor Download „Revision und Änderungen prüfen“ wählen. Die Vorschau nennt Revision, SPEC-SHA-256, Manifest-SHA-256 und Änderungen. Erst danach fachlich bestätigen; jede Eingabeänderung macht die Vorschau ungültig. Wiederholungen desselben Inputs nutzen dieselbe Revision. Geänderte Inhalte erhalten die nächste Revision und einen getrennten ZIP-Namen. Entfernte/umbenannte Task-IDs oder entfernte Klärungsabhängigkeiten blockieren den Export bis zur expliziten Migration durch den Coordinator. Keine automatische Löschung.
+
+Die bisherigen Manifeste werden lokal im Browser je Plan-ID gespeichert; Browserdaten nicht löschen und alle Manifeste sichern. Dieselbe Plan-ID nicht in einem anderen Browser oder auf einem anderen Rechner ohne Historie neu vergeben. Bei Browserwechsel vollständige Manifeste wiederherstellen; bei Verlust oder konkurrierender Revision muss der Coordinator entscheiden. Die lokale Web-Lock-Sperre schützt gleichzeitige Exporte desselben Origins. SHA-256 ist eine Integritätsprüfung, keine Signatur oder Authentifizierung. Manifeste enthalten Projektdaten und sind entsprechend zu schützen. Die eigentliche Import-Konfliktprüfung bleibt bei Aira.

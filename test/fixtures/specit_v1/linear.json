@@ -1,0 +1,108 @@
+{
+  "expected_files": {
+    "SPEC.md": "# Synthetische Spezifikation\n\nFR-01: Einträge lokal prüfen.\n",
+    "draft/01-T01.md": "# SpecIt fixture-linear T01 – Umsetzung: Prüfung *lokal*\nEpic: SpecIt fixture-linear T01 – Prüfung *lokal*\nUmfang: 5\n\n## Ziel\n\nEinträge lokal prüfen.\n\n## Ausgangslage\n\nSynthetischer Plan: lokale Verarbeitung.\n\n## Anforderungen\n\n- FR-01: Prüfe `a|b` unverändert.\n- NFR-01: Umlaute ä, ö und ß erhalten.\n\n## Features\n\n- F01\n\n## Umfang\n\n- Lokale Verarbeitung\n\n## Nicht im Umfang\n\n- (keine)\n\n## Schnittstellen\n\n- Eingabe: UTF-8\n\n## Liefergegenstände\n\n- Prüfbericht\n\n## Acceptance\n\n- FR-01: `a|b` bleibt exakt erhalten.\n- Mehrzeiliges Kriterium:\n  **kein** Verlust.\n\n## Tests\n\n- Normalfall und Fehlerfall\n\n## Festlegungen\n\n- Nur Standardbibliothek.\n- Zeichen * _ # | ` bleiben Daten.\n\n## Offene Entscheidungen\n\n- (keine)\n\n## Abhängigkeiten\n\n- (keine)\n\n## Referenzen\n\n- ../SPEC.md (SHA-256: 8c596da79fb08026c67873c10bb547198dfefc150695a8013042426f361e0cd8)\n- ../manifest.json\n",
+    "draft/02-T02.md": "# SpecIt fixture-linear T02 – Umsetzung: Bericht\nEpic: SpecIt fixture-linear T02 – Bericht\nUmfang: 1\n\n## Ziel\n\nEinträge lokal prüfen.\n\n## Ausgangslage\n\nSynthetischer Plan: lokale Verarbeitung.\n\n## Anforderungen\n\n- FR-01: Prüfe `a|b` unverändert.\n- NFR-01: Umlaute ä, ö und ß erhalten.\n\n## Features\n\n- F01\n\n## Umfang\n\n- Lokale Verarbeitung\n\n## Nicht im Umfang\n\n- (keine)\n\n## Schnittstellen\n\n- Eingabe: UTF-8\n\n## Liefergegenstände\n\n- Prüfbericht\n\n## Acceptance\n\n- FR-01: `a|b` bleibt exakt erhalten.\n- Mehrzeiliges Kriterium:\n  **kein** Verlust.\n\n## Tests\n\n- Normalfall und Fehlerfall\n\n## Festlegungen\n\n- Nur Standardbibliothek.\n- Zeichen * _ # | ` bleiben Daten.\n\n## Offene Entscheidungen\n\n- (keine)\n\n## Abhängigkeiten\n\n- T01\n\n## Referenzen\n\n- ../SPEC.md (SHA-256: 8c596da79fb08026c67873c10bb547198dfefc150695a8013042426f361e0cd8)\n- ../manifest.json\n",
+    "draft/EPICS.md": "| Epic | Blocked by | Status |\n| --- | --- | --- |\n| SpecIt fixture-linear T01 – Prüfung *lokal* | – | – |\n| SpecIt fixture-linear T02 – Bericht | SpecIt fixture-linear T01 – Prüfung *lokal* | – |\n",
+    "manifest.json": "{\n  \"artifacts\": [],\n  \"blockers\": [],\n  \"plan\": {\n    \"blocked\": [],\n    \"decisions\": [\n      \"Nur Standardbibliothek.\",\n      \"Zeichen * _ # | ` bleiben Daten.\"\n    ],\n    \"summary\": \"Synthetischer Plan: lokale Verarbeitung.\",\n    \"tasks\": [\n      {\n        \"acceptance\": [\n          \"FR-01: `a|b` bleibt exakt erhalten.\",\n          \"Mehrzeiliges Kriterium:\\n  **kein** Verlust.\"\n        ],\n        \"blockedBy\": [],\n        \"deliverables\": [\n          \"Prüfbericht\"\n        ],\n        \"dependsOn\": [\n          \"T01\"\n        ],\n        \"features\": [\n          \"F01\"\n        ],\n        \"goal\": \"Einträge lokal prüfen.\",\n        \"id\": \"T02\",\n        \"interfaces\": [\n          \"Eingabe: UTF-8\"\n        ],\n        \"minutes\": 2,\n        \"outOfScope\": [],\n        \"requirements\": [\n          \"FR-01: Prüfe `a|b` unverändert.\",\n          \"NFR-01: Umlaute ä, ö und ß erhalten.\"\n        ],\n        \"scope\": [\n          \"Lokale Verarbeitung\"\n        ],\n        \"tests\": [\n          \"Normalfall und Fehlerfall\"\n        ],\n        \"title\": \"Bericht\"\n      },\n      {\n        \"acceptance\": [\n          \"FR-01: `a|b` bleibt exakt erhalten.\",\n          \"Mehrzeiliges Kriterium:\\n  **kein** Verlust.\"\n        ],\n        \"blockedBy\": [],\n        \"deliverables\": [\n          \"Prüfbericht\"\n        ],\n        \"dependsOn\": [],\n        \"features\": [\n          \"F01\"\n        ],\n        \"goal\": \"Einträge lokal prüfen.\",\n        \"id\": \"T01\",\n        \"interfaces\": [\n          \"Eingabe: UTF-8\"\n        ],\n        \"minutes\": 12.5,\n        \"outOfScope\": [],\n        \"raw\": 15,\n        \"requirements\": [\n          \"FR-01: Prüfe `a|b` unverändert.\",\n          \"NFR-01: Umlaute ä, ö und ß erhalten.\"\n        ],\n        \"scope\": [\n          \"Lokale Verarbeitung\"\n        ],\n        \"tests\": [\n          \"Normalfall und Fehlerfall\"\n        ],\n        \"title\": \"Prüfung *lokal*\"\n      }\n    ],\n    \"waves\": [\n      [\n        \"T01\"\n      ],\n      [\n        \"T02\"\n      ]\n    ]\n  },\n  \"plan_id\": \"fixture-linear\",\n  \"repo\": \"example/synthetic\",\n  \"revision\": 1,\n  \"schema_version\": 1,\n  \"spec_sha256\": \"8c596da79fb08026c67873c10bb547198dfefc150695a8013042426f361e0cd8\",\n  \"target_minutes\": null,\n  \"target_minutes_reason\": \"not_available\",\n  \"tasks\": {\n    \"T01\": {\n      \"epic_title\": \"SpecIt fixture-linear T01 – Prüfung *lokal*\",\n      \"file\": \"draft/01-T01.md\",\n      \"item_title\": \"SpecIt fixture-linear T01 – Umsetzung: Prüfung *lokal*\",\n      \"points\": 5\n    },\n    \"T02\": {\n      \"epic_title\": \"SpecIt fixture-linear T02 – Bericht\",\n      \"file\": \"draft/02-T02.md\",\n      \"item_title\": \"SpecIt fixture-linear T02 – Umsetzung: Bericht\",\n      \"points\": 1\n    }\n  }\n}\n"
+  },
+  "expected_order": [
+    "T01",
+    "T02"
+  ],
+  "source": {
+    "confirmed_points": {
+      "T01": 5,
+      "T02": 1
+    },
+    "plan": {
+      "blocked": [],
+      "decisions": [
+        "Nur Standardbibliothek.",
+        "Zeichen * _ # | ` bleiben Daten."
+      ],
+      "summary": "Synthetischer Plan: lokale Verarbeitung.",
+      "tasks": [
+        {
+          "acceptance": [
+            "FR-01: `a|b` bleibt exakt erhalten.",
+            "Mehrzeiliges Kriterium:\n  **kein** Verlust."
+          ],
+          "blockedBy": [],
+          "deliverables": [
+            "Prüfbericht"
+          ],
+          "dependsOn": [
+            "T01"
+          ],
+          "features": [
+            "F01"
+          ],
+          "goal": "Einträge lokal prüfen.",
+          "id": "T02",
+          "interfaces": [
+            "Eingabe: UTF-8"
+          ],
+          "minutes": 2,
+          "outOfScope": [],
+          "requirements": [
+            "FR-01: Prüfe `a|b` unverändert.",
+            "NFR-01: Umlaute ä, ö und ß erhalten."
+          ],
+          "scope": [
+            "Lokale Verarbeitung"
+          ],
+          "tests": [
+            "Normalfall und Fehlerfall"
+          ],
+          "title": "Bericht"
+        },
+        {
+          "acceptance": [
+            "FR-01: `a|b` bleibt exakt erhalten.",
+            "Mehrzeiliges Kriterium:\n  **kein** Verlust."
+          ],
+          "blockedBy": [],
+          "deliverables": [
+            "Prüfbericht"
+          ],
+          "dependsOn": [],
+          "features": [
+            "F01"
+          ],
+          "goal": "Einträge lokal prüfen.",
+          "id": "T01",
+          "interfaces": [
+            "Eingabe: UTF-8"
+          ],
+          "minutes": 12.5,
+          "outOfScope": [],
+          "raw": 15,
+          "requirements": [
+            "FR-01: Prüfe `a|b` unverändert.",
+            "NFR-01: Umlaute ä, ö und ß erhalten."
+          ],
+          "scope": [
+            "Lokale Verarbeitung"
+          ],
+          "tests": [
+            "Normalfall und Fehlerfall"
+          ],
+          "title": "Prüfung *lokal*"
+        }
+      ],
+      "waves": [
+        [
+          "T01"
+        ],
+        [
+          "T02"
+        ]
+      ]
+    },
+    "plan_id": "fixture-linear",
+    "repo": "example/synthetic",
+    "revision": 1,
+    "target_minutes": null
+  }
+}
