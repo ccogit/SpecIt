@@ -1,0 +1,91 @@
+{
+  "base": "linear.json",
+  "cases": [
+    {
+      "expected": "VERSION_MISMATCH",
+      "field": "schema_version",
+      "id": "unknown_version",
+      "path": "manifest.json",
+      "value": 99
+    },
+    {
+      "expected": "INVALID_HASH",
+      "field": "spec_sha256",
+      "id": "spec_hash",
+      "path": "manifest.json",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "expected": "INVALID_PATH",
+      "field": "draft_files/0/path",
+      "id": "invalid_draft_path",
+      "path": "manifest.json",
+      "value": "../01-T01.md"
+    },
+    {
+      "expected": "INVALID_PATH",
+      "field": "draft_files/0/path",
+      "id": "invalid_draft_separator",
+      "path": "manifest.json",
+      "value": "draft\\01-T01.md"
+    },
+    {
+      "expected": "INVALID_PATH",
+      "field": "draft_files/0/path",
+      "id": "invalid_absolute_draft_path",
+      "path": "manifest.json",
+      "value": "/draft/01-T01.md"
+    },
+    {
+      "expected": "ID_CONFLICT",
+      "field": "criteria/0/id",
+      "id": "zero_criterion_id",
+      "path": "requirements.json",
+      "value": "AC-T01-000"
+    },
+    {
+      "expected": "INVALID_SCHEMA",
+      "field": "requirements",
+      "id": "mandatory_requirement_without_criterion",
+      "path": "requirements.json",
+      "value": [
+        {
+          "id": "FR-001",
+          "mandatory": true,
+          "state": "approved",
+          "text": "Eingabe lokal prüfen."
+        },
+        {
+          "id": "NFR-001",
+          "mandatory": true,
+          "state": "approved",
+          "text": "Ergebnis nachvollziehbar dokumentieren."
+        }
+      ]
+    },
+    {
+      "base": "blocked.json",
+      "expected": "INVALID_SCHEMA",
+      "field": "criteria/0/decision_id",
+      "id": "blocker_criterion_without_decision",
+      "path": "requirements.json",
+      "value": null
+    },
+    {
+      "base": "blocked.json",
+      "expected": "INVALID_SCHEMA",
+      "field": "decisions/0/state",
+      "id": "decision_resolved_without_confirmation",
+      "path": "requirements.json",
+      "value": "resolved"
+    },
+    {
+      "base": "revised.json",
+      "expected": "HISTORY_CONFLICT",
+      "field": "previous_manifest_sha256",
+      "id": "wrong_predecessor",
+      "path": "manifest.json",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}
