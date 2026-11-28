@@ -608,10 +608,11 @@ http.createServer(async(req,res)=>{
  }
  if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/plan/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/aira/export','/api/aira/preview','/api/aira/migration','/api/reuse','/api/repo',...projectRoutes].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
  if(!['http://'+host+':'+port,'http://localhost:'+port].includes(req.headers.origin)||!String(req.headers['content-type']).startsWith('application/json'))return send(res,403,{error:'Nur lokale Anfragen erlaubt.'});
- let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>1500000)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
+ const maxBody=req.url==='/api/aira/v2/restore'?64*1024*1024:1500000;
+ let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>maxBody)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
  if(req.url==='/api/repo'){
   let body;try{body=JSON.parse(raw)}catch{return send(res,400,{error:'Ungültige Anfrage.'})}
-  try{return send(res,200,await createRepo(body))}catch(e){return send(res,400,{error:e.message||'Das Repository konnte nicht angelegt werden.'})}
+  try{projectApi.assertRun({});return send(res,200,await createRepo(body))}catch(e){if(e.code==='POLICY_DENIED'){const {status,data}=projectError(e);return send(res,status,data)}return send(res,400,{error:e.message||'Das Repository konnte nicht angelegt werden.'})}
  }
  if(projectRoutes.includes(req.url)){
   try{return send(res,200,projectApi.dispatch(req.url,parseAiraJson(raw)))}

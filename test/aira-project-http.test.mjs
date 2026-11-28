@@ -72,6 +72,7 @@ test('T15 local HTTP: persistent active mode, trusted predecessor, restart, rest
   const standalone=await data(await select(post,'standalone',restored.selection,{source:{spec:'separate'}}));
   assert.equal(standalone.project.mode,'standalone');
   assert.equal((await post('/api/run',{...source})).status,403);
+  assert.equal((await post('/api/run',{repo:'https://github.com/example/project.git',spec:'other',plan:{tasks:[{id:'T02'}]}})).status,403);
   await data(await post('/api/run',{repo:'example/other',spec:'separate',plan:{tasks:[{id:'T02'}]}}));
   assert.equal(env.starts(),2);
 });
@@ -89,4 +90,14 @@ test('T15 local HTTP: explicit selection, unknown/running state, stale CAS and O
   assert.equal((await select(post,'standalone',0,{source:{spec:'other'}})).status,409);
   assert.equal((await select(post,'aira',p.selection,{binding:{...binding,repo:'example/foreign'},source})).status,403);
   assert.equal((await select(post,'standalone',p.selection,{source})).status,403);
+});
+
+test('T15 a restarted process cannot declare an interrupted local run idle',async t=>{
+  const env=setup(t);const store=createProjectStore(env.root);
+  store.reserveRun({},'previous-process');
+  const {post}=await env.open();
+  const status=await data(await post('/api/aira/project',{action:'status'}));
+  assert.equal(status.run_observation,'unknown');assert.equal(Object.hasOwn(status,'local_run'),false);
+  assert.equal((await select(post,'aira',0,{binding,source})).status,409);
+  assert.equal((await post('/api/run',{})).status,409);assert.equal(env.starts(),0);
 });

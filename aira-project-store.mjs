@@ -9,6 +9,8 @@ const check = (condition, code = 'INVALID_SCHEMA') => { if (!condition) fail(cod
 const id = value => typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9-]{0,23}$/.test(value);
 const repoName = value => typeof value === 'string' && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value)
   && value.split('/').every(part => part !== '.' && part !== '..') && !/\.git$/i.test(value);
+const repoMatches = (value, repo) => typeof value === 'string' && (value.toLowerCase().match(/(?:https?:\/\/github\.com\/|git@github\.com:)?[a-z0-9_.-]+\/[a-z0-9_.-]+/g) ?? [])
+  .some(candidate => candidate.replace(/^https?:\/\/github\.com\/|^git@github\.com:/,'').replace(/\.git$/,'') === repo.toLowerCase());
 const sha = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const plain = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const canonical = value => Array.isArray(value) ? value.map(canonical) : plain(value)
@@ -119,6 +121,7 @@ export function createProjectStore(root, { validatePackage } = {}) {
         && Number.isSafeInteger(p.generation) && p.generation >= 1 && Array.isArray(p.history));
       ids.add(p.project_id);
       check(p.source === undefined || plain(p.source) && sha(p.source.spec_sha256) && sha(p.source.plan_sha256));
+      check(p.sources === undefined || Array.isArray(p.sources) && p.sources.every(source=>plain(source)&&sha(source.spec_sha256)&&sha(source.plan_sha256)));
       if (p.binding !== null) {
         check(id(p.binding.plan_id) && repoName(p.binding.repo) && !plans.has(p.binding.plan_id.toLowerCase())
           && !repos.has(p.binding.repo.toLowerCase()), 'HISTORY_CONFLICT');
@@ -176,9 +179,9 @@ export function createProjectStore(root, { validatePackage } = {}) {
     const planHash = plan ? hash(JSON.stringify(canonical(plan))) : null;
     check(!state.projects.some(p => p.binding && (
       typeof plan_id === 'string' && p.binding.plan_id.toLowerCase() === plan_id.toLowerCase()
-      || typeof repo === 'string' && p.binding.repo.toLowerCase() === repo.trim().toLowerCase()
-      || specHash && (p.source?.spec_sha256 === specHash || p.history.some(entry => json(decode(entry.files)['manifest.json']).spec_sha256 === specHash))
-      || planHash && (p.source?.plan_sha256 === planHash || p.history.some(entry => { const plan = json(decode(entry.files)['manifest.json']).plan; return plan && hash(JSON.stringify(canonical(plan))) === planHash; }))
+      || repoMatches(repo, p.binding.repo)
+      || specHash && (p.source?.spec_sha256 === specHash || p.sources?.some(s=>s.spec_sha256===specHash) || p.history.some(entry => json(decode(entry.files)['manifest.json']).spec_sha256 === specHash))
+      || planHash && (p.source?.plan_sha256 === planHash || p.sources?.some(s=>s.plan_sha256===planHash) || p.history.some(entry => { const plan = json(decode(entry.files)['manifest.json']).plan; return plan && hash(JSON.stringify(canonical(plan))) === planHash; }))
     )), 'POLICY_DENIED');
   }
   function assertRunInState(state, body) {
@@ -229,7 +232,14 @@ export function createProjectStore(root, { validatePackage } = {}) {
           p = { project_id: randomUUID().replaceAll('-', '').slice(0,24), mode, binding: null, generation: 1, history: [] };
           state.projects.push(p);
         }
-        if (state.active_project_id !== p.project_id) {
+        let sourceChanged=false;
+        if (p.binding && typeof source?.spec==='string' && source.spec.trim() && plain(source.plan)) {
+          const next={spec_sha256:hash(source.spec),plan_sha256:hash(JSON.stringify(canonical(source.plan)))};
+          if (!equal(p.source,next) && !(p.sources??[]).some(s=>equal(s,next))) {
+            p.sources??=[];p.sources.push(next);sourceChanged=true;
+          }
+        }
+        if (state.active_project_id !== p.project_id || sourceChanged) {
           state.active_project_id = p.project_id;
           state.selection++;
         }
