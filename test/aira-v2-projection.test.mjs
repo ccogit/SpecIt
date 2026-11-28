@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {canonicalV2Json, projectV2EvidenceLine} from '../aira-v2-projection.mjs';
 
-// Aira A1 commit 3aab45f, docs/plan/specit-aira-v1.2/fixtures-v2/linear.json.
+// Aira A1 commit b69992f, docs/plan/specit-aira-v1.2/fixtures-v2/linear.json.
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/aira-v2/linear.json', import.meta.url), 'utf8'));
 const sha256 = value => createHash('sha256').update(value).digest('hex');
 const files = fixture.expected_files;
