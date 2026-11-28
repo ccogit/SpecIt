@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {confirmRequirementRevision} from '../aira-requirement-revisions.mjs';
+import {confirmRequirementRevision, persistRequirementRevision, requirementCoverageReport} from '../aira-requirement-revisions.mjs';
 import {allocateRequirementIdentity} from '../aira-requirement-identities.mjs';
 
 function example() {
@@ -83,4 +83,39 @@ test('V1 IDs require a complete explicit migration mapping; old IDs cannot be re
   assert.equal(snapshot.migration.manifest_bytes[0],manifest);
   assert.equal(allocateRequirementIdentity(snapshot.highWater,'T').id,'T10');
   assert.equal(snapshot.plan.tasks[0].id,'T01');
+});
+
+test('task cannot use a test namespace; required text cannot be empty', () => {
+  const {plan,data}=example();
+  plan.tasks[0].id='TC-T01-002';
+  assert.throws(()=>initial(plan,data),/invalid or duplicate identity/);
+  plan.tasks[0].id='T01'; data.requirements[0].text='';
+  assert.throws(()=>initial(plan,data),/Missing requirement text/);
+});
+
+test('storage reload preserves predecessor and failed confirmation does not write', () => {
+  const {plan,data}=example();
+  let stored=null;
+  const storage={getItem:()=>stored,setItem:(_key,value)=>{stored=value}};
+  const previous=persistRequirementRevision(storage,'example',plan,data,{confirmedIds:ids});
+  const before=stored;
+  data.revision++; plan.tasks[0].title='New';
+  assert.throws(()=>persistRequirementRevision(storage,'example',plan,data),/Unconfirmed identity change/);
+  assert.equal(stored,before);
+  const next=persistRequirementRevision(storage,'example',plan,data,{confirmedIds:['T01']});
+  assert.deepEqual(next.highWater,previous.highWater);
+  assert.equal(JSON.parse(stored).plan.tasks[0].title,'New');
+});
+
+test('coverage display distinguishes mandatory gaps and approved exceptions', () => {
+  const {data}=example();
+  data.requirements.push({id:'NFR-001',text:'Optional',mandatory:false,state:'deferred'});
+  const report=requirementCoverageReport(data);
+  assert.equal(report[0].state,'covered');
+  assert.equal(report[1].state,'missing');
+  data.exceptions.push({requirement_id:'NFR-001',reason:'Deferred for later',approved_by:'actor',approved_at:'2026-01-01T00:00:00Z'});
+  assert.equal(requirementCoverageReport(data)[1].exception.reason,'Deferred for later');
+  assert.equal(requirementCoverageReport(data)[1].state,'exception');
+  data.requirements[0].state='deferred';
+  assert.equal(requirementCoverageReport(data)[0].state,'missing');
 });

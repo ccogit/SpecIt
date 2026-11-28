@@ -1,7 +1,7 @@
 import {restoreRequirementHighWater, checkRequirementCoverage} from './aira-requirement-identities.mjs';
 
 const kindPatterns = {
-  task: /^T/, requirement: /^(FR|NFR)-/, decision: /^B/, criterion: /^AC-/, test: /^TC-/,
+  task: /^T\d{2,3}$/, requirement: /^(FR|NFR)-\d{3}$/, decision: /^B\d{2}$/, criterion: /^AC-/, test: /^TC-/,
 };
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 const text = value => typeof value === 'string' && value.trim().length > 0;
@@ -112,6 +112,7 @@ export function confirmRequirementRevision(plan, data, {previous = null, confirm
     assert(Array.isArray(ids) && (!required || ids.length > 0) && new Set(ids).size === ids.length
       && ids.every(id => active.get(id)?.kind === kind), 'Missing, duplicate or unknown ' + kind + ' reference');
   };
+  for (const r of data.requirements) assert(text(r.text), 'Missing requirement text: ' + r.id);
   for (const t of plan.tasks) refs(t.requirements, 'requirement', true);
   for (const d of data.decisions) {
     refs(d.task_ids, 'task', true);
@@ -143,4 +144,32 @@ export function confirmRequirementRevision(plan, data, {previous = null, confirm
   checkRequirementCoverage(data.requirements, data.criteria.map(c => c.requirement_ids), data.exceptions.map(e => e.requirement_id));
   const migrationEvidence = migration ?? previous?.migration;
   return JSON.parse(JSON.stringify({plan, requirements: data, highWater, ...(migrationEvidence ? {migration: migrationEvidence} : {})}));
+}
+
+// Read-only coverage display; unconfirmed drafts may have gaps. Exceptions are
+// displayed with their actual reason, not counted as fulfilled requirements.
+export function requirementCoverageReport(data) {
+  return data.requirements.map(r => {
+    const criterion_ids = data.criteria.filter(c => c.requirement_ids.includes(r.id)).map(c => c.id);
+    const exception = data.exceptions.find(e => e.requirement_id === r.id);
+    const approvedException = !r.mandatory && exception && text(exception.reason)
+      && text(exception.approved_by) && text(exception.approved_at);
+    const state = r.mandatory && r.state !== 'approved' ? 'missing'
+      : criterion_ids.length ? 'covered' : approvedException ? 'exception' : 'missing';
+    return {id:r.id, mandatory:r.mandatory, state, criterion_ids,
+      ...(approvedException ? {exception: structuredClone(exception)} : {})};
+  });
+}
+
+// Storage is supplied by the application (e.g. its local browser store).
+// No state is written unless the complete revision passes validation. This
+// local state is not an authorization or independent acceptance record.
+export function persistRequirementRevision(storage, key, plan, data, options = {}) {
+  assert(text(key) && typeof storage?.getItem === 'function' && typeof storage?.setItem === 'function', 'Invalid revision storage');
+  assert(!Object.hasOwn(options, 'previous'), 'Predecessor must come from revision storage');
+  const raw = storage.getItem(key);
+  const previous = raw === null ? null : JSON.parse(raw);
+  const next = confirmRequirementRevision(plan, data, {...options, previous});
+  storage.setItem(key, JSON.stringify(next));
+  return next;
 }
