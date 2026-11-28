@@ -26,9 +26,47 @@ function records(plan, data) {
   return active;
 }
 
+// V1 has no structured requirements. The caller must supply the original V1
+// manifest texts, an explicit per-ID retention/retirement mapping and a local
+// migration record. Nothing is inferred from a title or array position.
+function migrationRecords(migration, data) {
+  assert(migration.confirmed === true && text(migration.evidence_ref) && text(migration.target)
+    && Array.isArray(migration.manifest_bytes) && migration.manifest_bytes.length > 0
+    && Array.isArray(migration.mapping), 'Explicit V1 migration required');
+  const known = new Map();
+  let repo;
+  for (const [i, bytes] of migration.manifest_bytes.entries()) {
+    assert(typeof bytes === 'string', 'Missing original V1 manifest bytes');
+    const m = JSON.parse(bytes);
+    assert(m.schema_version === 1 && m.revision === i + 1 && m.plan_id === data.plan_id
+      && text(m.repo) && (i === 0 || repo === m.repo)
+      && Array.isArray(m.plan?.tasks) && Array.isArray(m.blockers), 'Invalid V1 migration history');
+    repo = m.repo;
+    const seen = new Set();
+    for (const [kind, entries] of [['task', m.plan.tasks], ['decision', m.blockers]]) {
+      for (const entry of entries) {
+        assert(entry && typeof entry.id === 'string' && kindPatterns[kind].test(entry.id)
+          && !seen.has(entry.id), 'Invalid V1 identity: ' + entry?.id);
+        restoreRequirementHighWater({}, [entry.id], []);
+        seen.add(entry.id);
+        known.set(entry.id, {kind, entry});
+      }
+    }
+  }
+  assert(migration.repo === repo, 'V1 migration repository mismatch');
+  const mapping = new Map();
+  for (const entry of migration.mapping) {
+    assert(entry && known.has(entry.id) && !mapping.has(entry.id)
+      && ['retain','retire'].includes(entry.action), 'Invalid V1 identity mapping: ' + entry?.id);
+    mapping.set(entry.id, entry.action);
+  }
+  assert(mapping.size === known.size, 'Incomplete V1 identity mapping');
+  return {known, mapping};
+}
+
 // The caller supplies explicit confirmations, never inferred from AI output.
 // The returned snapshot is JSON-persistable and does not mutate its predecessor.
-export function confirmRequirementRevision(plan, data, {previous = null, confirmedIds = []} = {}) {
+export function confirmRequirementRevision(plan, data, {previous = null, confirmedIds = [], migration = null} = {}) {
   const active = records(plan, data);
   assert(data.schema_version === 2 && text(data.plan_id) && Number.isSafeInteger(data.revision)
     && data.revision > 0, 'Invalid revision');
@@ -40,13 +78,18 @@ export function confirmRequirementRevision(plan, data, {previous = null, confirm
       && entry.retired_revision <= data.revision && !retired.has(entry.id), 'Invalid tombstone: ' + entry?.id);
     retired.set(entry.id, entry);
   }
-  const known = previous ? records(previous.plan, previous.requirements) : new Map();
+  assert(!(previous && migration), 'Migration is only permitted for the first V2 revision');
+  const migrated = migration ? migrationRecords(migration, data) : null;
+  const known = previous ? records(previous.plan, previous.requirements) : migrated?.known ?? new Map();
   const priorRetired = previous ? previous.requirements.retired_ids : [];
   assert(previous ? previous.requirements.plan_id === data.plan_id
     && data.revision === previous.requirements.revision + 1 : data.revision === 1, 'Invalid revision sequence');
   assert(Array.isArray(confirmedIds) && new Set(confirmedIds).size === confirmedIds.length
     && confirmedIds.every(id => active.has(id)), 'Unknown or duplicate confirmation');
   const confirmed = new Set(confirmedIds);
+  if (migrated) for (const [id, action] of migrated.mapping) {
+    assert(action === 'retain' ? active.has(id) && confirmed.has(id) : !active.has(id) && retired.has(id), 'Unconfirmed V1 identity mapping: ' + id);
+  }
   const oldCounters = restoreRequirementHighWater(previous?.highWater ?? {}, [...known.keys()], priorRetired.map(x => x.id));
   const highWater = restoreRequirementHighWater(oldCounters, [...active.keys()], [...retired.keys()]);
   for (const tombstone of priorRetired) assert(equal(retired.get(tombstone.id), tombstone), 'Changed or missing tombstone: ' + tombstone.id);
@@ -98,5 +141,6 @@ export function confirmRequirementRevision(plan, data, {previous = null, confirm
   }
   for (const e of data.exceptions) assert(text(e.reason) && text(e.approved_by) && text(e.approved_at), 'Unconfirmed exception');
   checkRequirementCoverage(data.requirements, data.criteria.map(c => c.requirement_ids), data.exceptions.map(e => e.requirement_id));
-  return JSON.parse(JSON.stringify({plan, requirements: data, highWater}));
+  const migrationEvidence = migration ?? previous?.migration;
+  return JSON.parse(JSON.stringify({plan, requirements: data, highWater, ...(migrationEvidence ? {migration: migrationEvidence} : {})}));
 }

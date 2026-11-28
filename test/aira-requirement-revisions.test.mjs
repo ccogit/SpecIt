@@ -53,3 +53,34 @@ test('missing confirmation, unknown requirement, duplicate ID and mandatory gap 
   const gap=structuredClone(data); gap.requirements[0].state='deferred';
   assert.throws(()=>initial(plan,gap),/Mandatory requirement/);
 });
+
+test('reordering keeps all IDs; decision text changes require explicit confirmation', () => {
+  const {plan,data}=example();
+  plan.tasks.push({id:'T02',title:'Two',requirements:['FR-001']});
+  data.criteria.push({id:'AC-T02-001',task_id:'T02',requirement_ids:['FR-001'],text:'Also works',verification:'manual',decision_id:null});
+  data.decisions.push({id:'B01',text:'Original question',state:'open',task_ids:['T01'],requirement_ids:[],resolution:null,evidence_ref:null,confirmed_by:null,confirmed_at:null});
+  data.criteria.push({id:'AC-B01-001',task_id:'B01',requirement_ids:[],text:'Decide',verification:'manual',decision_id:'B01'});
+  const previous=confirmRequirementRevision(plan,data,{confirmedIds:[...ids,'T02','AC-T02-001','B01','AC-B01-001']});
+  plan.tasks.reverse(); data.criteria.reverse(); data.revision++;
+  const reordered=confirmRequirementRevision(plan,data,{previous});
+  assert.deepEqual(reordered.highWater,previous.highWater);
+  data.revision++; data.decisions[0].text='Rephrased question';
+  assert.throws(()=>confirmRequirementRevision(plan,data,{previous:reordered}),/Unconfirmed identity change: B01/);
+  const next=confirmRequirementRevision(plan,data,{previous:reordered,confirmedIds:['B01']});
+  assert.equal(next.requirements.decisions[0].id,'B01');
+  assert.deepEqual(next.requirements.decisions[0].task_ids,['T01']);
+});
+
+test('V1 IDs require a complete explicit migration mapping; old IDs cannot be recycled', () => {
+  const {plan,data}=example();
+  const manifest=JSON.stringify({schema_version:1,plan_id:'example',repo:'example/repo',revision:1,
+    plan:{tasks:[{id:'T01',title:'Old'},{id:'T09',title:'Retire'}]},blockers:[]});
+  data.retired_ids=[{kind:'task',id:'T09',reason:'Replaced',retired_revision:1}];
+  const migration={confirmed:true,evidence_ref:'local/migration',target:'confirmed target',repo:'example/repo',
+    manifest_bytes:[manifest],mapping:[{id:'T01',action:'retain'},{id:'T09',action:'retire'}]};
+  assert.throws(()=>confirmRequirementRevision(plan,data,{confirmedIds:ids,migration:{...migration,mapping:migration.mapping.slice(0,1)}}),/Incomplete V1/);
+  const snapshot=confirmRequirementRevision(plan,data,{confirmedIds:ids,migration});
+  assert.equal(snapshot.migration.manifest_bytes[0],manifest);
+  assert.equal(allocateRequirementIdentity(snapshot.highWater,'T').id,'T10');
+  assert.equal(snapshot.plan.tasks[0].id,'T01');
+});
