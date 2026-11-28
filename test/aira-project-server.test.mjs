@@ -126,7 +126,7 @@ test('T04 V1 standalone export remains byte compatible; no calibration or agent 
   const dir=mkdtempSync(join(tmpdir(),'specit-s2-v1-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
   await withServer(dir,async(post,get)=>{
     const f=JSON.parse(readFileSync(new URL('./fixtures/specit_v1/linear.json',import.meta.url)));
-    const payload={...f.source,spec:f.expected_files['SPEC.md'],approved:true,changes_approved:true,initial_confirmed:true};
+    const payload={...f.source,spec:f.expected_files['SPEC.md'],approved:true,changes_approved:true};
     const before=await result(await get('/api/run'));
     const p=await post('/api/aira/preview',payload);assert.equal(p.status,200,await p.clone().text());
     const res=await post('/api/aira/export',payload);assert.equal(res.status,200,await res.clone().text());
