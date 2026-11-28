@@ -37,6 +37,9 @@ test('T14 foreign binding, missing fields, bad ID, false verification and receip
     v=>v.requirements[0].state='verified',
     v=>v.tasks[0].state='invalid'
   ])assert.throws(()=>appendFeedback([],mutate(events[0],fn),context));
+  const first=appendFeedback([],events[0].bytes,context).entries;
+  for(const field of ['assignment_id','pr_number','head_sha','base_sha','candidate_sha','merge_sha','acceptance_event_id'])
+    assert.throws(()=>appendFeedback(first,mutate(events[1],v=>v.tasks[0][field]=null),context),{code:'EVIDENCE_MISMATCH'});
   assert.throws(()=>appendFeedback([],events[0].bytes,context,'0'.repeat(64)),{code:'INVALID_HASH'});
   assert.throws(()=>appendFeedback([],Buffer.from(events[0].text.replace('"sequence": 1','"sequence": 1, "sequence": 1')),context));
   assert.throws(()=>appendFeedback([],Buffer.from([255]),context));

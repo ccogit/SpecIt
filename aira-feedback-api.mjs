@@ -2,7 +2,8 @@ import {randomUUID} from 'node:crypto';
 import {closeSync,fsyncSync,lstatSync,mkdirSync,openSync,readFileSync,renameSync,rmSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {parseAiraJson} from './aira-identities.mjs';
-import {createFeedbackStore} from './aira-feedback.mjs';
+import {createFeedbackStore,feedbackProjection} from './aira-feedback.mjs';
+import {createDecisionReviews,reservedDecisionEvidence} from './aira-feedback-decisions.mjs';
 
 const fail=code=>{throw Object.assign(Error(code),{code});};
 const need=(ok,code='INVALID_SCHEMA')=>{if(!ok)fail(code);};
@@ -32,12 +33,14 @@ export const feedbackRoute='/api/aira/feedback';
 // Uses SI-6's project archive write.lock as a read barrier. The adapter never
 // writes projects.json. Selection/epoch checks and receipt append run under
 // that same lock, so another process cannot advance the archive mid-import.
-export function createFeedbackApi({store,root}){
-  const registry=join(root,'feedback-bindings.json'),lock=join(root,'write.lock');
-  function locked(fn){
-    let fd;try{fd=openSync(lock,'wx',0o600);}catch(e){if(e.code==='EEXIST')fail('HISTORY_CONFLICT');throw e;}
-    try{return fn();}finally{closeSync(fd);rmSync(lock,{force:true});}
+export function createFeedbackApi({store,root,owner,now}){
+  const registry=join(root,'feedback-bindings.json'),lock=join(root,'write.lock'),guard=join(root,'feedback-operation.lock');
+  const reviews=createDecisionReviews(root,{owner,now});
+  function lockFile(path,fn){
+    let fd;try{fd=openSync(path,'wx',0o600);}catch(e){if(e.code==='EEXIST')fail('HISTORY_CONFLICT');throw e;}
+    try{return fn();}finally{closeSync(fd);rmSync(path,{force:true});}
   }
+  const locked=fn=>lockFile(lock,fn),guarded=fn=>lockFile(guard,fn);
   function context(body){
     need(object(body));
     const {project,selection}=store.active();
@@ -46,7 +49,7 @@ export function createFeedbackApi({store,root}){
     need(body.plan_id===project.binding.plan_id&&body.repo===project.binding.repo,'WRONG_TARGET');
     need(body.expected_generation===project.generation&&body.expected_head===project.manifest_sha256&&body.expected_export_epoch===project.export_epoch,'HISTORY_CONFLICT');
     need(projectId(project.project_id));
-    return {project,history:store.history(project.project_id)};
+    return {project,selection,history:store.history(project.project_id)};
   }
   function bindings(){
     const all=readJson(registry,[]);
@@ -61,8 +64,8 @@ export function createFeedbackApi({store,root}){
     return createFeedbackStore(join(parent,project_id),()=>({binding,history}));
   }
   function dispatch(body){
-    return locked(()=>{
-      const {project,history}=context(body),all=bindings();
+    return guarded(()=>locked(()=>{
+      const {project,selection,history}=context(body),all=bindings();
       let entry=all.find(x=>x.project_id===project.project_id);
       if(body.action==='bind'){
         // Explicit source verification by a human at the trusted local
@@ -79,25 +82,45 @@ export function createFeedbackApi({store,root}){
       const binding=entry?{binding_id:entry.binding_id,jira_project:entry.jira_project}:null;
       if(!entry){
         need(body.action==='status','CONTEXT_UNAVAILABLE');
-        return {binding:null,projection:{freshness:'unknown',current:null,history:[]}};
+        return {binding:null,owner:reviews.owner,projection:{freshness:'unknown',current:null,history:[]}};
       }
       const receipts=receiptStore(project,history,entry);
-      let status,backup;
+      let status,backup,candidate;
       switch(body.action){
         case 'bind':case 'status':break;
         case 'import':
           need(body.source_confirmed===true,'APPROVAL_REQUIRED');
           status=receipts.import(decode(body.bytes),body.sha256);break;
         case 'backup':
-          backup={schema_version:1,...project.binding,...binding,entries:receipts.backup()};break;
+          backup={schema_version:1,...project.binding,...binding,entries:receipts.backup(),reviews:reviews.backup({binding,history,projection:receipts.projection()})};break;
         case 'restore':
           need(body.source_confirmed===true,'APPROVAL_REQUIRED');
           need(object(body.backup)&&body.backup.schema_version===1&&['binding_id','jira_project','plan_id','repo'].every(k=>body.backup[k]===entry[k]),'WRONG_TARGET');
-          status=receipts.restore(body.backup.entries);break;
+          {
+            const restoredProjection=feedbackProjection(body.backup.entries,{binding:{...project.binding,...binding},history});
+            const restoreReviews=reviews.restore({binding,history,projection:restoredProjection,reviews:body.backup.reviews});
+            status=receipts.restore(body.backup.entries);restoreReviews();break;
+          }
+        case 'confirm_decision':
+          candidate=reviews.confirm({project,selection,history,binding,projection:receipts.projection(),proposal:body.proposal,confirmation:body.confirmation});break;
         default:fail('INVALID_SCHEMA');
       }
-      return {binding,projection:receipts.projection(),...(status?{status}:{}),...(backup?{backup}:{})};
+      return {binding,owner:reviews.owner,projection:receipts.projection(),...(status?{status}:{}),...(backup?{backup}:{}),...(candidate??{})};
+    }));
+  }
+  // Serialize receipt changes across the approval check and synchronous SI-6
+  // preview/export. SI-6 still owns its own archive CAS and frozen preview.
+  function withExportApproval(body,run){
+    if(!Object.hasOwn(body,'feedback_approval')&&!(Array.isArray(body.requirements?.decisions)&&body.requirements.decisions.some(d=>reservedDecisionEvidence(d?.evidence_ref))))return run();
+    return guarded(()=>{
+      locked(()=>{
+        const {project,selection,history}=context(body),entry=bindings().find(x=>x.project_id===project.project_id);
+        const binding=entry?{binding_id:entry.binding_id,jira_project:entry.jira_project}:null;
+        const projection=entry?receiptStore(project,history,entry).projection():null;
+        reviews.verifyExport({body,project,selection,history,binding,projection});
+      });
+      return run();
     });
   }
-  return {dispatch};
+  return {dispatch,withExportApproval};
 }
