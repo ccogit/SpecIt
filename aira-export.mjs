@@ -1,3 +1,4 @@
+import {exportAiraV2,previewAiraV2,verifyAiraV2} from './aira-v2-export.mjs';
 import { createHash } from 'node:crypto';
 import { validatePlan } from './planner.mjs';
 import { codepointCompare as cmp, decisionsFor, identityConflicts, parseAiraJson } from './aira-identities.mjs';
@@ -171,6 +172,8 @@ function projectAira(input) {
 }
 
 export function exportAira(input) {
+  if(input?.schema_version===2)return exportAiraV2(input);
+  if(input?.schema_version!==undefined&&input.schema_version!==1)throw Object.assign(Error('Aira-Export: unbekannte Schema-Version'),{code:'VERSION_MISMATCH'});
   if(input?.approved!==true)fail('fachliche Freigabe');
   const result=projectAira(input);
   if(input.history?.length&&!result.unchanged&&input.changes_approved!==true)fail('Änderungsplan ausdrücklich freigeben');
@@ -179,6 +182,8 @@ export function exportAira(input) {
 
 // Preview contains no ZIP and authorizes nothing. Revision derives from exact content.
 export function previewAira(input) {
+  if(input?.schema_version===2)return previewAiraV2(input);
+  if(input?.schema_version!==undefined&&input.schema_version!==1)throw Object.assign(Error('Aira-Export: unbekannte Schema-Version'),{code:'VERSION_MISMATCH'});
   const history=input?.history??[];
   if(!Array.isArray(history))fail('Identitätshistorie');
   const last=history.at(-1);
@@ -197,6 +202,8 @@ export function previewAira(input) {
 export function verifyAira(files,history=[]) {
   let m;
   try { m=parseAiraJson(bytes(files['manifest.json']).toString('utf8')); } catch { fail('Manifest JSON'); }
+  if(m.schema_version===2)return verifyAiraV2(files,history);
+  if(m.schema_version!==1)throw Object.assign(Error('Aira-Export: unbekannte Schema-Version'),{code:'VERSION_MISMATCH'});
   keys(m,['schema_version','plan_id','revision','repo','spec_sha256','target_minutes','plan','tasks','blockers','artifacts'],['target_minutes_reason']);
   if(m.schema_version!==1) fail('Schema-Version');
   if(!obj(m.tasks)||!Array.isArray(m.blockers)||!Array.isArray(m.artifacts)) fail('Manifest-Zuordnungen');

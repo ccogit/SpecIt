@@ -1,0 +1,52 @@
+{
+  "cases": [
+    {
+      "expected": "no_op",
+      "field": null,
+      "id": "same_sequence_same_hash",
+      "sequence": 2,
+      "value": null
+    },
+    {
+      "expected": "reject",
+      "field": "observed_at",
+      "id": "same_sequence_different_hash",
+      "sequence": 2,
+      "value": "2026-11-28T12:16:00Z"
+    },
+    {
+      "expected": "reject",
+      "field": "sequence",
+      "id": "sequence_gap",
+      "sequence": 2,
+      "value": 4
+    },
+    {
+      "expected": "reject",
+      "field": "previous_feedback_sha256",
+      "id": "wrong_feedback_predecessor",
+      "sequence": 2,
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "expected": "reject",
+      "field": "revision",
+      "id": "wrong_revision",
+      "sequence": 2,
+      "value": 1
+    }
+  ],
+  "events": [
+    {
+      "sequence": 1,
+      "sha256": "7a8ced771774af2cd05d2afba8d7f414ea13840039d20d341df62aaf921c532d",
+      "text": "{\n  \"binding_id\": \"9c8c38bf-4330-43ae-9ee3-ba32237f1ea0\",\n  \"decisions\": [],\n  \"findings\": [],\n  \"import_state\": \"committed\",\n  \"jira_project\": \"DEMO\",\n  \"manifest_sha256\": \"fa132797af5d940656a5046595fa8c42b1bf764cd36c36088089ca3a5cd2ea33\",\n  \"measurements\": [],\n  \"observed_at\": \"2026-11-28T12:00:00Z\",\n  \"plan_id\": \"fixture-v2-linear\",\n  \"previous_feedback_sha256\": null,\n  \"repo\": \"example/synthetic\",\n  \"requirements\": [\n    {\n      \"criterion_ids\": [\n        \"AC-T01-002\"\n      ],\n      \"id\": \"FR-001\",\n      \"reason\": null,\n      \"state\": \"pending\"\n    }\n  ],\n  \"revision\": 2,\n  \"schema_version\": 1,\n  \"sequence\": 1,\n  \"tasks\": [\n    {\n      \"acceptance_event_id\": null,\n      \"assignment_id\": null,\n      \"base_sha\": null,\n      \"candidate_sha\": null,\n      \"criteria\": [\n        {\n          \"evidence_ref\": null,\n          \"id\": \"AC-T01-002\",\n          \"state\": \"not_run\"\n        }\n      ],\n      \"head_sha\": null,\n      \"id\": \"T01\",\n      \"jira_key\": \"DEMO-1\",\n      \"merge_sha\": null,\n      \"pr_number\": null,\n      \"reason\": null,\n      \"state\": \"pending\"\n    }\n  ]\n}\n"
+    },
+    {
+      "sequence": 2,
+      "sha256": "0afbf28e49701d41d3161ee7b02a613a21605288f597699e40fd0468542df07a",
+      "text": "{\n  \"binding_id\": \"9c8c38bf-4330-43ae-9ee3-ba32237f1ea0\",\n  \"decisions\": [],\n  \"findings\": [],\n  \"import_state\": \"committed\",\n  \"jira_project\": \"DEMO\",\n  \"manifest_sha256\": \"fa132797af5d940656a5046595fa8c42b1bf764cd36c36088089ca3a5cd2ea33\",\n  \"measurements\": [\n    {\n      \"assignment_id\": \"17e19f40-1c63-4ba0-aa18-92c973f8b682\",\n      \"event_id\": \"5555555555555555555555555555555555555555\",\n      \"metric\": \"assignment_to_merge_seconds\",\n      \"observed_at\": \"2026-11-28T12:15:00Z\",\n      \"reason\": null,\n      \"value\": 480\n    },\n    {\n      \"assignment_id\": \"17e19f40-1c63-4ba0-aa18-92c973f8b682\",\n      \"event_id\": \"6666666666666666666666666666666666666666\",\n      \"metric\": \"segment_seconds\",\n      \"observed_at\": \"2026-11-28T12:15:00Z\",\n      \"reason\": \"SOURCE_UNAVAILABLE\",\n      \"value\": null\n    }\n  ],\n  \"observed_at\": \"2026-11-28T12:15:00Z\",\n  \"plan_id\": \"fixture-v2-linear\",\n  \"previous_feedback_sha256\": \"7a8ced771774af2cd05d2afba8d7f414ea13840039d20d341df62aaf921c532d\",\n  \"repo\": \"example/synthetic\",\n  \"requirements\": [\n    {\n      \"criterion_ids\": [\n        \"AC-T01-002\"\n      ],\n      \"id\": \"FR-001\",\n      \"reason\": null,\n      \"state\": \"verified\"\n    }\n  ],\n  \"revision\": 2,\n  \"schema_version\": 1,\n  \"sequence\": 2,\n  \"tasks\": [\n    {\n      \"acceptance_event_id\": \"5555555555555555555555555555555555555555\",\n      \"assignment_id\": \"17e19f40-1c63-4ba0-aa18-92c973f8b682\",\n      \"base_sha\": \"2222222222222222222222222222222222222222\",\n      \"candidate_sha\": \"3333333333333333333333333333333333333333\",\n      \"criteria\": [\n        {\n          \"evidence_ref\": \"evidence/demo-check.json\",\n          \"id\": \"AC-T01-002\",\n          \"state\": \"verified\"\n        }\n      ],\n      \"head_sha\": \"1111111111111111111111111111111111111111\",\n      \"id\": \"T01\",\n      \"jira_key\": \"DEMO-1\",\n      \"merge_sha\": \"4444444444444444444444444444444444444444\",\n      \"pr_number\": 17,\n      \"reason\": null,\n      \"state\": \"done\"\n    }\n  ]\n}\n"
+    }
+  ],
+  "package": "revised.json"
+}

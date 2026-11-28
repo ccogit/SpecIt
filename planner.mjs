@@ -103,3 +103,16 @@ export function renderSingle(plan,spec,context={}) {
 export function renderBacklog(plan,spec,context={}) {
  return ['# Implementation backlog',plan.summary,'## Festlegungen des Plans',plan.decisions.map(x=>'- '+x).join('\n')||'Keine angegeben.','## Abhängigkeitsstufen (nur potenziell parallel)',...plan.waves.map((w,i)=>'- Stufe '+(i+1)+': '+w.join(', ')),'Vor paralleler Ausführung gemeinsame Dateien und Schnittstellen auf Konflikte prüfen. Blockierte Aufgaben erst nach Freigabe starten.',...skillPart(),...plan.tasks.map(t=>renderTask(t,plan,spec,context,false))].join('\n\n---\n\n');
 }
+
+// V2 is a separate, explicitly reviewed projection; legacy planning/rendering
+// continues to use the V1 text fields. Keys below identify proposal entries,
+// never persisted identities. Only a human-confirmed mapping retains an ID.
+export function projectRequirementsPlan(plan, data) {
+  const tasks = plan.tasks.map(t => ({
+    ...t,
+    acceptance: data.criteria.filter(c => c.task_id === t.id).map(c => c.text),
+    tests: data.tests.filter(c => c.task_id === t.id).map(c => c.description),
+    blockedBy: data.decisions.filter(d => d.state === 'open' && d.task_ids.includes(t.id)).map(d => d.text),
+  }));
+  return validatePlan({...plan, tasks});
+}

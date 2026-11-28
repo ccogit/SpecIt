@@ -1,0 +1,40 @@
+{
+  "fixtures": {
+    "blocked.json": {
+      "expected": "valid",
+      "sha256": "cd5eadb4b96977c7d0f5b382b9f70112b647caaf046980365c83498861c39348"
+    },
+    "branched.json": {
+      "expected": "valid",
+      "sha256": "3cde7440644e62ca46f0500ef3a93fd2aa186d3ff25fc874deb4cc70654c43b9"
+    },
+    "feedback.json": {
+      "expected": "valid",
+      "sha256": "c0a8ea38f2b25bb16f1d710852885aea09337a2dd3644f2c609336b8cbc99fff"
+    },
+    "invalid.json": {
+      "expected": {
+        "blocker_criterion_without_decision": "INVALID_SCHEMA",
+        "decision_resolved_without_confirmation": "INVALID_SCHEMA",
+        "invalid_absolute_draft_path": "INVALID_PATH",
+        "invalid_draft_path": "INVALID_PATH",
+        "invalid_draft_separator": "INVALID_PATH",
+        "mandatory_requirement_without_criterion": "INVALID_SCHEMA",
+        "spec_hash": "INVALID_HASH",
+        "unknown_version": "VERSION_MISMATCH",
+        "wrong_predecessor": "HISTORY_CONFLICT",
+        "zero_criterion_id": "ID_CONFLICT"
+      },
+      "sha256": "4b6e0565fd9310dca8fbfdd91facb17e830aaf7ca3a52e177d51ae7dd639bbc2"
+    },
+    "linear.json": {
+      "expected": "valid",
+      "sha256": "2bd9c7d9fbfe7af7d734f25dccef8324ee49d48ab59ea569f63bc91c09fb4b75"
+    },
+    "revised.json": {
+      "expected": "valid",
+      "sha256": "b7e6c9c1d365e5bc19f92985412afd6b6149871c7fb534e94094784aa5075034"
+    }
+  },
+  "version": 1
+}

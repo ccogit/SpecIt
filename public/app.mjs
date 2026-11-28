@@ -7,6 +7,7 @@ applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?
 
 import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate,setAgentSkill} from '/planner.mjs';
 import {decisionsFor,identityConflicts,parseAiraJson,sameManifest} from '/aira-identities.mjs';
+import {mountAiraV2} from '/aira-v2-ui.mjs';
 import { modulators, cleanSvg, cleanLogos,conceptSections,conceptTopic,topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
 import {balance} from '/balance.mjs';
@@ -3201,6 +3202,7 @@ $('airaDownload').onclick=async()=>{
   }catch(e){airaInvalidate();status.textContent=e.message}
   finally{btn.disabled=!airaPreview||!$('airaApprove').checked}
 };
+mountAiraV2({getCurrent:airaCurrent,getQuestions:()=>s.questions,getRepo:repoText,getV1History:airaLocalHistoryFor,isBusy:()=>active||runBusy||runStarting,notice:text=>$('flowNote').textContent=text});
 // PDF: Druckvorschau des Browsers mit eigenem Drucklayout (nur die Spezifikation, A4); der Dokumenttitel wird zum Dateinamen
 const printTitle=document.title;
 $('specPdf').onclick=()=>{if(!s.spec.trim())return;if(specMode!=='view')setSpecMode('view');document.title=s.project.trim()?s.project.trim()+' – Spezifikation':'Spezifikation';window.print()};
