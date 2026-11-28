@@ -1,0 +1,50 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {demoPlan,validatePlan,proposeRequirementPlan,projectRequirementsPlan} from '../planner.mjs';
+import {interviewDecisionDrafts} from '../interview.mjs';
+import {confirmRequirementRevision,persistRequirementRevision,requirementCoverageReport} from '../aira-requirement-revisions.mjs';
+import {verifyV1Migration} from '../aira-v1-migration.mjs';
+
+const opts={plan_id:'stable'};
+const confirm=(p,previous=null)=>confirmRequirementRevision(p.plan,p.requirements,{previous,confirmedIds:Object.values(p.mapping)});
+test('real planner proposal allocates all namespaces, explicit mapping retains renamed task after reorder',()=>{
+  const draft=demoPlan('Synthetic');
+  const a=proposeRequirementPlan(draft,opts);
+  assert.ok(a.plan.tasks.every(t=>t.requirements.every(id=>/^FR-/.test(id))));
+  assert.deepEqual(a.confirmedIds,[]);
+  assert.throws(()=>confirmRequirementRevision(a.plan,a.requirements),/Unconfirmed/);
+  const previous=confirm(a);
+  const changed=structuredClone(draft);changed.tasks.reverse();changed.tasks.find(t=>t.id==='T01').title='New title';
+  const t=changed.tasks.find(t=>t.id==='T01');
+  const oldKey=Object.keys(a.mapping).find(k=>JSON.parse(k)[0]==='T'&&JSON.parse(k)[1]==='T01');
+  const mapping={...a.mapping,[JSON.stringify(['T',t.id,t.title,t.goal])]:a.mapping[oldKey]};
+  const b=proposeRequirementPlan(changed,{...opts,previous,mapping});
+  assert.equal(b.plan.tasks.find(t=>t.title==='New title').id,a.mapping[oldKey]);
+  assert.deepEqual(b.requirements.retired_ids,[]);
+  assert.deepEqual(confirm(b,previous).highWater,previous.highWater);
+});
+test('interview links are explicit, default or decided answers never resolve a blocker automatically',()=>{
+  const draft=demoPlan('Synthetic');
+  const questions=[{question:'Which format?',state:'decided',choice:[0]}];
+  const decisions=interviewDecisionDrafts(questions,[{question:'Which format?',task_ids:['T01']}]);
+  assert.throws(()=>interviewDecisionDrafts(questions,[{question:'Unknown',task_ids:['T01']}]),/Unbekannte/);
+  const a=proposeRequirementPlan(draft,{...opts,decisions});
+  const b=a.requirements.decisions[0];assert.equal(b.state,'open');assert.equal(b.resolution,null);
+  assert.ok(a.plan.blocked.includes(b.task_ids[0]));
+  assert.deepEqual(projectRequirementsPlan(a.plan,a.requirements),a.plan);
+  assert.equal(requirementCoverageReport(a.requirements).every(x=>x.state==='covered'),true);
+});
+test('V1 migration verifies original complete packages and rejects changed/missing bytes',()=>{
+  const f=JSON.parse(readFileSync(new URL('./fixtures/specit_v1/linear.json',import.meta.url),'utf8'));
+  const m=JSON.parse(f.expected_files['manifest.json']);
+  const packageBytes=Object.fromEntries(Object.entries(f.expected_files).map(([p,v])=>[p,Buffer.from(v).toString('base64')]));
+  const migration={target:'local target',evidence_ref:'local evidence',packages:[packageBytes]};
+  const binding={plan_id:m.plan_id,repo:m.repo};
+  const verified=verifyV1Migration(migration,binding);
+  assert.equal(verified.manifest_bytes[0],f.expected_files['manifest.json']);
+  assert.match(verified.manifest_sha256[0],/^[a-f0-9]{64}$/);
+  assert.throws(()=>verifyV1Migration({...migration,packages:[{...packageBytes,'SPEC.md':Buffer.from('changed').toString('base64')}]},binding),{code:'HISTORY_CONFLICT'});
+  const missing={...packageBytes};delete missing['draft/EPICS.md'];
+  assert.throws(()=>verifyV1Migration({...migration,packages:[missing]},binding),{code:'HISTORY_CONFLICT'});
+});

@@ -284,7 +284,8 @@
             <div class="flow3">
         <button id="goDownload" type="button" class="flowbtn" title="Spezifikation, Plan und Aufträge stehen als Dateien bereit – zur Übergabe an Coding-Agenten deiner Wahl."><b>↓ Nur herunterladen</b></button>
         <button id="goApprove" type="button" class="flowbtn" title="Du siehst den Plan und gibst ihn frei. Erst danach starten die Agenten auf diesem Rechner."><b>✓ Prüfen, dann umsetzen</b></button>
-        <button id="goAira" type="button" class="flowbtn"><b>↓ Aira-Entwurf exportieren</b></button>
+        <button id="goAira" type="button" class="flowbtn"><b>↓ Aira-Entwurf exportieren (V1)</b></button>
+        <button id="goAiraV2" type="button" class="flowbtn"><b>↓ Aira V2 – strukturierter Export</b></button>
         <button id="goDirect" type="button" class="flowbtn" title="Die Agenten starten sofort auf diesem Rechner – ohne dass du den Plan bestätigst."><b>▸ Direkt umsetzen</b></button>
       </div>
       <div class="flowrun"><span class="flowcap">Umsetzung auf diesem Rechner</span><div class="agentline" id="agentLine"></div><div id="runPanel" class="hidden runpanel">
@@ -306,6 +307,44 @@
 <div class="card" id="reviewCard">
       <div class="stephead"><span class="stepno">2</span><div><h2>Prüfen und bestätigen</h2><p class="muted">Alle Festlegungen und Ergebnisse auf einen Blick. „Ändern“ führt zur passenden Stelle. Abgeschlossen wird erst mit der Bestätigung unten rechts.</p></div></div>
       <div id="review" class="review"></div>
+      <dialog id="airaV2Dialog" aria-labelledby="airaV2Heading">
+        <h2 id="airaV2Heading">Aira V2 – strukturierte Requirements und stabile IDs</h2>
+        <p>Separater V2-Ablauf. Der V1-Plan bleibt unverändert. Alle Vorschläge und Zuordnungen fachlich prüfen. Keine Secrets oder echten Kundendaten.</p>
+        <label>Plan-ID <input id="airaV2PlanId" maxlength="24"></label>
+        <label>Zielrepository <input id="airaV2Repo"></label>
+        <button id="airaV2Load" type="button" class="btn">Stand laden</button>
+        <label><input id="airaV2First" type="checkbox"> Neue, noch nie exportierte Plan-ID ausdrücklich bestätigen</label>
+        <details><summary>V2-Historie sichern oder wiederherstellen</summary>
+          <button id="airaV2SaveBackup" type="button" class="btn">Sicherung herunterladen</button>
+          <input id="airaV2Backup" type="file" accept=".json,application/json">
+          <button id="airaV2Restore" type="button" class="btn">Originalstand wiederherstellen</button>
+        </details>
+        <details><summary>V1-Erstaufnahme mit Originalpaketen</summary>
+          <p>Alle ursprünglichen V1-ZIP-Pakete in getrennte Ordner entpacken. Den gemeinsamen Elternordner auswählen. Alle Dateien werden geprüft.</p>
+          <input id="airaV2Packages" type="file" webkitdirectory multiple>
+          <label>Bestätigtes Ziel <input id="airaV2Target"></label>
+          <label>Lokaler Migrationsbeleg <input id="airaV2Evidence"></label>
+          <button id="airaV2Migrate" type="button" class="btn">Originalpakete prüfen</button>
+          <pre id="airaV2MigrationIds" style="white-space:pre-wrap"></pre>
+          <label>Migrationsdaten: retain/retire je ID, confirmed erst nach Prüfung <textarea id="airaV2Migration" rows="5" spellcheck="false"></textarea></label>
+        </details>
+        <details><summary>Interview-Klärungen explizit zuordnen</summary>
+          <pre id="airaV2Questions" style="white-space:pre-wrap"></pre>
+          <label>JSON-Array mit question und task_ids (IDs des aktuellen Entwurfs) <textarea id="airaV2Links" rows="3" spellcheck="false">[]</textarea></label>
+        </details>
+        <label>Fachliche ID-Zuordnungen (JSON-Objekt: Vorschlagsschlüssel → bestehende ID; neue Einträge leer lassen) <textarea id="airaV2Mapping" rows="5" spellcheck="false">{}</textarea></label>
+        <button id="airaV2Propose" type="button" class="btn">Vorschlag aus aktuellem Plan erzeugen</button>
+        <details><summary>Vorschlagsschlüssel und zugeteilte IDs</summary><pre id="airaV2ProposalKeys" style="white-space:pre-wrap"></pre></details>
+        <label>Strukturierter Entwurf: plan / requirements (JSON). Texte, Referenzen, neue IDs und Tombstone-Gründe prüfen. <textarea id="airaV2Draft" rows="16" spellcheck="false"></textarea></label>
+        <h3>Pflichtabdeckung und Ausnahmen</h3><pre id="airaV2Coverage" style="white-space:pre-wrap"></pre>
+        <label>Explizit bestätigte neue/geänderte IDs (durch Leerzeichen oder Komma getrennt) <textarea id="airaV2Confirmations" rows="2" spellcheck="false"></textarea></label>
+        <label>Bestätigte Story Points je aktiver T-/B-ID (JSON; nur 1, 2, 3, 5, 8) <textarea id="airaV2Points" rows="5" spellcheck="false">{}</textarea></label>
+        <button id="airaV2Preview" type="button" class="btn">Revision und exakte Projektion prüfen</button>
+        <pre id="airaV2Review" style="white-space:pre-wrap;max-height:18rem;overflow:auto"></pre>
+        <label><input id="airaV2Approve" type="checkbox"> Plan, Zuordnungen, Nachweise, Zielrepository, Punkte und Paket fachlich freigegeben.</label>
+        <p id="airaV2Status" role="status"></p>
+        <div class="actions"><button id="airaV2Download" type="button" class="btn primary" disabled>↓ Freigegebenes V2-ZIP</button><button id="airaV2Close" type="button" class="btn">Schließen</button></div>
+      </dialog>
       <dialog id="airaDialog" aria-labelledby="airaHeading">
         <h2 id="airaHeading">Aira-Entwurf exportieren (V1)</h2>
         <p>Nur Entwurf und Kontext als ZIP. Kein Agentenstart, keine Kalibrierungsmessung, keine Jira-Anmeldung.</p>
