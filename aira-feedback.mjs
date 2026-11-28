@@ -8,7 +8,7 @@ const need = (ok, code='INVALID_SCHEMA') => { if (!ok) fail(code); };
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 const keys = (x, names) => need(object(x) && Object.keys(x).length === names.split(' ').length && names.split(' ').every(k=>Object.hasOwn(x,k)));
-const str = x => typeof x === 'string' && x.length > 0 && x.length <= 4096 && !/[\x00-\x1f\x7f]/.test(x);
+const str = x => typeof x === 'string' && x.isWellFormed() && x.trim().length > 0 && x.length <= 4096 && !/[\x00-\x1f\x7f]/.test(x);
 const nullable = (x, fn=str) => x === null || fn(x);
 const hex = (x,n=64) => typeof x === 'string' && x.length===n && /^[0-9a-f]+$/i.test(x);
 const positive = x => Number.isSafeInteger(x) && x>0;
@@ -44,10 +44,11 @@ export function validateFeedback(bytes, context, receiptHash) {
   need(archived && hash(archived.files['manifest.json'])===f.manifest_sha256,'WRONG_TARGET');
   const m=json(archived.files['manifest.json']),r=json(archived.files['requirements.json']);
   need(m.revision===f.revision&&r.revision===f.revision&&m.repo===f.repo&&m.plan_id===f.plan_id&&r.plan_id===f.plan_id&&hash(archived.files['requirements.json'])===m.requirements_sha256,'WRONG_TARGET');
-  const tasks=new Set(m.plan.tasks.map(x=>x.id)), criteria=new Map(r.criteria.map(x=>[x.id,x])), requirements=new Map(r.requirements.map(x=>[x.id,x])), decisions=new Set(r.decisions.map(x=>x.id));
+  const tasks=new Set([...m.plan.tasks,...m.blockers].map(x=>x.id)), criteria=new Map(r.criteria.map(x=>[x.id,x])), requirements=new Map(r.requirements.map(x=>[x.id,x])), decisions=new Set(r.decisions.map(x=>x.id));
   for(const list of [f.tasks,f.requirements,f.decisions])unique(list);
   unique(f.measurements,'event_id');
   need(Array.isArray(f.findings));
+  const findingKeys=new Set();
   const verified=new Set(), assignments=new Set();
   for(const t of f.tasks){
     keys(t,'id jira_key state assignment_id pr_number head_sha base_sha candidate_sha merge_sha acceptance_event_id criteria reason');
@@ -56,12 +57,13 @@ export function validateFeedback(bytes, context, receiptHash) {
     need(one(t.state,'pending blocked assigned reported verified merge_confirmed done failed unknown'));
     for(const k of ['head_sha','base_sha','candidate_sha','merge_sha'])need(nullable(t[k],v=>hex(v,40)));
     if(t.assignment_id)assignments.add(t.assignment_id);
+    if(['merge_confirmed','done'].includes(t.state)&&m.plan.tasks.some(x=>x.id===t.id))need(merged(t),'EVIDENCE_MISMATCH');
     unique(t.criteria);
     for(const c of t.criteria){
       keys(c,'id state evidence_ref');
       need(criteria.get(c.id)?.task_id===t.id,'ID_CONFLICT');
       need(one(c.state,'reported verified failed not_run unknown')&&nullable(c.evidence_ref));
-      if(c.state==='verified'&&c.evidence_ref&&merged(t))verified.add(c.id);
+      if(c.state==='verified'){need(!!c.evidence_ref,'EVIDENCE_MISMATCH');if(merged(t))verified.add(c.id);}
     }
   }
   for(const q of f.requirements){
@@ -75,7 +77,7 @@ export function validateFeedback(bytes, context, receiptHash) {
   for(const d of f.decisions){
     keys(d,'id state evidence_ref resolution reason');
     need(decisions.has(d.id),'ID_CONFLICT');
-    need(one(d.state,'open resolved pending_confirmation unknown')&&nullable(d.evidence_ref)&&nullable(d.resolution)&&reason(d.reason));
+    need(one(d.state,'open resolved pending_confirmation unknown')&&nullable(d.evidence_ref)&&nullable(d.resolution,v=>typeof v==='string'&&v.isWellFormed()&&v.trim().length>0&&v.length<=1000&&!/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(v))&&reason(d.reason));
     need(d.resolution===null||d.state==='resolved');
   }
   for(const v of f.measurements){
@@ -86,11 +88,13 @@ export function validateFeedback(bytes, context, receiptHash) {
   }
   for(const v of f.findings){
     keys(v,'code ref state');need(reason(v.code)&&v.code!==null&&str(v.ref)&&/^[A-Za-z0-9_.:/-]+$/.test(v.ref)&&one(v.state,'open resolved unknown'));
+    const key=JSON.stringify([v.code,v.ref]);need(!findingKeys.has(key),'ID_CONFLICT');findingKeys.add(key);
   }
   return {sha256,feedback:f};
 }
 
 function replay(entries,context){
+  need(Array.isArray(entries));
   let last=null;
   return entries.map((e,i)=>{
     need(object(e)&&typeof e.bytes==='string'&&hex(e.sha256));

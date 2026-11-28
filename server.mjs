@@ -11,6 +11,7 @@ import { factor, scale, info as calibInfo } from './calibration.mjs';
 import { zip, collect } from './zip.mjs';
 import { airaZip } from './aira-zip.mjs';
 import { previewAira, exportAira } from './aira-export.mjs';
+import { createFeedbackApi, feedbackRoute } from './aira-feedback-api.mjs';
 import { createProjectStore } from './aira-project-store.mjs';
 import { createProjectApi, projectRoutes, projectError } from './aira-project-api.mjs';
 import { makeProjectRecord, verifyProjectPackage, zipProjectFiles } from './aira-project-package.mjs';
@@ -397,6 +398,7 @@ function createRepo(b){
 const projectsDir=path.resolve(process.env.SPECIT_PROJECTS_DIR||path.join(homedir(),'SpecIt-Projekte'));
 const projectArchiveDir=path.resolve(process.env.SPECIT_AIRA_STORE_DIR||path.join(homedir(),'.specit','aira-projects'));
 const projectStore=createProjectStore(projectArchiveDir,{validatePackage:verifyProjectPackage});
+const feedbackApi=createFeedbackApi({store:projectStore,root:projectArchiveDir});
 const projectApi=createProjectApi({store:projectStore,runStatus,normalizePlan:validatePlan,preview:previewAira,buildFiles:input=>buildAiraV2Export(input).files,
  exportFiles:exportAira,zipFiles:zipProjectFiles,makeRecord:makeProjectRecord,validateRecord:validateV2Restore});
 // Verträgt einen Codeblock um das JSON und Text davor oder danach (dann zählt der Teil von der ersten bis zur letzten Klammer)
@@ -606,13 +608,17 @@ http.createServer(async(req,res)=>{
    return res.end(file.body);
   }catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}
  }
- if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/plan/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/aira/export','/api/aira/preview','/api/aira/migration','/api/aira/v2/restore','/api/reuse','/api/repo',...projectRoutes].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
+ if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/plan/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/aira/export','/api/aira/preview','/api/aira/migration','/api/aira/v2/restore','/api/reuse','/api/repo',feedbackRoute,...projectRoutes].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
  if(!['http://'+host+':'+port,'http://localhost:'+port].includes(req.headers.origin)||!String(req.headers['content-type']).startsWith('application/json'))return send(res,403,{error:'Nur lokale Anfragen erlaubt.'});
- const maxBody=req.url==='/api/aira/v2/restore'?64*1024*1024:1500000;
+ const maxBody=(req.url==='/api/aira/v2/restore'||req.url===feedbackRoute)?64*1024*1024:1500000;
  let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>maxBody)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
  if(req.url==='/api/repo'){
   let body;try{body=JSON.parse(raw)}catch{return send(res,400,{error:'Ungültige Anfrage.'})}
   try{projectApi.assertRun({});return send(res,200,await createRepo(body))}catch(e){if(e.code==='POLICY_DENIED'){const {status,data}=projectError(e);return send(res,status,data)}return send(res,400,{error:e.message||'Das Repository konnte nicht angelegt werden.'})}
+ }
+ if(req.url===feedbackRoute){
+  try{return send(res,200,feedbackApi.dispatch(parseAiraJson(raw)))}
+  catch(e){const {status,data}=projectError(e);return send(res,status,data)}
  }
  if(projectRoutes.includes(req.url)){
   try{return send(res,200,projectApi.dispatch(req.url,parseAiraJson(raw)))}
