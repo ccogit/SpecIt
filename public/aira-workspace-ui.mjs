@@ -117,3 +117,27 @@ export function mountWorkspaceView(root,{view,context,domain,client}){
   });
   void load();return ()=>{mounted=false;client.close();target.replaceChildren();};
 }
+
+// The Aira shell supplies the per-tab CSRF token from its authenticated session
+// (not a private service capability). No cross-origin or redirect fallback.
+export function createWorkspaceBrowserTransport({csrf, fetchImpl=globalThis.fetch, origin=globalThis.location?.origin, viewUrl=globalThis.location?.href}){
+  require(typeof csrf==='string'&&csrf.length>0&&typeof origin==='string'&&typeof viewUrl==='string','CONTEXT_UNAVAILABLE');
+  const base=new URL(viewUrl);
+  require(base.origin===origin&&base.hostname==='127.0.0.1'&&base.protocol==='http:'&&workspaceViews.some(v=>base.pathname===namespace+v),'WRONG_TARGET');
+  return async (path,body,{stream=false}={})=>{
+    const url=new URL(path,base);
+    require(url.origin===origin&&['capabilities','open_context','prepare_package','progress'].some(op=>url.pathname==='/api/workspace/specit/v1/'+op)&&!url.search&&!url.hash,'WRONG_TARGET');
+    const raw=JSON.stringify(body);require(new TextEncoder().encode(raw).length<=65536,'INVALID_SCHEMA');
+    const res=await fetchImpl(url,{method:'POST',mode:'same-origin',credentials:'same-origin',redirect:'error',cache:'no-store',
+      headers:{'content-type':'application/json','x-csrf-token':csrf},body:raw});
+    require(res.ok,'SOURCE_UNAVAILABLE');
+    const type=(res.headers.get('content-type')||'').split(';')[0].trim();
+    require(type===(stream?'text/event-stream':'application/json'),'EVIDENCE_MISMATCH');
+    if(stream){require(res.body,'SOURCE_UNAVAILABLE');return res.body;}
+    const reader=res.body?.getReader();require(reader,'SOURCE_UNAVAILABLE');
+    const decoder=new TextDecoder('utf-8',{fatal:true});let rawResponse='',size=0;
+    try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;require(size<=65536,'EVIDENCE_MISMATCH');rawResponse+=decoder.decode(value,{stream:true});}rawResponse+=decoder.decode();}
+    finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
+    return JSON.parse(rawResponse);
+  };
+}
