@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SpecIt – Origin-Migration</title><link rel="stylesheet" href="./base.css"></head>
+<body><main style="max-width:60rem;margin:2rem auto;padding:1rem">
+<h1>Entwürfe und Historie sichern und migrieren</h1>
+<p>Öffne diese Seite zuerst auf der bisherigen SpecIt-Origin (gleicher Host und Port). Schließe andere SpecIt-Tabs vor einer Wiederherstellung. Export und Vorschau ändern keine Daten. Das Serverarchiv ist getrennt von Projektbindung, V2-Archiv und Ausführung. Es gibt keinen automatischen Import nach Aira.</p>
+<section><h2>1. Originaldaten dieser Origin</h2><button id="export" type="button">Originaldaten als Sicherung herunterladen</button></section>
+<section><h2>2. Sicherung prüfen</h2><input id="file" type="file" accept=".json,application/json"><button id="preview" type="button">Server-Dry-run</button><button id="browser-preview" type="button">Browser-Restore-Dry-run</button>
+<pre id="preview-text" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+<label><input id="keep" type="checkbox"> Konflikte ausdrücklich als getrennte Originale behalten (kein Überschreiben)</label>
+<button id="apply" type="button" disabled>Serverarchiv übernehmen</button>
+<button id="browser-restore" type="button" disabled>In diesen Browser wiederherstellen</button></section>
+<section><h2>3. Serverarchiv</h2><button id="list" type="button">Gesicherte Entwürfe anzeigen</button><div id="records"></div>
+<pre id="original" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre></section>
+<p id="status" role="status" aria-live="polite"></p><a href="./">Zur Standalone-Anwendung (kein automatischer Wechsel)</a>
+</main><script type="module" src="./origin-migration-ui.mjs"></script></body></html>
