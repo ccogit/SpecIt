@@ -45,12 +45,12 @@ async function withServer(archive,run){
   }finally{cp.kill('SIGTERM');await Promise.race([exited,pause(2000)]);}
 }
 const result=async(res,status=200)=>{assert.equal(res.status,status,await res.clone().text());return res.json()};
-const context=({project,selection})=>({project_id:project.project_id,selection,...project.binding,expected_generation:project.generation,expected_head:project.manifest_sha256});
+const context=({project,selection})=>({project_id:project.project_id,selection,...project.binding,expected_generation:project.generation,expected_head:project.manifest_sha256,expected_export_epoch:project.export_epoch});
 const select=(post,mode,expected_selection,extra={})=>post('/api/aira/project',{action:'activate',mode,expected_selection,confirmed:true,...extra});
 async function exportRevision(post,c,name){
   const payload={...input(name),...c};
   const preview=await result(await post('/api/aira/preview',payload));
-  const res=await post('/api/aira/export',{...payload,approved:true,changes_approved:true,expected_manifest_sha256:preview.manifest_sha256});
+  const res=await post('/api/aira/export',{...payload,approved:true,changes_approved:true,expected_manifest_sha256:preview.manifest_sha256,preview_id:preview.preview_id});
   assert.equal(res.status,200,await res.clone().text());
   assert.deepEqual(unzip(Buffer.from(await res.arrayBuffer())),fixture(name).expected_files);
   return preview;
@@ -89,5 +89,26 @@ test('T15 production server HTTP: bound run denied, exact V2 archive, restart an
     const restored=await result(await post('/api/aira/v2/restore',{...c,packages:backup.packages,records:backup.records}));
     assert.equal(restored.project.revision,2);assert.equal(restored.project.manifest_sha256,backup.project.manifest_sha256);
     const copy=await result(await post('/api/aira/history',{...context(restored),action:'backup'}));assert.deepEqual(copy.packages,backup.packages);
+  });
+});
+
+test('T04 real server freezes confirmed V2 bytes and refuses stale approval', {timeout:15000},async t=>{
+  const dir=mkdtempSync(join(tmpdir(),'specit-s2-preview-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));
+  await withServer(dir,async post=>{
+    const first=input('linear'),binding={plan_id:first.plan_id,repo:first.repo};
+    const active=await result(await select(post,'aira',0,{binding,source:{...binding,plan:first.plan,spec:first.spec}})),c=context(active),payload={...first,...c};
+    const preview=await result(await post('/api/aira/preview',payload));
+    const approved={...payload,approved:true,changes_approved:true,preview_id:preview.preview_id,expected_manifest_sha256:preview.manifest_sha256};
+    assert.equal((await post('/api/aira/export',{...approved,approved:false})).status,400);
+    assert.equal((await post('/api/aira/export',{...approved,spec:approved.spec+' Änderung'})).status,409);
+    const next=await result(await post('/api/aira/preview',payload));
+    assert.equal((await post('/api/aira/export',approved)).status,409);
+    const res=await post('/api/aira/export',{...approved,preview_id:next.preview_id});
+    assert.equal(res.status,200,await res.clone().text());
+    assert.deepEqual(unzip(Buffer.from(await res.arrayBuffer())),fixture('linear').expected_files);
+    assert.equal((await post('/api/aira/export',{...approved,preview_id:next.preview_id})).status,409);
+    const h=await result(await post('/api/aira/history',c));
+    assert.equal(h.export_status,'archived');assert.equal(h.last_known_receipt,null);assert.equal(h.history.length,1);
+    assert.equal((await post('/api/run',{action:'start'})).status,403);
   });
 });

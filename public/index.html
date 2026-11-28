@@ -26,6 +26,11 @@
 </header>
 
 <main>
+  <section aria-label="Projektmodus" style="margin-bottom:1rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+    <p id="airaProjectModeStatus" role="status" style="flex-basis:100%;overflow-wrap:anywhere">Projektmodus wird geladen …</p>
+    <button id="airaProjectOpen" type="button" class="btn">Aira-Projekt / Historie</button>
+    <button id="airaStandaloneProject" type="button" class="btn">Getrenntes Standalone-Projekt wählen</button>
+  </section>
   
 
   
@@ -307,12 +312,16 @@
 <div class="card" id="reviewCard">
       <div class="stephead"><span class="stepno">2</span><div><h2>Prüfen und bestätigen</h2><p class="muted">Alle Festlegungen und Ergebnisse auf einen Blick. „Ändern“ führt zur passenden Stelle. Abgeschlossen wird erst mit der Bestätigung unten rechts.</p></div></div>
       <div id="review" class="review"></div>
-      <dialog id="airaV2Dialog" aria-labelledby="airaV2Heading">
+      <dialog id="airaV2Dialog" aria-labelledby="airaV2Heading" style="max-width:min(54rem,calc(100vw - 2rem));max-height:calc(100dvh - 2rem);overflow:auto;box-sizing:border-box;overflow-wrap:anywhere">
         <h2 id="airaV2Heading">Aira V2 – strukturierte Requirements und stabile IDs</h2>
         <p>Separater V2-Ablauf. Der V1-Plan bleibt unverändert. Alle Vorschläge und Zuordnungen fachlich prüfen. Keine Secrets oder echten Kundendaten.</p>
         <label>Plan-ID <input id="airaV2PlanId" maxlength="24"></label>
         <label>Zielrepository <input id="airaV2Repo"></label>
-        <button id="airaV2Load" type="button" class="btn">Stand laden</button>
+        <label><input id="airaV2Bind" type="checkbox"> Projektbindung bzw. Wechsel ausdrücklich bestätigen</label>
+        <button id="airaV2Load" type="button" class="btn">Bindung wählen &amp; Serverstand laden</button>
+        <p id="airaV2ExportStatus" role="status">Exportstatus: Stand nicht geladen</p>
+        <p id="airaV2ReceiptStatus">Letzte bekannte Aira-Quittung: unbekannt</p>
+        <details><summary>Persistente Revisionshistorie</summary><pre id="airaV2History" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre></details>
         <label><input id="airaV2First" type="checkbox"> Neue, noch nie exportierte Plan-ID ausdrücklich bestätigen</label>
         <details><summary>V2-Historie sichern oder wiederherstellen</summary>
           <button id="airaV2SaveBackup" type="button" class="btn">Sicherung herunterladen</button>
@@ -338,9 +347,10 @@
         <label>Strukturierter Entwurf: plan / requirements (JSON). Texte, Referenzen, neue IDs und Tombstone-Gründe prüfen. <textarea id="airaV2Draft" rows="16" spellcheck="false"></textarea></label>
         <h3>Pflichtabdeckung und Ausnahmen</h3><pre id="airaV2Coverage" style="white-space:pre-wrap"></pre>
         <label>Explizit bestätigte neue/geänderte IDs (durch Leerzeichen oder Komma getrennt) <textarea id="airaV2Confirmations" rows="2" spellcheck="false"></textarea></label>
+        <div id="airaV2PointRows" style="display:grid;gap:.5rem"></div>
         <label>Bestätigte Story Points je aktiver T-/B-ID (JSON; nur 1, 2, 3, 5, 8) <textarea id="airaV2Points" rows="5" spellcheck="false">{}</textarea></label>
         <button id="airaV2Preview" type="button" class="btn">Revision und exakte Projektion prüfen</button>
-        <pre id="airaV2Review" style="white-space:pre-wrap;max-height:18rem;overflow:auto"></pre>
+        <pre id="airaV2Review" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:18rem;overflow:auto"></pre>
         <label><input id="airaV2Approve" type="checkbox"> Plan, Zuordnungen, Nachweise, Zielrepository, Punkte und Paket fachlich freigegeben.</label>
         <p id="airaV2Status" role="status"></p>
         <div class="actions"><button id="airaV2Download" type="button" class="btn primary" disabled>↓ Freigegebenes V2-ZIP</button><button id="airaV2Close" type="button" class="btn">Schließen</button></div>
