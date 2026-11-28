@@ -82,12 +82,16 @@ test('T15 explicit mode change fails for active and unknown tasks; binding survi
   store.create('local-2');
   assert.equal(store.assertStandalone({ project_id: 'local-2', repo: 'example/other' }), true);
   assert.throws(() => store.assertStandalone({ repo: 'EXAMPLE/project' }), { code: 'POLICY_DENIED' });
+  assert.throws(() => store.assertStandalone({ project_id: 'local-2', repo: 'EXAMPLE/project' }), { code: 'POLICY_DENIED' });
+  assert.throws(() => store.assertStandalone({}), { code: 'POLICY_DENIED' });
+  assert.throws(() => store.assertStandalone({ project_id: 'missing' }), { code: 'SOURCE_UNAVAILABLE' });
   assert.throws(() => store.setMode('local-2', { mode: 'aira', binding, expected_generation: 1, observation: 'idle' }), { code: 'WRONG_TARGET' });
 });
 
 test('T15 rejects foreign paths, wrong target, tampering, invalid validator and index corruption', t => {
   const { store, root } = setup(t);
   assert.throws(() => add(store, { ...fixture(1), '../foreign': Buffer.from('x') }), { code: 'INVALID_PATH' });
+  assert.throws(() => add(store, { ...fixture(1), 'SPEC.md': 'Synthetic SPEC' }), { code: 'INVALID_SCHEMA' });
   assert.throws(() => add(store, { ...fixture(1), 'SPEC.md': Buffer.from('different') }), { code: 'INVALID_HASH' });
   const foreign = fixture(1);
   foreign['manifest.json'] = bytes({ ...JSON.parse(foreign['manifest.json']), repo: 'example/foreign' });

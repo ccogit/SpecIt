@@ -64,7 +64,14 @@ function inspect(files, binding) {
   check(expected.has('draft/EPICS.md') && expected.size === paths.length, 'INVALID_PATH');
   return { manifest, requirements, manifest_sha256: hash(files['manifest.json']) };
 }
-const encode = files => Object.fromEntries(Object.entries(files).map(([key, bytes]) => [key, Buffer.from(bytes).toString('base64')]));
+function encode(files) {
+  check(plain(files));
+  return Object.fromEntries(Object.entries(files).map(([key, bytes]) => {
+    check(validPath(key), 'INVALID_PATH');
+    check(bytes instanceof Uint8Array);
+    return [key, Buffer.from(bytes).toString('base64')];
+  }));
+}
 function decode(files) {
   check(plain(files));
   return Object.fromEntries(Object.entries(files).map(([key, bytes]) => {
@@ -160,7 +167,7 @@ export function createProjectStore(root, { validatePackage } = {}) {
     // Full V2 validation is deliberately an injected, trusted server dependency.
     // Never accept a client assertion that a package is valid.
     check(typeof validatePackage === 'function', 'CONTEXT_UNAVAILABLE');
-    check(validatePackage(files, previous) === true, 'INVALID_SCHEMA');
+    check(validatePackage(decode(encode(files)), previous ? decode(encode(previous)) : null) === true, 'INVALID_SCHEMA');
   }
   return {
     list: () => read().projects.map(summary),
@@ -195,12 +202,13 @@ export function createProjectStore(root, { validatePackage } = {}) {
         return summary(p);
       });
     },
+    // The caller MUST resolve project_id from trusted server context. An
+    // absent/unknown identity is not evidence of a standalone project.
     assertStandalone({ project_id, plan_id, repo, spec }) {
       const state = read();
-      if (project_id !== undefined) {
-        const p = get(state, project_id);
-        check(p.mode === 'standalone' && p.binding === null, 'POLICY_DENIED');
-      }
+      check(id(project_id), 'POLICY_DENIED');
+      const p = get(state, project_id);
+      check(p.mode === 'standalone' && p.binding === null, 'POLICY_DENIED');
       const specHash = typeof spec === 'string' ? hash(spec) : null;
       check(!state.projects.some(p => p.binding && (
         typeof plan_id === 'string' && p.binding.plan_id.toLowerCase() === plan_id.toLowerCase()
