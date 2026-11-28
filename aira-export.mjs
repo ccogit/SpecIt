@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { validatePlan } from './planner.mjs';
-import { codepointCompare as cmp, decisionsFor, identityConflicts } from './aira-identities.mjs';
+import { codepointCompare as cmp, decisionsFor, identityConflicts, parseAiraJson } from './aira-identities.mjs';
 export { decisionsFor } from './aira-identities.mjs';
 
 const fail = field => { throw new Error('Aira-Export: ungültig oder nicht bestätigt: '+field); };
@@ -188,22 +188,33 @@ export function previewAira(input) {
     catch(e){if(e.message!=='Aira-Export: ungültig oder nicht bestätigt: konkurrierende oder falsche Revision; erwartet '+(last.revision+1))throw e;
       result=projectAira({...input,revision:last.revision+1});}
   }else result=projectAira({...input,revision:1});
-  return {manifest:result.manifest,changes:result.changes,unchanged:result.unchanged};
+  return {manifest:result.manifest,manifest_sha256:sha256(result.files['manifest.json']),changes:result.changes,unchanged:result.unchanged};
 }
 
-/** Verify an existing initial package against the projection, without writing/importing it.
+/** Verify an existing package against the projection, without writing/importing it.
  * Comparing the canonical manifest bytes also rejects duplicate JSON keys.
  */
 export function verifyAira(files,history=[]) {
   let m;
-  try { m=JSON.parse(bytes(files['manifest.json']).toString('utf8')); } catch { fail('Manifest JSON'); }
+  try { m=parseAiraJson(bytes(files['manifest.json']).toString('utf8')); } catch { fail('Manifest JSON'); }
   keys(m,['schema_version','plan_id','revision','repo','spec_sha256','target_minutes','plan','tasks','blockers','artifacts'],['target_minutes_reason']);
   if(m.schema_version!==1) fail('Schema-Version');
   if(!obj(m.tasks)||!Array.isArray(m.blockers)||!Array.isArray(m.artifacts)) fail('Manifest-Zuordnungen');
   const points=Object.create(null),artifacts=Object.create(null);
-  for(const [id,t] of Object.entries(m.tasks)) points[id]=t.points;
-  for(const t of m.blockers) points[t.id]=t.points;
-  for(const a of m.artifacts) { artifactPath(a.path); artifacts[a.path]=files[a.path]; }
+  const paths=new Set();
+  function item(id,t,blocker){
+    keys(t,blocker?['id','decision','epic_title','item_title','file','points']:['epic_title','item_title','file','points']);
+    if(typeof id!=='string'||!(blocker?/^B[0-9]{2}$/:/^T[0-9]{2,3}$/).test(id)||Object.hasOwn(points,id))fail('Manifest-ID');
+    if(typeof t.file!=='string'||!/^draft\/(?:0[1-9]|[1-9][0-9])-(?:T[0-9]{2,3}|B[0-9]{2})\.md$/.test(t.file)||!t.file.endsWith('-'+id+'.md')||paths.has(t.file))fail('Work-item-Pfad');
+    paths.add(t.file);points[id]=t.points;
+  }
+  for(const [id,t] of Object.entries(m.tasks))item(id,t,false);
+  for(const t of m.blockers){if(!obj(t))fail('Manifest-Klärung');item(t.id,t,true)}
+  for(const a of m.artifacts) {
+    keys(a,['path','sha256']);artifactPath(a.path);
+    if(!hash(a.sha256)||Object.hasOwn(artifacts,a.path)||!Object.hasOwn(files,a.path))fail('Artefaktdatei oder Hash');
+    artifacts[a.path]=files[a.path];
+  }
   const generated=exportAira({schema_version:m.schema_version,plan_id:m.plan_id,revision:m.revision,repo:m.repo,plan:m.plan,target_minutes:m.target_minutes,confirmed_points:points,approved:true,spec:files['SPEC.md'],spec_sha256:m.spec_sha256,artifacts,history,changes_approved:true});
   if(!same(Object.keys(generated).sort(),Object.keys(files).sort())) fail('Paketdateien');
   for(const p of Object.keys(generated)) if(!generated[p].equals(bytes(files[p]))) fail('Hash oder Markdown-/Manifest-Projektion');

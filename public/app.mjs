@@ -6,7 +6,7 @@ document.getElementById('setToggle').onclick=()=>settingsOpen();
 applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('specit-theme',theme)}catch{}applyTheme()};
 
 import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate,setAgentSkill} from '/planner.mjs';
-import {decisionsFor,identityConflicts} from '/aira-identities.mjs';
+import {decisionsFor,identityConflicts,parseAiraJson} from '/aira-identities.mjs';
 import { modulators, cleanSvg, cleanLogos,conceptSections,conceptTopic,topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
 import {balance} from '/balance.mjs';
@@ -2946,7 +2946,7 @@ $('plan').onclick=async()=>{
     await stream('/api/plan/stream',{mode:'plan',spec:s.spec,...context,features:s.features.filter(f=>f.on).map(f=>({id:f.id,name:f.name})),ai:$('ai').checked},m=>{if(m.t){if(planLive){planLive.text+=m.t;planLiveTick()}}else if(m.error)fail=m.error;else if(m.done)r=m}).finally(refreshModels);
     if(fail)throw Error(fail);if(!r||!r.plan)throw Error('Der Plan kam unvollständig an. Bitte erneut versuchen.');
     if(rev!==revision){$('planStatus').textContent='Eingaben geändert. Erneut starten.';return}
-    s.plan=validatePlan(r.plan);s.planSource=r.source;s.planSpec=s.spec;s.planContext=context;s.planTrace=r.trace||null;statuses();save();
+    s.plan=validatePlan(r.plan);s.planSource=r.source;s.planSpec=s.spec;s.planContext=context;s.planTrace=r.trace||null;s.airaPointSuggestions=r.aira_point_suggestions||{};statuses();save();
   }catch(e){if(lockId===currentLockId)$('planStatus').textContent=e.message}finally{planLive=null;clearInterval(planLiveTimer);planLiveTimer=0;lock(false,undefined,lockId);try{runFeatureUI();mainUI()}catch{}}
   if(lockId!==currentLockId)return;
 };
@@ -3073,15 +3073,38 @@ function download(name,content){const url=URL.createObjectURL(new Blob([content]
 async function copyText(t,status,ok='Kopiert.'){try{await navigator.clipboard.writeText(t);status.textContent=ok}catch{status.textContent='Kopieren nicht möglich. Bitte manuell markieren oder herunterladen.'}}
 $('specDownload').onclick=()=>{if(s.spec)download('SPEC.md',specFile())};
 // Separater Aira-Ablauf: keine Änderung von s.plan oder s.finished.
-let airaSnapshot=null,airaPreview=null;
-const airaCurrent=()=>s.plan&&!stale()?JSON.stringify({plan:s.plan,spec:s.planSpec,source:s.planSource,target_minutes:targetMinutes()||null}):null;
+let airaSnapshot=null,airaPreview=null,airaImported=null;
+const airaCurrent=()=>s.plan&&!stale()?JSON.stringify({plan:s.plan,spec:s.planSpec,source:s.planSource,target_minutes:targetMinutes()||null,suggestions:s.airaPointSuggestions||{}}):null;
 const airaKey='specit-aira-history-v1';
 function airaHistory(){
   const raw=localStorage.getItem(airaKey),data=raw===null?{}:JSON.parse(raw);
   if(!data||typeof data!=='object'||Array.isArray(data))throw Error('Aira-Historie nicht lesbar.');
   return data;
 }
-const airaHistoryFor=id=>{const data=airaHistory();return Object.hasOwn(data,id)?data[id]:[]};
+function airaLocalHistoryFor(id){
+  const data=airaHistory(),history=Object.hasOwn(data,id)?data[id]:[];
+  if(!Array.isArray(history))throw Error('Aira-Historie nicht lesbar.');
+  return history;
+}
+function airaHistoryFor(id){
+  const local=airaLocalHistoryFor(id);
+  if(!airaImported||airaImported.id!==id)return local;
+  const imported=airaImported.history;
+  if(local.length>imported.length||local.some((m,i)=>JSON.stringify(m)!==JSON.stringify(imported[i])))throw Error('Konkurrierende Historie; Coordinator muss entscheiden.');
+  return imported;
+}
+$('airaRestoreHistory').onclick=async()=>{
+  airaInvalidate();
+  const status=$('airaStatus'),id=$('airaPlanId').value,files=[...$('airaHistoryFiles').files];
+  try{
+    if(!files.length)throw Error('Bitte alle bisherigen Manifestdateien auswählen.');
+    const history=(await Promise.all(files.map(async f=>parseAiraJson(await f.text())))).sort((a,b)=>a.revision-b.revision);
+    if(!$('airaDialog').open||id!==$('airaPlanId').value)throw Error('Plan-ID geändert; bitte erneut auswählen.');
+    if(history.some((m,i)=>m.plan_id!==id||m.revision!==i+1||m.schema_version!==1))throw Error('Manifeste passen nicht zur Plan-ID oder Historie ist lückenhaft.');
+    airaImported={id,history};airaRows();
+    status.textContent='Historie für die Vorschau geladen; Zuordnungen werden serverseitig geprüft.';
+  }catch(e){airaImported=null;airaRows();status.textContent='Aira-Historie nicht übernommen: '+(e.message.startsWith('Aira-Export:')?e.message:'Bitte vollständige, passende Manifeste auswählen.')}
+};
 function airaInvalidate(){
   airaPreview=null;$('airaApprove').checked=false;$('airaDownload').disabled=true;$('airaChanges').textContent='';
 }
@@ -3092,11 +3115,14 @@ function airaRows(){
   points.replaceChildren();
   try{
     const history=airaHistoryFor(id),previous=history.at(-1);
+    $('airaInitialRow').hidden=!!history.length;
+    $('airaInitial').checked=false;
     const conflicts=identityConflicts(current.plan,previous);
     if(conflicts.length)$('airaChanges').textContent='Migration mit Coordinator erforderlich:\n'+conflicts.join('\n');
     const rows=[...decisionsFor(current.plan,history).map(d=>({id:d.id,title:'Offene Entscheidung: '+d.decision})),...current.plan.tasks];
     for(const t of rows){
-      const label=node('label',t.id+' – '+t.title+' '),select=node('select');
+      const suggestion=current.suggestions[t.id],hint=[1,2,3,5,8].includes(suggestion)?' (KI-Vorschlag: '+suggestion+', nicht bestätigt)':' (kein KI-Vorschlag)';
+      const label=node('label',t.id+' – '+t.title+hint+' '),select=node('select');
       select.dataset.airaId=t.id;select.setAttribute('aria-label','Punkte '+t.id);
       for(const n of ['',1,2,3,5,8]){const o=node('option',n===''?'Bitte auswählen':String(n));o.value=String(n);select.append(o)}
       label.append(select);points.append(label,node('br'));
@@ -3106,7 +3132,7 @@ function airaRows(){
 $('goAira').onclick=()=>{
   $('flowNote').textContent='';
   if(active||runBusy||runStarting){$('flowNote').textContent='Bitte erst den laufenden Vorgang beenden.';return}
-  airaSnapshot=airaCurrent();
+  airaImported=null;$('airaHistoryFiles').value='';airaSnapshot=airaCurrent();
   if(!airaSnapshot){$('flowNote').textContent='Aira: Bitte zuerst einen aktuellen Plan erstellen und prüfen.';return}
   const current=JSON.parse(airaSnapshot);
   $('airaRepo').value=repoText();$('airaStatus').textContent='';
@@ -3114,9 +3140,9 @@ $('goAira').onclick=()=>{
   airaRows();$('airaDialog').showModal();
 };
 $('airaClose').onclick=()=>$('airaDialog').close();
-$('airaDialog').addEventListener('close',airaInvalidate);
+$('airaDialog').addEventListener('close',()=>{airaInvalidate();airaImported=null});
 $('airaDialog').addEventListener('input',e=>{
-  if(e.target===$('airaPlanId'))airaRows();
+  if(e.target===$('airaPlanId')){airaImported=null;$('airaHistoryFiles').value='';airaRows();}
   else if(e.target!==$('airaApprove'))airaInvalidate();
 });
 $('airaApprove').onchange=()=>{$('airaDownload').disabled=!airaPreview||!$('airaApprove').checked};
@@ -3126,6 +3152,7 @@ function airaInput(){
   if(!/^[A-Za-z0-9][A-Za-z0-9-]{0,23}$/.test(plan_id)){$('airaPlanId').focus();throw Error('Bitte eine gültige Plan-ID eingeben.')}
   if(!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)){$('airaRepo').focus();throw Error('Zielrepo fehlt oder ist ungültig (owner/name).')}
   const history=airaHistoryFor(plan_id),confirmed_points={};
+  if(!history.length&&!$('airaInitial').checked)throw Error('Erstexport ausdrücklich bestätigen oder vollständige frühere Manifeste laden.');
   const conflicts=identityConflicts(current.plan,history.at(-1));
   if(conflicts.length)throw Error('Migration mit Coordinator erforderlich: '+conflicts.join('; '));
   for(const select of $('airaPoints').querySelectorAll('select')){
@@ -3141,8 +3168,8 @@ $('airaPreview').onclick=async()=>{
     const res=await fetch('/api/aira/preview',{method:'POST',headers:{'content-type':'application/json'},body:snapshot});
     const result=await res.json();if(!res.ok)throw Error(result.error||'Aira-Vorschau fehlgeschlagen.');
     if(!$('airaDialog').open||snapshot!==JSON.stringify(airaInput()))throw Error('Eingaben geändert; erneut prüfen.');
-    airaPreview={snapshot,...result};
-    $('airaChanges').textContent='Revision '+result.manifest.revision+' · SHA-256 SPEC: '+result.manifest.spec_sha256+'\n'+(result.unchanged?'Unveränderte Wiederholung':result.changes.join('\n'))+'\nHash ist keine Signatur. Änderungen ausdrücklich bestätigen.';
+    airaPreview={snapshot,localHistory:JSON.stringify(airaLocalHistoryFor(input.plan_id)),...result};
+    $('airaChanges').textContent='Revision '+result.manifest.revision+' · SHA-256 SPEC: '+result.manifest.spec_sha256+'\nSHA-256 Manifest: '+result.manifest_sha256+'\n'+(result.unchanged?'Unveränderte Wiederholung':result.changes.join('\n'))+'\nHash ist keine Signatur. Änderungen ausdrücklich bestätigen.';
     status.textContent='Bitte die angezeigte Revision und die Inhalte fachlich freigeben.';
   }catch(e){status.textContent=e.message}finally{btn.disabled=false}
 };
@@ -3155,17 +3182,19 @@ $('airaDownload').onclick=async()=>{
     if(preview.snapshot!==JSON.stringify(input))throw Error('Freigabe veraltet; erneut prüfen.');
     if(!navigator.locks)throw Error('Browser unterstützt keine sichere Sperre für die lokale Revisionshistorie.');
     await navigator.locks.request('specit-aira-history',async()=>{
-      const stillCurrent=()=>$('airaDialog').open&&airaPreview===preview&&$('airaApprove').checked&&preview.snapshot===JSON.stringify(airaInput());
+      const stillCurrent=()=>$('airaDialog').open&&airaPreview===preview&&$('airaApprove').checked&&preview.snapshot===JSON.stringify(airaInput())&&preview.localHistory===JSON.stringify(airaLocalHistoryFor(input.plan_id));
       if(!stillCurrent())throw Error('Konkurrierende Änderung oder veraltete Freigabe; erneut prüfen.');
       const res=await fetch('/api/aira/export',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...input,revision:preview.manifest.revision,approved:true,changes_approved:true})});
       if(!res.ok)throw Error((await res.json()).error||'Aira-Export fehlgeschlagen.');
       const blob=await res.blob();
       if(!stillCurrent())throw Error('Konkurrierende Änderung oder veraltete Freigabe; kein Download.');
-      if(!preview.unchanged){
-        const history=airaHistory();
-        Object.defineProperty(history,input.plan_id,{value:[...input.history,preview.manifest],enumerable:true,configurable:true,writable:true});
+      const local=airaLocalHistoryFor(input.plan_id);
+      if(!preview.unchanged||local.length!==input.history.length){
+        const history=airaHistory(),next=preview.unchanged?input.history:[...input.history,preview.manifest];
+        Object.defineProperty(history,input.plan_id,{value:next,enumerable:true,configurable:true,writable:true});
         localStorage.setItem(airaKey,JSON.stringify(history));
       }
+      airaImported=null;
       const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download='aira-'+input.plan_id+'-r'+preview.manifest.revision+'.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
       airaInvalidate();status.textContent='Aira-Entwurf heruntergeladen. Nur draft/ an den Coordinator übergeben; SPEC und Manifest aufbewahren.';
     });

@@ -312,6 +312,10 @@
         <p id="airaDemo" class="status"></p>
         <label>Stabile, projektweit eindeutige Plan-ID <input id="airaPlanId" maxlength="24" type="text" placeholder="projekt-1"></label>
         <label>Zielrepository (owner/name) <input id="airaRepo" type="text" placeholder="owner/repo"></label>
+        <p class="meta">Bei einem Neu-Export müssen alle bisherigen Manifeste verfügbar sein. Bei Browserwechsel oder fehlender lokaler Historie die Manifeste ab Revision 1 auswählen.</p>
+        <label>Historie wiederherstellen <input id="airaHistoryFiles" type="file" accept=".json,application/json" multiple></label>
+        <button id="airaRestoreHistory" class="btn" type="button">Manifeste für Vorschau übernehmen</button>
+        <label id="airaInitialRow"><input id="airaInitial" type="checkbox"> Erstexport: Diese Plan-ID wurde projektweit noch nie exportiert.</label>
         <p>Umfangspunkte (1, 2, 3, 5, 8) unabhängig von Laufzeit ausdrücklich bestätigen.</p>
         <div id="airaPoints"></div>
         <label><input id="airaApprove" type="checkbox"> Ich habe den Plan, die offenen Entscheidungen, die Punkte, das Zielrepository und die Inhalte fachlich geprüft und freigegeben. Keine Secrets oder echten Kundendaten.</label>

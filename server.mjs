@@ -11,6 +11,7 @@ import { factor, scale, info as calibInfo } from './calibration.mjs';
 import { zip, collect } from './zip.mjs';
 import { airaZip } from './aira-zip.mjs';
 import { previewAira } from './aira-export.mjs';
+import { pointSuggestions, parseAiraJson } from './aira-identities.mjs';
 import { flowPrompt, cleanFlow, archPrompt, cleanArch } from './diagrams.mjs';
 import { protoPrompt, protoBrief, cleanProto } from './prototype.mjs';
 // Schätzungen an gemessenen Läufen ausrichten: raw behält den Wert der KI, minutes ist der umgerechnete
@@ -493,7 +494,7 @@ async function claude(b,onText){
  const more=b.mode==='questions'&&b.questions.length>0,decisions=b.mode==='decisions';
  // Ohne diesen Satz denkt das Modell erst lange still nach (gemessen 13 bis 90 Sekunden), mit ihm beginnt die Antwort nach rund einer Sekunde.
  const quick=b.mode==='plan'?'':b.mode==='final'?startNow:startJson;
- const instruction=b.mode==='plan'?planPrompt:decisions?decisionPrompt:b.mode==='questions'?questionPrompt(b.fill?'fill':more):finalPrompt(b)+conceptNote(b);
+ const instruction=b.mode==='plan'?planPrompt+' Ergänze je Task zusätzlich aira_points: 1, 2, 3, 5 oder 8 als modellunabhängigen Vorschlag für den fachlichen Umfang (Komplexität, Risiken, Schnittstellen und Liefergegenstände), ausdrücklich unabhängig von minutes/raw, Modell, Agentenzahl und Zielzeit. Keine Umrechnung. Der Mensch bestätigt die Punkte separat; sie gehören nicht zum normalisierten Plan.':decisions?decisionPrompt:b.mode==='questions'?questionPrompt(b.fill?'fill':more):finalPrompt(b)+conceptNote(b);
  const scope=b.mode==='questions'&&b.duration?' Die Ziel-Entwicklungsdauer (targetDuration, reine Entwicklungszeit mit KI und Coding-Agenten) begrenzt den Umfang: Wähle Standards, die in dieser Zeit umsetzbar sind.':'';
  const style=b.mode==='questions'?stylePrompt(b.creativity,b.tone)+' Für die Fragen heißt das: Antwortoptionen und Standards passen zum Einsatzbereich; eigene Ideen erscheinen nur als zusätzliche Antwortoption, nie als Standard, sofern nicht ausdrücklich erwünscht.':'';
  const reuse=b.mode==='plan'&&b.reuse.length?' Der Nutzer hat die Open-Source-Projekte in reuse ausgewählt: Plane sie als zu prüfende Integrationskandidaten ein, mit einem vorgelagerten Audit/PoC-Task (Code, Lizenz, Wartung, Sicherheit), bevor Aufgaben darauf aufbauen. Nicht ausgewählte Projekte sind keine Vorgabe.':'';
@@ -504,7 +505,7 @@ async function claude(b,onText){
  if(b.mode==='final')return {source:'claude',markdown:withToc(out)};
  let parsed;try{parsed=parseJson(out)}catch{throw Error('Claude hat kein gültiges JSON geliefert. Bitte erneut versuchen.')}
  // Nichts bleibt blockiert: Offenes hat der Plan selbst festgelegt (siehe Prompt).
- if(b.mode==='plan'){if(Array.isArray(parsed.tasks))for(const t of parsed.tasks)if(t&&typeof t==='object')t.blockedBy=[];const plan=calibPlan(validatePlan(parsed));return {source:'claude',plan,trace:traceGaps(b.spec,plan)}}
+ if(b.mode==='plan'){if(Array.isArray(parsed.tasks))for(const t of parsed.tasks)if(t&&typeof t==='object')t.blockedBy=[];const plan=calibPlan(validatePlan(parsed));return {source:'claude',plan,trace:traceGaps(b.spec,plan),aira_point_suggestions:pointSuggestions(plan,parsed.tasks)}}
  if(!Array.isArray(parsed.questions))throw Error('Ungültiges Frageformat.');
  const asked=new Set(b.questions.map(q=>q.question.toLowerCase()));
  const have=new Set(b.questions.map(q=>q.question)),taken=new Set(b.questions.map(q=>q.question.toLowerCase()));
@@ -603,12 +604,12 @@ http.createServer(async(req,res)=>{
   try{return send(res,200,await createRepo(body))}catch(e){return send(res,400,{error:e.message||'Das Repository konnte nicht angelegt werden.'})}
  }
  if(req.url==='/api/aira/preview'){
-  try{return send(res,200,previewAira(JSON.parse(raw)))}
+  try{return send(res,200,previewAira(parseAiraJson(raw)))}
   catch(e){return send(res,400,{error:e instanceof Error&&e.message.startsWith('Aira-Export:')?e.message:'Aira-Export: ungültige Anfrage.'})}
  }
  if(req.url==='/api/aira/export'){
   try {
-   const body=airaZip(JSON.parse(raw));
+   const body=airaZip(parseAiraJson(raw));
    res.writeHead(200,{'Content-Type':'application/zip','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
    return res.end(body);
   } catch(e) { return send(res,400,{error:e instanceof Error&&e.message.startsWith('Aira-Export:')?e.message:'Aira-Export: ungültige Anfrage.'}); }

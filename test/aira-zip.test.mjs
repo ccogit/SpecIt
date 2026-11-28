@@ -26,9 +26,11 @@ test('Aira ZIP: Klärungs-Epics und getrennte Kontextdateien, reproduzierbar',()
 });
 test('Eigene UI und API ohne Standalone-Start',()=>{
   const html=read('../public/index.html'),app=read('../public/app.mjs'),server=read('../server.mjs');
-  for(const id of ['goAira','airaDialog','airaApprove','airaDownload','goDownload','goApprove','goDirect'])assert.match(html,new RegExp('id="'+id+'"'));
+  for(const id of ['goAira','airaDialog','airaApprove','airaDownload','airaPreview','airaInitial','airaHistoryFiles','goDownload','goApprove','goDirect'])assert.match(html,new RegExp('id="'+id+'"'));
   const flow=app.slice(app.indexOf('// Separater Aira-Ablauf'),app.indexOf('// PDF: Druckvorschau'));
   assert.match(flow,/\/api\/aira\/export/);
+  assert.match(flow,/\/api\/aira\/preview/);
+  assert.match(flow,/navigator\.locks\.request/);
   assert.doesNotMatch(flow,/\/api\/run|\/api\/repo|calib|goFlow\(|startRun\(/);
   const endpoint=server.slice(server.indexOf("if(req.url==='/api/aira/export')"),server.indexOf("if(req.url==='/api/run/download')"));
   assert.match(endpoint,/airaZip/);

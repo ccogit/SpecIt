@@ -28,3 +28,55 @@ export function identityConflicts(plan,previous) {
   for(const d of previous.blockers)if(!current.has(d.decision))conflicts.push(d.id+': Entscheidung entfernt');
   return conflicts;
 }
+
+// Only suggestions, never confirmed points. Ignore malformed or ambiguous proposals.
+export function pointSuggestions(plan,rawTasks){
+  const out={};
+  if(!Array.isArray(rawTasks))return out;
+  for(const t of plan.tasks){
+    const candidates=rawTasks.filter(x=>x&&x.id===t.id);
+    if(candidates.length===1&&[1,2,3,5,8].includes(candidates[0].aira_points))out[t.id]=candidates[0].aira_points;
+  }
+  return out;
+}
+
+// JSON.parse alone silently accepts duplicate keys. Parse first for grammar, then
+// scan the original tokens to reject duplicate object keys and nonfinite numbers.
+export function parseAiraJson(raw){
+  const invalid=()=>{throw Error('Aira-Export: ungültiges JSON oder doppelte Schlüssel.')};
+  if(typeof raw!=='string')invalid();
+  let result;
+  try{result=JSON.parse(raw)}catch{invalid()}
+  let i=0;
+  const ws=()=>{while(i<raw.length&&/[ \t\r\n]/.test(raw[i]))i++};
+  function string(){
+    const start=i++;
+    while(i<raw.length){
+      if(raw[i]==='\\'){i+=2;continue}
+      if(raw[i++]==='"')return JSON.parse(raw.slice(start,i));
+    }
+    invalid();
+  }
+  function scan(){
+    ws();
+    if(raw[i]==='{'){
+      i++;ws();const seen=new Set();
+      if(raw[i]==='}'){i++;return}
+      while(i<raw.length){
+        ws();const key=string();
+        if(seen.has(key))invalid();seen.add(key);
+        ws();i++;scan();ws();
+        if(raw[i++]==='}')return;
+      }
+    }else if(raw[i]==='['){
+      i++;ws();if(raw[i]===']'){i++;return}
+      while(i<raw.length){scan();ws();if(raw[i++]==']')return}
+    }else if(raw[i]==='"')string();
+    else{
+      const start=i;while(i<raw.length&&!/[,\]}\s]/.test(raw[i]))i++;
+      const value=JSON.parse(raw.slice(start,i));
+      if(typeof value==='number'&&!Number.isFinite(value))invalid();
+    }
+  }
+  scan();return result;
+}
