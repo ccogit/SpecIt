@@ -118,10 +118,15 @@ test('T15 production HTTP: explicit owner diff produces new revision only after 
     const still=await data(await post('/api/aira/history',{...c,action:'backup'}));assert.deepEqual(still.packages,initial.packages);assert.equal(still.project.revision,1);
     assert.equal(JSON.parse(still.record.requirements_bytes).decisions[0].state,'open');
     const payload=r=>({...first,...c,revision:2,requirements:r.requirements,plan:projectRequirementsPlan(first.plan,r.requirements),
-      confirmed_points:Object.fromEntries(Object.entries(first.confirmed_points).filter(([id])=>id!=='B01')),confirmed_ids:r.confirmed_ids,feedback_approval:r.approval_id});
+      confirmed_points:{...first.confirmed_points},confirmed_ids:r.confirmed_ids,feedback_approval:r.approval_id});
     const draft=payload(approved),{feedback_approval,...missing}=draft;
     assert.equal((await post('/api/aira/preview',missing)).status,400);
+    // Resolved B01 remains an active V2 work item; dropping its points is invalid.
+    const withoutBlockerPoints={...draft,confirmed_points:Object.fromEntries(Object.entries(draft.confirmed_points).filter(([id])=>id!=='B01'))};
+    assert.equal((await data(await post('/api/aira/preview',withoutBlockerPoints),400)).code,'INVALID_SCHEMA');
     const preview=await data(await post('/api/aira/preview',draft));
+    assert.equal(preview.manifest.blockers.find(b=>b.id==='B01').points,first.confirmed_points.B01);
+    assert.match(preview.drafts['draft/EPICS.md'],/T01[^\n]*B01/);
     const exportBody=(draft,p)=>({...draft,approved:true,changes_approved:true,preview_id:p.preview_id,expected_manifest_sha256:p.manifest_sha256});
     assert.equal((await post('/api/aira/export',{...exportBody(draft,preview),approved:false})).status,400);
     const next=await ingest({...f,sequence:2,previous_feedback_sha256:received.projection.current.sha256,observed_at:'2026-11-28T12:01:00Z',findings:[{code:'SOURCE_UNAVAILABLE',ref:'B01',state:'open'}]});
@@ -134,6 +139,7 @@ test('T15 production HTTP: explicit owner diff produces new revision only after 
     assert.equal(finalRequirements.decisions[0].state,'resolved');assert.equal(finalRequirements.decisions[0].confirmed_by,'owner-test');
     assert.deepEqual(finalManifest.plan.tasks.find(t=>t.id==='T01').blockedBy,[]);
     for(const id of Object.keys(originalManifest.tasks))assert.equal(finalManifest.tasks[id].points,originalManifest.tasks[id].points);
+    assert.deepEqual(finalManifest.blockers,originalManifest.blockers,'resolved decision retains its mapped B work item and confirmed points');
     assert.equal((await data(await send(post,ctx(packages),{action:'status'}))).projection.freshness,'stale');
     backup=(await data(await send(post,ctx(packages),{action:'backup'}))).backup;assert.equal(backup.reviews.length,1);
     const after=await data(await get('/api/run'));assert.deepEqual(after.calib,before.calib);assert.deepEqual(after.items,before.items);assert.equal(after.active,before.active);

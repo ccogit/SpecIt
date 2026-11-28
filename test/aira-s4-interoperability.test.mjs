@@ -59,10 +59,8 @@ function exportInput(name, previous) {
   };
 }
 
-test('Q11 T01/T14/T15 exported revision feeds original receipts, survives restart/restore, rejects stale approval', async t => {
+test('Q11 T01/T14/T15 exported revision feeds original receipts and rejects stale approval', async t => {
   const {exportAira, previewAira, verifyAira} = await import('../aira-export.mjs');
-  const {createFeedbackStore} = await import('../aira-feedback.mjs');
-  const {feedbackView} = await import('../public/aira-feedback-ui.mjs');
   // All calls are in-process; no server, network, Jira, runner or remote writes.
   t.mock.method(globalThis, 'fetch', () => { throw Error('Unexpected network call'); });
   const first = exportAira(exportInput('linear.json'));
@@ -80,6 +78,21 @@ test('Q11 T01/T14/T15 exported revision feeds original receipts, survives restar
     }
   }
   assert.equal(verifyAira(second, [input.previous]), true);
+  await checkReceipts(t, first, second);
+});
+
+// Independent consumer-side test, usable even without the exporter. The
+// preceding test additionally exercises the same consumer with actual output.
+test('Q11 T14/T15 pinned packages and receipts survive restart and restore', async t => {
+  const packageBytes = name => Object.fromEntries(Object.entries(v2(name).expected_files)
+    .map(([path, content]) => [path, Buffer.from(content)]));
+  t.mock.method(globalThis, 'fetch', () => { throw Error('Unexpected network call'); });
+  await checkReceipts(t, packageBytes('linear.json'), packageBytes('revised.json'));
+});
+
+async function checkReceipts(t, first, second) {
+  const {createFeedbackStore} = await import('../aira-feedback.mjs');
+  const {feedbackView} = await import('../public/aira-feedback-model.mjs');
   const history = [first, second].map(files => ({files, manifest_sha256: hash(files['manifest.json'])}));
   const {events, package: receiptPackage} = v2('feedback.json');
   assert.equal(receiptPackage, 'revised.json');
@@ -105,9 +118,10 @@ test('Q11 T01/T14/T15 exported revision feeds original receipts, survives restar
   assert.equal(projection.current.sha256, events[1].sha256);
   const manifest = JSON.parse(second['manifest.json']);
   const requirements = JSON.parse(second['requirements.json']);
-  const view = feedbackView({projection, manifest, requirements});
+  const view = feedbackView({projection, manifest, requirements, manifestSha: hash(second['manifest.json'])});
   assert.equal(view.freshness, 'current');
   assert.equal(view.requirements.find(r => r.id === 'FR-001').fulfilled, true);
   assert.ok(!JSON.stringify(view).includes('assignment_to_merge_seconds'));
+  assert.equal(feedbackView({projection, manifest, requirements, manifestSha: 'f'.repeat(64)}).requirements[0].fulfilled, false);
   assert.deepEqual(structuredClone(context), original);
-});
+}
