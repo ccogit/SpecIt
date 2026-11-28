@@ -9,6 +9,40 @@ const namespaces = new Map([
 ]);
 
 const ownerPattern = /^(?:T(?:0[1-9]|[1-9][0-9]{1,2})|B(?:0[1-9]|[1-9][0-9]))$/;
+const identityPattern = /^(?:(FR|NFR)-([0-9]{3})|(T|B)([0-9]{2,3})|((?:AC|TC)-[TB][0-9]{2,3})-([0-9]{3}))$/;
+
+function identityCounter(id) {
+  const match = typeof id === 'string' && identityPattern.exec(id);
+  if (!match) throw new Error('Invalid historical identity');
+  const [, requirement, requirementNumber, owner, ownerNumber, child, childNumber] = match;
+  if (owner && !ownerPattern.test(id) || child && !ownerPattern.test(child.slice(3))) {
+    throw new Error('Invalid historical identity: ' + id);
+  }
+  const number = Number(requirementNumber ?? ownerNumber ?? childNumber);
+  if (number === 0) throw new Error('Invalid historical identity: ' + id);
+  return [requirement ?? owner ?? child, number];
+}
+
+// Rebuild counters from an explicitly mapped predecessor, including retired IDs.
+// Preserve any higher persisted value even if the corresponding ID is absent.
+export function restoreRequirementHighWater(highWater, activeIds, retiredIds) {
+  const restored = {...highWater};
+  const seen = new Set();
+  for (const ids of [activeIds, retiredIds]) {
+    for (const id of ids) {
+      const [key, value] = identityCounter(id);
+      if (seen.has(id)) throw new Error('Duplicate historical identity: ' + id);
+      seen.add(id);
+      const current = Object.hasOwn(restored, key) ? restored[key] : 0;
+      const limit = key === 'B' ? 99 : 999;
+      if (!Number.isInteger(current) || current < 0 || current > limit) {
+        throw new Error('Invalid persisted identity counter: ' + key);
+      }
+      restored[key] = Math.max(current, value);
+    }
+  }
+  return restored;
+}
 
 export function allocateRequirementIdentity(highWater, namespace, owner) {
   const format = namespaces.get(namespace);
