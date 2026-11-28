@@ -110,7 +110,7 @@ export function createProjectStore(root, { validatePackage } = {}) {
   check(lstatSync(directory).isDirectory(), 'INVALID_PATH');
   const index = join(directory, 'projects.json'), lock = join(directory, 'write.lock');
   function read() {
-    if (!regular(index)) return { version: 1, projects: [] };
+    if (!regular(index)) return { version: 1, projects: [], active_project_id: null, selection: 0, local_run: null };
     const state = json(readFileSync(index));
     check(state.version === 1 && Array.isArray(state.projects));
     const ids = new Set(), plans = new Set(), repos = new Set();
@@ -118,6 +118,7 @@ export function createProjectStore(root, { validatePackage } = {}) {
       check(id(p.project_id) && !ids.has(p.project_id) && ['standalone', 'aira'].includes(p.mode)
         && Number.isSafeInteger(p.generation) && p.generation >= 1 && Array.isArray(p.history));
       ids.add(p.project_id);
+      check(p.source === undefined || plain(p.source) && sha(p.source.spec_sha256) && sha(p.source.plan_sha256));
       if (p.binding !== null) {
         check(id(p.binding.plan_id) && repoName(p.binding.repo) && !plans.has(p.binding.plan_id.toLowerCase())
           && !repos.has(p.binding.repo.toLowerCase()), 'HISTORY_CONFLICT');
@@ -126,6 +127,12 @@ export function createProjectStore(root, { validatePackage } = {}) {
         chain(p.history, p.binding);
       } else check(p.mode === 'standalone' && p.history.length === 0);
     }
+    state.active_project_id ??= null;
+    state.selection ??= 0;
+    state.local_run ??= null;
+    check(state.local_run === null || typeof state.local_run.owner === 'string' && typeof state.local_run.token === 'string');
+    check(Number.isSafeInteger(state.selection) && state.selection >= 0
+      && (state.active_project_id === null || ids.has(state.active_project_id)));
     return state;
   }
   function transaction(fn) {
@@ -160,16 +167,91 @@ export function createProjectStore(root, { validatePackage } = {}) {
     return { project_id: p.project_id, mode: p.mode, binding: structuredClone(p.binding), generation: p.generation,
       revision: p.history.length, manifest_sha256: latest(p) };
   }
+  function active(state) {
+    return { selection: state.selection, project: state.active_project_id === null ? null : summary(get(state, state.active_project_id)),
+      projects: state.projects.map(summary), local_run: state.local_run ?? null };
+  }
+  function denyBound(state, { plan_id, repo, spec, plan }) {
+    const specHash = typeof spec === 'string' && spec.trim() ? hash(spec) : null;
+    const planHash = plan ? hash(JSON.stringify(canonical(plan))) : null;
+    check(!state.projects.some(p => p.binding && (
+      typeof plan_id === 'string' && p.binding.plan_id.toLowerCase() === plan_id.toLowerCase()
+      || typeof repo === 'string' && p.binding.repo.toLowerCase() === repo.trim().toLowerCase()
+      || specHash && (p.source?.spec_sha256 === specHash || p.history.some(entry => json(decode(entry.files)['manifest.json']).spec_sha256 === specHash))
+      || planHash && (p.source?.plan_sha256 === planHash || p.history.some(entry => { const plan = json(decode(entry.files)['manifest.json']).plan; return plan && hash(JSON.stringify(canonical(plan))) === planHash; }))
+    )), 'POLICY_DENIED');
+  }
+  function assertRunInState(state, body) {
+    check(plain(body) && (!Object.hasOwn(body, 'mode') || body.mode === 'standalone'), 'POLICY_DENIED');
+    if (state.active_project_id !== null) {
+      const p = get(state, state.active_project_id);
+      check(p.mode === 'standalone' && p.binding === null, 'POLICY_DENIED');
+      check(!Object.hasOwn(body, 'project_id') || body.project_id === p.project_id, 'POLICY_DENIED');
+    } else check(!Object.hasOwn(body, 'project_id'), 'POLICY_DENIED');
+    denyBound(state, body);
+  }
   function idle(observation) {
     check(observation === 'idle', 'CONTEXT_UNAVAILABLE');
   }
-  function validate(files, previous) {
+  function validate(files, previous, record) {
     // Full V2 validation is deliberately an injected, trusted server dependency.
     // Never accept a client assertion that a package is valid.
     check(typeof validatePackage === 'function', 'CONTEXT_UNAVAILABLE');
-    check(validatePackage(decode(encode(files)), previous ? decode(encode(previous)) : null) === true, 'INVALID_SCHEMA');
+    check(validatePackage(decode(encode(files)), previous ? decode(encode(previous)) : null, record ? structuredClone(record) : undefined) === true, 'INVALID_SCHEMA');
   }
   return {
+    active: () => active(read()),
+    // Project selection is an explicit, persisted server operation, not a flag on a run request.
+    activate({ expected_selection, mode, binding, project_id, source, observation }) {
+      return transaction(state => {
+        check(state.selection === expected_selection, 'HISTORY_CONFLICT');
+        check(!state.local_run, 'CONTEXT_UNAVAILABLE');
+        idle(observation);
+        check(['standalone', 'aira'].includes(mode));
+        let p;
+        if (mode === 'aira') {
+          check(plain(binding) && Object.keys(binding).length === 2 && id(binding.plan_id) && repoName(binding.repo));
+          p = state.projects.find(other => other.binding && other.binding.plan_id.toLowerCase() === binding.plan_id.toLowerCase());
+          if (p) check(equal(p.binding, binding) && p.mode === 'aira' && (!project_id || project_id === p.project_id), 'WRONG_TARGET');
+          else {
+            check(!project_id && !state.projects.some(other => other.binding && other.binding.repo.toLowerCase() === binding.repo.toLowerCase()), 'WRONG_TARGET');
+            check(typeof source?.spec === 'string' && source.spec.trim() && plain(source.plan));
+            p = { project_id: randomUUID().replaceAll('-', '').slice(0,24), mode, binding, generation: 1, history: [],
+              source: { spec_sha256: hash(source.spec), plan_sha256: hash(JSON.stringify(canonical(source.plan))) } };
+            state.projects.push(p);
+          }
+        } else if (project_id) {
+          p = get(state, project_id);
+          check(p.mode === 'standalone' && p.binding === null, 'POLICY_DENIED');
+          denyBound(state, source ?? {});
+        } else {
+          denyBound(state, source ?? {});
+          p = { project_id: randomUUID().replaceAll('-', '').slice(0,24), mode, binding: null, generation: 1, history: [] };
+          state.projects.push(p);
+        }
+        if (state.active_project_id !== p.project_id) {
+          state.active_project_id = p.project_id;
+          state.selection++;
+        }
+        return active(state);
+      });
+    },
+    assertRun(body) { assertRunInState(read(), body); return true; },
+    reserveRun(body, owner) {
+      return transaction(state => {
+        assertRunInState(state, body);
+        check(!state.local_run, 'CONTEXT_UNAVAILABLE');
+        const token = randomUUID();
+        state.local_run = {owner, token};
+        return token;
+      });
+    },
+    releaseRun(owner, token) {
+      return transaction(state => {
+        check(state.local_run?.owner === owner && state.local_run.token === token, 'CONTEXT_UNAVAILABLE');
+        state.local_run = null;
+      });
+    },
     list: () => read().projects.map(summary),
     get: project_id => summary(get(read(), project_id)),
     create(project_id) {
@@ -186,6 +268,7 @@ export function createProjectStore(root, { validatePackage } = {}) {
         const p = get(state, project_id);
         check(p.generation === expected_generation, 'HISTORY_CONFLICT');
         idle(observation);
+        check(p.mode === mode || !p.history.length, 'CONTEXT_UNAVAILABLE');
         check(['standalone', 'aira'].includes(mode));
         if (mode === 'aira') {
           check(plain(binding) && id(binding.plan_id) && repoName(binding.repo));
@@ -218,20 +301,21 @@ export function createProjectStore(root, { validatePackage } = {}) {
       return true;
     },
     history(project_id) {
-      return get(read(), project_id).history.map(entry => ({ manifest_sha256: entry.manifest_sha256, files: decode(entry.files) }));
+      return get(read(), project_id).history.map(entry => ({ manifest_sha256: entry.manifest_sha256, files: decode(entry.files), ...(entry.record ? { record: structuredClone(entry.record) } : {}) }));
     },
-    restore(project_id, { packages, expected_generation, expected_head }) {
+    restore(project_id, { packages, records, expected_generation, expected_head, expected_selection }) {
       return transaction(state => {
         const p = get(state, project_id);
         check(p.mode === 'aira' && p.binding, 'WRONG_TARGET');
+        if (expected_selection !== undefined) check(state.active_project_id === project_id && state.selection === expected_selection, 'HISTORY_CONFLICT');
         check(p.generation === expected_generation && latest(p) === expected_head, 'HISTORY_CONFLICT');
         check(Array.isArray(packages) && packages.length >= p.history.length && packages.length > 0, 'HISTORY_CONFLICT');
         const candidate = [];
-        for (const files of packages) {
+        for (const [i, files] of packages.entries()) {
           const copy = decode(encode(files)), current = inspect(copy, p.binding);
           const prev = candidate.at(-1);
-          validate(copy, prev ? decode(prev.files) : null);
-          candidate.push({ manifest_sha256: current.manifest_sha256, files: encode(copy) });
+          validate(copy, prev ? decode(prev.files) : null, records?.[i]);
+          candidate.push({ manifest_sha256: current.manifest_sha256, files: encode(copy), ...(records?.[i] ? { record: structuredClone(records[i]) } : {}) });
         }
         chain(candidate, p.binding);
         check(p.history.every((entry, i) => equal(entry, candidate[i])), 'HISTORY_CONFLICT');
@@ -239,16 +323,20 @@ export function createProjectStore(root, { validatePackage } = {}) {
         return summary(p);
       });
     },
-    append(project_id, { files, expected_generation, expected_head }) {
+    append(project_id, { files, record, expected_generation, expected_head, expected_selection }) {
       return transaction(state => {
         const p = get(state, project_id);
         check(p.mode === 'aira' && p.binding, 'WRONG_TARGET');
+        if (expected_selection !== undefined) check(state.active_project_id === project_id && state.selection === expected_selection, 'HISTORY_CONFLICT');
         check(p.generation === expected_generation && latest(p) === expected_head, 'HISTORY_CONFLICT');
         const copy = decode(encode(files)), current = inspect(copy, p.binding);
-        const entry = { manifest_sha256: current.manifest_sha256, files: encode(copy) };
+        const entry = { manifest_sha256: current.manifest_sha256, files: encode(copy), ...(record ? { record: structuredClone(record) } : {}) };
         const previous = p.history.at(-1);
-        if (previous && equal(previous, entry)) return summary(p);
-        validate(copy, previous ? decode(previous.files) : null);
+        if (previous && equal(previous.files, entry.files)) {
+          check(!record || equal(previous.record, entry.record), 'HISTORY_CONFLICT');
+          return summary(p);
+        }
+        validate(copy, previous ? decode(previous.files) : null, record);
         chain([...p.history, entry], p.binding);
         p.history.push(entry);
         return summary(p);
