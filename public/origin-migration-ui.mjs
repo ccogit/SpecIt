@@ -14,7 +14,7 @@ async function request(body){
   const r=await fetch('./api/origin-migration',{method:'POST',mode:'same-origin',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
   const data=await r.json();if(!r.ok)fail(data.code??'SOURCE_UNAVAILABLE');return data;
 }
-function action(fn){return async()=>{if(busy)return;busy=true;try{await fn();}catch(e){reset();status.textContent='Nicht übernommen: '+(e.code??e.message);}finally{busy=false;}};}
+function action(fn){return async()=>{if(busy)return;busy=true;$('file').disabled=true;try{await fn();}catch(e){reset();status.textContent='Nicht übernommen: '+(e.code??e.message);}finally{busy=false;$('file').disabled=false;}};}
 function showPreview(p){previewText.textContent=render(p);status.textContent='Vorschau: noch keine Daten geändert.';}
 $('file').onchange=action(async()=>{
   reset();selected=null;
@@ -61,3 +61,8 @@ async function list(){
   if(!data.records.length)records.textContent='Noch keine Originale archiviert.';
 }
 $('list').onclick=action(list);
+
+// The standalone server otherwise stops shortly after navigation away from app.mjs.
+// Keep the migration page alive without reloading or starting a job.
+const live=new EventSource('./api/alive');
+window.addEventListener('pagehide',()=>live.close(),{once:true});

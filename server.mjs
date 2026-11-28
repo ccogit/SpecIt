@@ -621,12 +621,24 @@ http.createServer(async(req,res)=>{
  }
  if(req.method!=='POST'||!['/api/origin-migration','/api/spec','/api/spec/stream','/api/plan/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/aira/export','/api/aira/preview','/api/aira/migration','/api/aira/v2/restore','/api/reuse','/api/repo',feedbackRoute,...projectRoutes].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
  if(!['http://'+host+':'+port,'http://localhost:'+port].includes(req.headers.origin)||!String(req.headers['content-type']).startsWith('application/json'))return send(res,403,{error:'Nur lokale Anfragen erlaubt.'});
- const maxBody=req.url==='/api/origin-migration'?maxOriginRequestBytes:(req.url==='/api/aira/v2/restore'||req.url===feedbackRoute)?64*1024*1024:1500000;
- let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>maxBody)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
  if(req.url==='/api/origin-migration'){
-  try{return send(res,200,originArchive.dispatch(parseAiraJson(raw)))}
-  catch(e){const {status,data}=projectError(e);return send(res,status,data)}
+  // Decode only complete UTF-8 bytes; a network chunk may split a non-ASCII
+  // character. The legacy raw strings and backup hash must not change.
+  const counts=new Map();for(let i=0;i<req.rawHeaders.length;i+=2){const k=req.rawHeaders[i].toLowerCase();counts.set(k,(counts.get(k)||0)+1);}
+  if(['host','origin','content-type','content-length','transfer-encoding'].some(k=>(counts.get(k)||0)>1)||
+     req.headers['content-type']!=='application/json'||req.headers['transfer-encoding']||
+     !/^[0-9]+$/.test(req.headers['content-length']||''))return send(res,400,{code:'INVALID_SCHEMA'});
+  const expected=Number(req.headers['content-length']);if(expected>maxOriginRequestBytes)return send(res,413,{code:'INVALID_SCHEMA'});
+  const chunks=[];let total=0;
+  try{
+   for await(const c of req){total+=c.length;if(total>expected||total>maxOriginRequestBytes)return send(res,413,{code:'INVALID_SCHEMA'});chunks.push(c);}
+   if(total!==expected)return send(res,400,{code:'INVALID_SCHEMA'});
+   const body=parseAiraJson(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(Buffer.concat(chunks)));
+   return send(res,200,originArchive.dispatch(body));
+  }catch(e){const {status,data}=projectError(e);return send(res,status,data)}
  }
+ const maxBody=(req.url==='/api/aira/v2/restore'||req.url===feedbackRoute)?64*1024*1024:1500000;
+ let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>maxBody)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
  if(req.url==='/api/repo'){
   let body;try{body=JSON.parse(raw)}catch{return send(res,400,{error:'Ungültige Anfrage.'})}
   try{projectApi.assertRun({});return send(res,200,await createRepo(body))}catch(e){if(e.code==='POLICY_DENIED'){const {status,data}=projectError(e);return send(res,status,data)}return send(res,400,{error:e.message||'Das Repository konnte nicht angelegt werden.'})}
