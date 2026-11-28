@@ -7,7 +7,8 @@ import {inflateRawSync} from 'node:zlib';
 import {buildAiraV2Export,validateV2Restore} from '../aira-v2-export.mjs';
 import {restoreRequirementHighWater} from '../aira-requirement-identities.mjs';
 import {verifyV1Migration} from '../aira-v1-migration.mjs';
-import {demoPlan,proposeRequirementPlan} from '../planner.mjs';
+import {demoPlan} from '../planner.mjs';
+import {proposeRequirementPlan} from '../aira-plan-proposal.mjs';
 import {confirmRequirementRevision} from '../aira-requirement-revisions.mjs';
 
 const read = name => readFileSync(new URL('./fixtures/aira-v2/' + name, import.meta.url));
