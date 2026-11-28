@@ -10,7 +10,11 @@ import { agentSkill } from './agentskill.mjs';
 import { factor, scale, info as calibInfo } from './calibration.mjs';
 import { zip, collect } from './zip.mjs';
 import { airaZip } from './aira-zip.mjs';
-import { previewAira } from './aira-export.mjs';
+import { previewAira, exportAira } from './aira-export.mjs';
+import { createProjectStore } from './aira-project-store.mjs';
+import { createProjectApi, projectRoutes, projectError } from './aira-project-api.mjs';
+import { makeProjectRecord, verifyProjectPackage, zipProjectFiles } from './aira-project-package.mjs';
+import { assertOutsideProjectArchive } from './aira-project-path.mjs';
 import { verifyV1Migration } from './aira-v1-migration.mjs';
 import { validateV2Restore } from './aira-v2-export.mjs';
 import { pointSuggestions, parseAiraJson } from './aira-identities.mjs';
@@ -391,6 +395,10 @@ function createRepo(b){
 }
 // Vorschlag für den Zielordner der direkten Umsetzung: ein Ordner im Home-Verzeichnis, über SPECIT_PROJECTS_DIR änderbar
 const projectsDir=path.resolve(process.env.SPECIT_PROJECTS_DIR||path.join(homedir(),'SpecIt-Projekte'));
+const projectArchiveDir=path.resolve(process.env.SPECIT_AIRA_STORE_DIR||path.join(homedir(),'.specit','aira-projects'));
+const projectStore=createProjectStore(projectArchiveDir,{validatePackage:verifyProjectPackage});
+const projectApi=createProjectApi({store:projectStore,runStatus,normalizePlan:validatePlan,preview:previewAira,
+ exportFiles:exportAira,zipFiles:zipProjectFiles,makeRecord:makeProjectRecord,validateRecord:validateV2Restore});
 // Verträgt einen Codeblock um das JSON und Text davor oder danach (dann zählt der Teil von der ersten bis zur letzten Klammer)
 function parseJson(out){
  const t=out.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
@@ -598,47 +606,61 @@ http.createServer(async(req,res)=>{
    return res.end(file.body);
   }catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}
  }
- if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/plan/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/aira/export','/api/aira/preview','/api/aira/migration','/api/aira/v2/restore','/api/reuse','/api/repo'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
+ if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/plan/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/aira/export','/api/aira/preview','/api/aira/migration','/api/reuse','/api/repo',...projectRoutes].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
  if(!['http://'+host+':'+port,'http://localhost:'+port].includes(req.headers.origin)||!String(req.headers['content-type']).startsWith('application/json'))return send(res,403,{error:'Nur lokale Anfragen erlaubt.'});
- let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>1500000)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
+ const maxBody=req.url==='/api/aira/v2/restore'?64*1024*1024:1500000;
+ let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>maxBody)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
  if(req.url==='/api/repo'){
   let body;try{body=JSON.parse(raw)}catch{return send(res,400,{error:'Ungültige Anfrage.'})}
-  try{return send(res,200,await createRepo(body))}catch(e){return send(res,400,{error:e.message||'Das Repository konnte nicht angelegt werden.'})}
+  try{projectApi.assertRun({});return send(res,200,await createRepo(body))}catch(e){if(e.code==='POLICY_DENIED'){const {status,data}=projectError(e);return send(res,status,data)}return send(res,400,{error:e.message||'Das Repository konnte nicht angelegt werden.'})}
  }
- if(req.url==='/api/aira/v2/restore'){
-  try{const body=parseAiraJson(raw);validateV2Restore(body.record,body);return send(res,200,{ok:true})}
-  catch(e){return send(res,400,{error:'Aira-Export: ungültige V2-Sicherung.',code:e.code||'HISTORY_CONFLICT'})}
+ if(projectRoutes.includes(req.url)){
+  try{return send(res,200,projectApi.dispatch(req.url,parseAiraJson(raw)))}
+  catch(e){const {status,data}=projectError(e);return send(res,status,data)}
  }
  if(req.url==='/api/aira/migration'){
   try{const body=parseAiraJson(raw);return send(res,200,verifyV1Migration(body.migration,body))}
   catch(e){return send(res,400,{error:'Aira-Export: ungültiges V1-Originalpaket oder Migrationsnachweis.',code:'HISTORY_CONFLICT'})}
  }
  if(req.url==='/api/aira/preview'){
-  try{return send(res,200,previewAira(parseAiraJson(raw)))}
-  catch(e){return send(res,400,{error:e instanceof Error&&e.message.startsWith('Aira-Export:')?e.message:'Aira-Export: ungültige Anfrage.',...(e.code?{code:e.code}:{})})}
+  try{
+   const input=parseAiraJson(raw);
+   if(input?.schema_version===2)return send(res,200,projectApi.dispatch(req.url,input));
+   projectApi.assertRun(input);
+   return send(res,200,previewAira(input));
+  }
+  catch(e){if(e.code){const {status,data}=projectError(e);return send(res,status,data)}return send(res,400,{error:'Aira-Export: ungültige Anfrage.'})}
  }
  if(req.url==='/api/aira/export'){
   try {
-   const body=airaZip(parseAiraJson(raw));
+   const input=parseAiraJson(raw);
+   if(input?.schema_version!==2)projectApi.assertRun(input);
+   const body=input?.schema_version===2?projectApi.dispatch(req.url,input):airaZip(input);
    res.writeHead(200,{'Content-Type':'application/zip','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
    return res.end(body);
-  } catch(e) { return send(res,400,{error:e instanceof Error&&e.message.startsWith('Aira-Export:')?e.message:'Aira-Export: ungültige Anfrage.',...(e.code?{code:e.code}:{})}); }
+  } catch(e) { if(e.code){const {status,data}=projectError(e);return send(res,status,data)}return send(res,400,{error:'Aira-Export: ungültige Anfrage.'}); }
  }
  if(req.url==='/api/run/download'){
   // Übergabe: der Zielordner einer direkten Umsetzung als ZIP-Archiv
   try{
-   const dir=await canonicalTargetDir(JSON.parse(raw).dir),body=zip(await collect(dir));
+   const dir=await canonicalTargetDir(JSON.parse(raw).dir);
+   assertOutsideProjectArchive(dir,projectArchiveDir);
+   const body=zip(await collect(dir));
    res.writeHead(200,{'Content-Type':'application/zip','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
    return res.end(body);
-  }catch(e){return send(res,400,{error:e instanceof SyntaxError?'Ungültige Anfrage.':e.message||'Download nicht möglich.'})}
+  }catch(e){if(e.code==='POLICY_DENIED'){const {status,data}=projectError(e);return send(res,status,data)}return send(res,400,{error:e instanceof SyntaxError?'Ungültige Anfrage.':e.message||'Download nicht möglich.'})}
  }
  if(req.url==='/api/run'){
   // Direkte Umsetzung: Agenten von Claude Code im Zielordner starten oder stoppen.
   let body;try{body=JSON.parse(raw)}catch{return send(res,400,{error:'Ungültige Anfrage.'})}
   if(body&&body.action==='stop')return send(res,200,stopRun());
-  if(body&&body.action==='open'){try{return send(res,200,await openDir(body.dir))}catch(e){return send(res,400,{error:e.message})}}
+  if(body&&body.action==='open'){try{assertOutsideProjectArchive(body.dir,projectArchiveDir);return send(res,200,await openDir(body.dir))}catch(e){const {status,data}=projectError(e);return send(res,status,data)}}
+  try{projectApi.assertRun(body)}catch(e){const {status,data}=projectError(e);return send(res,status,data)}
   if(!cliOk)return send(res,503,{error:'Claude Code ist nicht verfügbar. Installieren, mit „claude“ anmelden und SpecIt neu starten.'});
-  try{return send(res,200,await startRun(validateRun(body)))}catch(e){return send(res,400,{error:e.message||'Umsetzung konnte nicht gestartet werden.'})}
+  try{
+   const validated=validateRun(body);
+   return send(res,200,await projectApi.startRun(body,()=>{assertOutsideProjectArchive(validated.dir,projectArchiveDir);return startRun(validated)}));
+  }catch(e){if(e.code){const {status,data}=projectError(e);return send(res,status,data)}return send(res,400,{error:e.message||'Umsetzung konnte nicht gestartet werden.'})}
  }
  if(req.url==='/api/spec/preload'){
   // Low-priority speculative run. Its result is tied to a random browser token
