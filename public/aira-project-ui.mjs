@@ -1,4 +1,5 @@
-import {proposeRequirementPlan,projectRequirementsPlan} from '/planner.mjs';
+import {projectRequirementsPlan} from '/planner.mjs';
+import {proposeRequirementPlan} from '/aira-plan-proposal.mjs';
 import {interviewDecisionDrafts} from '/interview.mjs';
 import {confirmRequirementRevision,requirementCoverageReport} from '/aira-requirement-revisions.mjs';
 import {parseAiraJson,sameManifest} from '/aira-identities.mjs';
