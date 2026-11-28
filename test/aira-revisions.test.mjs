@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { exportAira,previewAira,verifyAira,sha256 } from '../aira-export.mjs';
-import { decisionsFor, pointSuggestions, parseAiraJson } from '../aira-identities.mjs';
+import { decisionsFor, pointSuggestions, parseAiraJson, sameManifest } from '../aira-identities.mjs';
 import { validatePlan } from '../planner.mjs';
 const fixture=n=>JSON.parse(readFileSync(new URL('./fixtures/specit_v1/'+n+'.json',import.meta.url),'utf8'));
 const input=n=>{const f=fixture(n);return {...f.source,spec:f.expected_files['SPEC.md'],approved:true}};
@@ -76,4 +76,10 @@ test('KI-Punktevorschläge sind separate, validierte Metadaten ohne Default',()=
 test('Striktes JSON: auch verschachtelte und escaped doppelte Keys, nichtendliche Zahlen',()=>{
   assert.deepEqual(parseAiraJson(' { "a": [ {"b":1}, {"b":2} ] } '),{a:[{b:1},{b:2}]});
   for(const raw of ['{"a":1,"a":2}','{"a":{"b":1,"\\u0062":2}}','{"x":[1e999]}','{"x":NaN}'])assert.throws(()=>parseAiraJson(raw),/Aira-Export/);
+});
+
+test('Historienwiederherstellung vergleicht Manifestwerte unabhängig von Schlüsselreihenfolge',()=>{
+  const m=manifest(exportAira(input('linear')));
+  assert.equal(sameManifest(m,Object.fromEntries(Object.entries(m).reverse())),true);
+  assert.equal(sameManifest(m,{...m,revision:2}),false);
 });

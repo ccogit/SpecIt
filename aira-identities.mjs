@@ -80,3 +80,9 @@ export function parseAiraJson(raw){
   }
   scan();return result;
 }
+
+// Compare manifest content, not property insertion order (downloaded JSON is canonical).
+export function sameManifest(a,b){
+  const ordered=x=>Array.isArray(x)?x.map(ordered):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort(codepointCompare).map(k=>[k,ordered(x[k])])):x;
+  return JSON.stringify(ordered(a))===JSON.stringify(ordered(b));
+}

@@ -6,7 +6,7 @@ document.getElementById('setToggle').onclick=()=>settingsOpen();
 applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?'light':'dark';try{localStorage.setItem('specit-theme',theme)}catch{}applyTheme()};
 
 import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate,setAgentSkill} from '/planner.mjs';
-import {decisionsFor,identityConflicts,parseAiraJson} from '/aira-identities.mjs';
+import {decisionsFor,identityConflicts,parseAiraJson,sameManifest} from '/aira-identities.mjs';
 import { modulators, cleanSvg, cleanLogos,conceptSections,conceptTopic,topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
 import {balance} from '/balance.mjs';
@@ -3090,7 +3090,7 @@ function airaHistoryFor(id){
   const local=airaLocalHistoryFor(id);
   if(!airaImported||airaImported.id!==id)return local;
   const imported=airaImported.history;
-  if(local.length>imported.length||local.some((m,i)=>JSON.stringify(m)!==JSON.stringify(imported[i])))throw Error('Konkurrierende Historie; Coordinator muss entscheiden.');
+  if(local.length>imported.length||local.some((m,i)=>!sameManifest(m,imported[i])))throw Error('Konkurrierende Historie; Coordinator muss entscheiden.');
   return imported;
 }
 $('airaRestoreHistory').onclick=async()=>{
@@ -3098,7 +3098,7 @@ $('airaRestoreHistory').onclick=async()=>{
   const status=$('airaStatus'),id=$('airaPlanId').value,files=[...$('airaHistoryFiles').files];
   try{
     if(!files.length)throw Error('Bitte alle bisherigen Manifestdateien auswählen.');
-    const history=(await Promise.all(files.map(async f=>parseAiraJson(await f.text())))).sort((a,b)=>a.revision-b.revision);
+    const history=(await Promise.all(files.map(async f=>parseAiraJson(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(await f.arrayBuffer()))))).sort((a,b)=>a.revision-b.revision);
     if(!$('airaDialog').open||id!==$('airaPlanId').value)throw Error('Plan-ID geändert; bitte erneut auswählen.');
     if(history.some((m,i)=>m.plan_id!==id||m.revision!==i+1||m.schema_version!==1))throw Error('Manifeste passen nicht zur Plan-ID oder Historie ist lückenhaft.');
     airaImported={id,history};airaRows();
