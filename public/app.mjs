@@ -7,7 +7,7 @@ applyTheme();document.getElementById('theme').onclick=()=>{theme=theme==='dark'?
 
 import {validatePlan,renderTask,renderBacklog,renderSingle,recommendAgents,estimate,setAgentSkill} from '/planner.mjs';
 import {decisionsFor,identityConflicts,parseAiraJson,sameManifest} from '/aira-identities.mjs';
-import {mountAiraV2} from '/aira-v2-ui.mjs';
+import {mountAiraV2} from '/aira-project-ui.mjs';
 import { modulators, cleanSvg, cleanLogos,conceptSections,conceptTopic,topics,cleanQuestions,cleanExtras,answerOf,acceptDefault,applyAutonomy,summary,coverage,cleanFeatures,featureMinutes,workPackages,featureDuration,suggestExtensions,cleanNames} from '/interview.mjs';
 import {renderMarkdown} from '/markdown.mjs';
 import {balance} from '/balance.mjs';
@@ -69,7 +69,7 @@ const toneNames=[
 ];
 const blank=()=>({ideaTidy:null,time:{req:0,spec:0,impl:0},aiLedger:{spec:{w:0,ms:0},impl:{w:0,ms:0}},concept:null,conceptAnswers:{},conceptWishes:[],usage:{context:0,ai:0,calls:0},flow:null,arch:null,proto:null,featPool:[],runOutput:null,own:{},sketch:null,logoCount:1,logos:[],logoChosen:-1,runModel:'',reviewBy:'',reviewModel:'',review:null,nameCount:1,names:[],nameAuto:'',featAgents:1,specStrategy:'incremental',strategyTimes:{},reuse:null,reuseSpec:'',planTrace:null,creativity:2,tone:2,features:[],featSource:'',layoutWish:'',layoutTheme:'LIGHT',runDir:'',runShell:false,nextStep:'download',finished:'',autonomy:100,durLevel:0,durCustom:null,durScale:2,project:'',phase:0,idea:'',askedIdea:'',questions:[],qSource:'',extras:[],active:-1,last:-1,clicks:0,spec:'',specSource:'',dirty:false,repo:'',repoOn:true,agent:'Agent-neutral',plan:null,planSource:'',planSpec:'',planContext:null,layoutOn:false,layoutCount:3,layoutDevice:'DESKTOP',layout:null});
 
-let s=blank();
+let s=blank(),airaProjectUI=null;
 try{
   const saved=JSON.parse(localStorage.getItem('specit-v3'));
   if(saved&&typeof saved.idea==='string'&&typeof saved.spec==='string'){
@@ -1480,7 +1480,7 @@ function planUI(){
   $('plan').textContent=current?'↻ Plan neu erstellen':'⚙ Plan erstellen';$('plan').classList.toggle('primary',!current);
   // 2) Weiteres Vorgehen: bereitstellen oder direkt umsetzen
   $('nextDownload').setAttribute('aria-pressed',String(!direct));$('nextRun').setAttribute('aria-pressed',String(direct));
-  $('nextRun').disabled=!agentsOk;$('nextRun').title=agentsOk?'':'Claude Code wurde auf diesem Rechner nicht gefunden.';
+  $('nextRun').disabled=!agentsOk||!!airaProjectUI?.blocksRun();$('nextRun').title=agentsOk?'':'Claude Code wurde auf diesem Rechner nicht gefunden.';
   $('runPanel').classList.toggle('hidden',!direct);
   if($('runDir').value!==s.runDir)$('runDir').value=s.runDir;$('runShell').checked=s.runShell;
   for(const id of ['runDir','runShell','nextDownload','nextRun','formSingle'])if(runBusy)$(id).disabled=true;else if(id!=='nextRun')$(id).disabled=false;
@@ -3202,7 +3202,7 @@ $('airaDownload').onclick=async()=>{
   }catch(e){airaInvalidate();status.textContent=e.message}
   finally{btn.disabled=!airaPreview||!$('airaApprove').checked}
 };
-mountAiraV2({getCurrent:airaCurrent,getQuestions:()=>s.questions,getRepo:repoText,getV1History:airaLocalHistoryFor,isBusy:()=>active||runBusy||runStarting,notice:text=>$('flowNote').textContent=text});
+airaProjectUI=mountAiraV2({getCurrent:airaCurrent,getQuestions:()=>s.questions,getRepo:repoText,getV1History:airaLocalHistoryFor,isBusy:()=>active||runBusy||runStarting,notice:text=>{$('flowNote').textContent=text;$('airaProjectModeStatus').textContent=text||$('airaProjectModeStatus').textContent},getStandaloneContext:()=>({spec:s.spec,plan:s.plan??undefined,repo:repoText()}),onModeChange:()=>{if(airaProjectUI?.blocksRun()&&s.nextStep==='run')s.nextStep='download';renderAll()}});
 // PDF: Druckvorschau des Browsers mit eigenem Drucklayout (nur die Spezifikation, A4); der Dokumenttitel wird zum Dateinamen
 const printTitle=document.title;
 $('specPdf').onclick=()=>{if(!s.spec.trim())return;if(specMode!=='view')setSpecMode('view');document.title=s.project.trim()?s.project.trim()+' – Spezifikation':'Spezifikation';window.print()};
@@ -3218,7 +3218,7 @@ const agentsNow=()=>Math.min(Math.max(1,s.featAgents||1),planMax());
 $('formSingle').onclick=()=>{s.featAgents=1;renderAll()};
 $('formSplit').onclick=()=>{const p=s.plan&&!stale()?s.plan:null;s.featAgents=Math.min(planMax(),Math.max(2,p?recommendAgents(p,targetMinutes()).agents:2));renderAll()};
 $('nextDownload').onclick=()=>{s.nextStep='download';renderAll()};
-$('nextRun').onclick=()=>{s.nextStep='run';renderAll();pollRun()};
+$('nextRun').onclick=()=>{if(airaProjectUI?.blocksRun())return;s.nextStep='run';renderAll();pollRun()};
 // Schätzung je Agentenzahl aus dem Plan, mit Empfehlung passend zur Zielvorgabe; ein Klick übernimmt die Zahl
 function adviceUI(p,agents){
   const box=$('runAdvice');box.replaceChildren();
@@ -3248,7 +3248,7 @@ function reviewUI(p,agents){
    l.className='agentline'+(n>=5?' high':n>1?' multi':'');l.title=n===1?'Ein Agent arbeitet alle Schritte nacheinander ab.':n+' Agenten arbeiten gleichzeitig – so in der Feature-Schätzung eingestellt. Jeder Agent verbraucht eigenes Kontingent: rund '+n+'-fache Kosten je Minute.'+(want>n?' Eingestellt sind '+want+'; mehr als '+n+' lassen sich bei diesem Umfang nicht gleichzeitig beschäftigen.':'');
    const est=p?estimate(p,agents):s.features.length?featDuration().total:0,dauer=est?node('span','≈ '+hm(est),'agentest'):null;if(dauer)dauer.title='Voraussichtliche Dauer der Umsetzung mit dieser Zahl an Agenten';
    l.replaceChildren(node('span','Agenten','eyebrow'),minus,node('b',String(n),'agentnum'),plus,txt,...(dauer?[dauer]:[]),...(cost?[cost]:[]))}
-  {const busy=active||runBusy||runStarting||layoutBusy;$('goDownload').disabled=busy;$('goApprove').disabled=$('goDirect').disabled=busy||!agentsOk;if(!agentsOk)$('goApprove').title=$('goDirect').title='Claude Code wurde auf diesem Rechner nicht gefunden.';
+  {const busy=active||runBusy||runStarting||layoutBusy;$('goDownload').disabled=busy;$('goApprove').disabled=$('goDirect').disabled=busy||!agentsOk||!!airaProjectUI?.blocksRun();$('goAira').disabled=!!airaProjectUI?.blocksRun();if(!agentsOk)$('goApprove').title=$('goDirect').title='Claude Code wurde auf diesem Rechner nicht gefunden.';
    const sum=summary(s.questions),on=s.features.filter(f=>f.on).length;$('specGroupMeta').textContent=s.features.length||s.questions.length?[on?plural(on,'Feature','Features'):'',s.questions.length?(sum.open?sum.open+' offen':'alle Entscheidungen getroffen'):''].filter(Boolean).join(' · '):''}$('plan').classList.toggle('hasplan',!!p);$('planAgainRow').classList.toggle('hidden',!p);$('planAgain').disabled=active||runBusy;
   {const m=$('implMoreMeta');if(m)m.textContent=['Zielagent '+$('agent').value,'Layouts '+($('layoutOn').checked?'an':'aus')].join(' · ');repoUI()}
   const jump=id=>()=>$(id).scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
@@ -3258,7 +3258,7 @@ function reviewUI(p,agents){
   row('Weiteres Vorgehen',direct?'Direkt umsetzen in '+(s.runDir.trim()||'– Zielordner fehlt –')+(s.runShell?' · Befehle erlaubt':' · ohne Befehle')+(s.runModel?' · '+(agentModels.find(m=>m.id===s.runModel)?.name||s.runModel):''):'Zum Download bereitstellen',jump('nextCard'),direct&&!s.runDir.trim());
   // Abschluss: der Knopf steht direkt unter der Übersicht
   const done=!!p&&s.finished===finishKey(),ready=!!p&&!active&&!runBusy&&!layoutBusy&&(!direct||(agentsOk&&!!s.runDir.trim())),f=$('finish');
-  f.textContent=done&&!direct?'✓ Abgeschlossen':direct?'▸ Freigeben und Umsetzung starten':'✓ Bestätigen und bereitstellen';f.disabled=!ready||(done&&!direct);
+  f.textContent=done&&!direct?'✓ Abgeschlossen':direct?'▸ Freigeben und Umsetzung starten':'✓ Bestätigen und bereitstellen';f.disabled=!ready||(done&&!direct)||(direct&&!!airaProjectUI?.blocksRun());
   {const again=direct&&done;f.classList.toggle('again',again);if(again)f.textContent=runBusy?'Umsetzung läuft …':'↻ Umsetzung erneut starten'}
   $('finishHint').textContent=!p?'Zum Abschließen fehlt ein aktueller Plan – „Plan erstellen“ (rot markiert).':layoutBusy?'Die Layout-Entwürfe werden noch erzeugt.':direct&&!agentsOk?'Claude Code wurde auf diesem Rechner nicht gefunden; „Direkt umsetzen“ ist nicht möglich.':direct&&!s.runDir.trim()?'Zum Abschließen fehlt der Zielordner (Abschnitt 1, rot markiert).':done?(direct?'':'Abgeschlossen. Die Dateien stehen bereit; eine Änderung der Festlegungen erfordert eine neue Bestätigung.'):'Bitte prüfen. Bestätigt wird mit dem Knopf darunter.';
   // Was zum Abschließen fehlt, ist an Ort und Stelle rot markiert; der Hinweis führt per Klick dorthin
@@ -3283,6 +3283,7 @@ async function goFlow(kind){
 async function goFlowRun(kind){
   const note=$('flowNote'),run=kind!=='download';note.textContent='';
   if(!s.spec.trim()||s.dirty){note.textContent='Bitte zuerst die Spezifikation aktualisieren.';return}
+  if(run&&airaProjectUI?.blocksRun()){note.textContent='Integrierter oder unbekannter Projektmodus: direkte Umsetzung gesperrt.';return}
   if(run&&!agentsOk){note.textContent='Claude Code wurde auf diesem Rechner nicht gefunden; die Umsetzung hier ist nicht möglich.';return}
   if(run&&!s.runDir.trim()){note.textContent='Bitte zuerst den Zielordner angeben.';$('runDir').focus();return}
   if(!(s.plan&&!stale()))planLiveStart(run&&repoAuto()?'Repository wird auf GitHub angelegt':'');else{runViewOn=true;runFeatureUI();mainUI()}
@@ -3305,6 +3306,7 @@ $('goDownload').onclick=()=>goFlow('download');$('goApprove').onclick=()=>goFlow
 for(const id of ['featPanel','decPanel'])$(id).addEventListener('toggle',()=>{if($(id).open)$('specGroup').open=true});
 $('implPanel').addEventListener('toggle',()=>mainUI());
 $('finish').onclick=async()=>{
+  if(s.nextStep==='run'&&airaProjectUI?.blocksRun()){$('finishHint').textContent='Integrierter oder unbekannter Projektmodus: direkte Umsetzung gesperrt.';return}
   const p=s.plan&&!stale()?s.plan:null;if(!p||active||runBusy)return;
   if(s.nextStep!=='run'){s.finished=finishKey();save();renderAll();$('doneBox').scrollIntoView({block:'nearest'});return}
   if(!s.runDir.trim()){$('finishHint').textContent='Bitte einen Zielordner angeben.';$('runDir').focus();return}
@@ -3593,6 +3595,7 @@ $('reset').onclick=()=>{
 };
 
 function renderAll(){
+  airaProjectUI?.sync();
   if($('project').value!==s.project)$('project').value=s.project;$('nameCount').value=s.nameCount;
   namesUI();
 if($('idea').value!==s.idea)$('idea').value=s.idea;
