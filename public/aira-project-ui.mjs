@@ -76,7 +76,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
     const root=byId('airaV2PointRows');root.replaceChildren();
     try{
       const draft=read(editor), values=read(points), prior=context?.record?parseAiraJson(context.record.manifest_bytes):null;
-      for(const task of [...draft.plan.tasks,...draft.requirements.decisions]){
+      for(const task of [...draft.plan.tasks,...draft.requirements.decisions.filter(d=>d.state==='open')]){
         const label=document.createElement('label'),select=document.createElement('select');
         const old=prior?.tasks?.[task.id]?.points??prior?.blockers?.find(x=>x.id===task.id)?.points;
         label.textContent=task.id+' · '+(task.title??task.question??task.id)+(old!==undefined?' (bisher '+old+')':'')+' ';
@@ -95,7 +95,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
       migration.value='';confirmations.value='';first.checked=false;byId('airaV2MigrationIds').textContent='';byId('airaV2ProposalKeys').textContent='';
       const next=structuredClone(h.record.snapshot);next.requirements.revision++;
       editor.value=json({plan:next.plan,requirements:next.requirements});mapping.value=json(h.record.mapping);
-      points.value=json(Object.fromEntries([...next.plan.tasks,...next.requirements.decisions].map(x=>[x.id,null])));
+      points.value=json(Object.fromEntries([...next.plan.tasks,...next.requirements.decisions.filter(d=>d.state==='open')].map(x=>[x.id,null])));
       showCoverage();showPoints();
     }
     await feedbackPanel.load();updateActions();return h;
@@ -185,7 +185,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
     // identity mapping on a later regeneration.
     byId('airaV2ProposalKeys').textContent=json(draft.mapping);
     context.proposalMapping=draft.mapping;
-    confirmations.value='';points.value=json(Object.fromEntries([...draft.plan.tasks,...draft.requirements.decisions].map(t=>[t.id,null])));
+    confirmations.value='';points.value=json(Object.fromEntries([...draft.plan.tasks,...draft.requirements.decisions.filter(d=>d.state==='open')].map(t=>[t.id,null])));
     showCoverage();showPoints();invalidate();status.textContent='Unbestätigter Vorschlag. Bestehende IDs im Zuordnungsfeld explizit wählen, ggf. neu erzeugen, fachliche Daten/Referenzen und Tombstone-Gründe bearbeiten.';
   });
   function input(){
@@ -255,7 +255,7 @@ export function mountAiraV2({getCurrent,getQuestions,getRepo,getV1History,isBusy
       confirmRequirementRevision(plan,result.requirements,{previous:record.snapshot,confirmedIds:result.confirmed_ids});
       invalidate();feedbackApproval=result.approval_id;
       editor.value=json({plan,requirements:result.requirements});confirmations.value=result.confirmed_ids.join(' ');
-      points.value=json(Object.fromEntries([...plan.tasks,...result.requirements.decisions].map(t=>[t.id,null])));
+      points.value=json(Object.fromEntries([...plan.tasks,...result.requirements.decisions.filter(d=>d.state==='open')].map(t=>[t.id,null])));
       showCoverage();showPoints();status.textContent='Fachlich bestätigter Entscheidungsdiff als neuer Entwurf. Punkte, Vorschau und Exportfreigabe separat bestätigen; kein automatischer Writeback oder Jira-Release.';
     }});
   void refresh().catch(()=>setSelection(null));

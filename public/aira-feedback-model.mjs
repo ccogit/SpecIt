@@ -3,7 +3,8 @@
 const byId = rows => new Map((rows??[]).map(row=>[row.id,row]));
 const known = value => value===true?'yes':value===false?'no':'unknown';
 const observed = (row,predicate) => known(row&&row.state!=='unknown'?predicate(row):null);
-const mergeConfirmed = task => !!task && ['merge_confirmed','done'].includes(task.state) && !!task.merge_sha && !!task.acceptance_event_id;
+const mergeConfirmed = task => !!task && ['merge_confirmed','done'].includes(task.state) && !!task.assignment_id &&
+  Number.isSafeInteger(task.pr_number) && task.pr_number>0 && ['head_sha','base_sha','candidate_sha','merge_sha'].every(k=>typeof task[k]==='string'&&/^[a-f0-9]{40}$/i.test(task[k])) && !!task.acceptance_event_id;
 const verified = criterion => criterion?.state==='verified' && !!criterion.evidence_ref;
 const aggregate = values => values.includes('no')?'no':values.length&&values.every(v=>v==='yes')?'yes':'unknown';
 const refs=task=>({jira_key:task?.jira_key??null,pr_number:task?.pr_number??null,merge_sha:task?.merge_sha??null,acceptance_event_id:task?.acceptance_event_id??null});

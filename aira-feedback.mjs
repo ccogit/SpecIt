@@ -25,7 +25,8 @@ const json = bytes => {
   try { return parseAiraJson(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes)); }
   catch { fail('INVALID_SCHEMA'); }
 };
-const merged = task => ['merge_confirmed','done'].includes(task.state) && !!task.merge_sha && !!task.acceptance_event_id;
+const merged = task => ['merge_confirmed','done'].includes(task.state) && !!task.assignment_id && positive(task.pr_number) &&
+  ['head_sha','base_sha','candidate_sha','merge_sha'].every(k=>hex(task[k],40)) && !!task.acceptance_event_id;
 
 // Binding and archive must come from trusted local registry, never the feedback.
 export function validateFeedback(bytes, context, receiptHash) {
@@ -44,7 +45,7 @@ export function validateFeedback(bytes, context, receiptHash) {
   need(archived && hash(archived.files['manifest.json'])===f.manifest_sha256,'WRONG_TARGET');
   const m=json(archived.files['manifest.json']),r=json(archived.files['requirements.json']);
   need(m.revision===f.revision&&r.revision===f.revision&&m.repo===f.repo&&m.plan_id===f.plan_id&&r.plan_id===f.plan_id&&hash(archived.files['requirements.json'])===m.requirements_sha256,'WRONG_TARGET');
-  const tasks=new Set([...m.plan.tasks,...m.blockers].map(x=>x.id)), criteria=new Map(r.criteria.map(x=>[x.id,x])), requirements=new Map(r.requirements.map(x=>[x.id,x])), decisions=new Set(r.decisions.map(x=>x.id));
+  const tasks=new Set([...m.plan.tasks,...r.decisions].map(x=>x.id)), criteria=new Map(r.criteria.map(x=>[x.id,x])), requirements=new Map(r.requirements.map(x=>[x.id,x])), decisions=new Set(r.decisions.map(x=>x.id));
   for(const list of [f.tasks,f.requirements,f.decisions])unique(list);
   unique(f.measurements,'event_id');
   need(Array.isArray(f.findings));
