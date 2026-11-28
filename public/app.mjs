@@ -3071,6 +3071,54 @@ $('layoutRun').onclick=async()=>{
 function download(name,content){const url=URL.createObjectURL(new Blob([content],{type:'text/plain;charset=utf-8'}));const a=node('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 async function copyText(t,status,ok='Kopiert.'){try{await navigator.clipboard.writeText(t);status.textContent=ok}catch{status.textContent='Kopieren nicht möglich. Bitte manuell markieren oder herunterladen.'}}
 $('specDownload').onclick=()=>{if(s.spec)download('SPEC.md',specFile())};
+// Separater Aira-Ablauf: kein goFlow/finish/startRun, keine Änderung von s.plan oder s.finished.
+let airaSnapshot=null;
+const airaCurrent=()=>s.plan&&!stale()?JSON.stringify({plan:s.plan,spec:s.planSpec,source:s.planSource,target_minutes:targetMinutes()||null}):null;
+$('goAira').onclick=()=>{
+  $('flowNote').textContent='';
+  if(active||runBusy||runStarting){$('flowNote').textContent='Bitte erst den laufenden Vorgang beenden.';return}
+  airaSnapshot=airaCurrent();
+  if(!airaSnapshot){$('flowNote').textContent='Aira: Bitte zuerst einen aktuellen Plan erstellen und prüfen.';return}
+  const current=JSON.parse(airaSnapshot),points=$('airaPoints');
+  $('airaRepo').value=repoText();$('airaApprove').checked=false;$('airaStatus').textContent='';
+  $('airaDemo').textContent=current.source==='demo'||current.plan.summary.startsWith('DEMO:')?'DEMO: generisches Arbeitsgerüst, vor Freigabe fachlich prüfen.':'Aktueller strukturierter Plan. Offene Entscheidungen werden eigene Klärungs-Epics, keine automatische Freigabe.';
+  points.replaceChildren();
+  const cmp=(a,b)=>{const aa=Array.from(a,c=>c.codePointAt(0)),bb=Array.from(b,c=>c.codePointAt(0));for(let i=0;i<Math.min(aa.length,bb.length);i++)if(aa[i]!==bb[i])return aa[i]-bb[i];return aa.length-bb.length};
+  const decisions=[...new Set(current.plan.tasks.flatMap(t=>t.blockedBy))].sort(cmp);
+  const rows=[...decisions.map((d,i)=>({id:'B'+String(i+1).padStart(2,'0'),title:'Offene Entscheidung: '+d})),...current.plan.tasks];
+  for(const t of rows){
+    const label=node('label',t.id+' – '+t.title+' '),select=node('select');
+    select.dataset.airaId=t.id;select.setAttribute('aria-label','Punkte '+t.id);
+    for(const n of ['',1,2,3,5,8]){const o=node('option',n===''?'Bitte auswählen':String(n));o.value=String(n);select.append(o)}
+    label.append(select);points.append(label,node('br'));
+  }
+  $('airaDialog').showModal();
+};
+$('airaClose').onclick=()=>$('airaDialog').close();
+$('airaDialog').addEventListener('input',e=>{if(e.target!==$('airaApprove'))$('airaApprove').checked=false});
+$('airaDownload').onclick=async()=>{
+  const status=$('airaStatus'),btn=$('airaDownload');
+  if(!airaSnapshot||airaSnapshot!==airaCurrent()||active||runBusy||runStarting){$('airaApprove').checked=false;status.textContent='Plan oder Spezifikation geändert. Dialog schließen und erneut prüfen.';return}
+  const current=JSON.parse(airaSnapshot),plan_id=$('airaPlanId').value,repo=$('airaRepo').value;
+  if(!/^[A-Za-z0-9][A-Za-z0-9-]{0,23}$/.test(plan_id)){status.textContent='Bitte eine gültige Plan-ID eingeben.';$('airaPlanId').focus();return}
+  if(!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)){status.textContent='Zielrepo fehlt oder ist ungültig (owner/name).';$('airaRepo').focus();return}
+  const confirmed_points={};
+  for(const select of $('airaPoints').querySelectorAll('select')){
+    if(!select.value){status.textContent='Bestätigte Punkte fehlen für '+select.dataset.airaId;select.focus();return}
+    confirmed_points[select.dataset.airaId]=Number(select.value);
+  }
+  if(!$('airaApprove').checked){status.textContent='Fachliche Freigabe fehlt.';$('airaApprove').focus();return}
+  const input={plan_id,repo,revision:1,plan:current.plan,spec:current.spec,target_minutes:current.target_minutes,confirmed_points,approved:true};
+  btn.disabled=true;
+  try{
+    const res=await fetch('/api/aira/export',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(input)});
+    if(!res.ok)throw Error((await res.json()).error||'Aira-Export fehlgeschlagen.');
+    const blob=await res.blob();
+    if(airaSnapshot!==airaCurrent()||!$('airaApprove').checked){status.textContent='Freigabe veraltet; kein Download.';return}
+    const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download='aira-'+plan_id+'-r1.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    status.textContent='Aira-Entwurf heruntergeladen. Nur draft/ an den Coordinator übergeben; SPEC und Manifest aufbewahren.';
+  }catch(e){status.textContent=e.message}finally{btn.disabled=false}
+};
 // PDF: Druckvorschau des Browsers mit eigenem Drucklayout (nur die Spezifikation, A4); der Dokumenttitel wird zum Dateinamen
 const printTitle=document.title;
 $('specPdf').onclick=()=>{if(!s.spec.trim())return;if(specMode!=='view')setSpecMode('view');document.title=s.project.trim()?s.project.trim()+' – Spezifikation':'Spezifikation';window.print()};

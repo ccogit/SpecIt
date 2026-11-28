@@ -9,6 +9,7 @@ import { MAX_SPEC_CHARS } from './limits.mjs';
 import { agentSkill } from './agentskill.mjs';
 import { factor, scale, info as calibInfo } from './calibration.mjs';
 import { zip, collect } from './zip.mjs';
+import { airaZip } from './aira-zip.mjs';
 import { flowPrompt, cleanFlow, archPrompt, cleanArch } from './diagrams.mjs';
 import { protoPrompt, protoBrief, cleanProto } from './prototype.mjs';
 // Schätzungen an gemessenen Läufen ausrichten: raw behält den Wert der KI, minutes ist der umgerechnete
@@ -593,12 +594,19 @@ http.createServer(async(req,res)=>{
    return res.end(file.body);
   }catch(e){return send(res,502,{error:e.message||'Stitch nicht erreichbar.'})}
  }
- if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/plan/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/reuse','/api/repo'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
+ if(req.method!=='POST'||!['/api/spec','/api/spec/stream','/api/plan/stream','/api/spec/preload','/api/layout','/api/run','/api/run/download','/api/aira/export','/api/reuse','/api/repo'].includes(req.url))return send(res,404,{error:'Nicht gefunden.'});
  if(!['http://'+host+':'+port,'http://localhost:'+port].includes(req.headers.origin)||!String(req.headers['content-type']).startsWith('application/json'))return send(res,403,{error:'Nur lokale Anfragen erlaubt.'});
  let raw='';try{for await(const c of req){raw+=c;if(Buffer.byteLength(raw)>1500000)return send(res,413,{error:'Eingaben zu groß.'})}}catch{return send(res,400,{error:'Anfrage abgebrochen.'})}
  if(req.url==='/api/repo'){
   let body;try{body=JSON.parse(raw)}catch{return send(res,400,{error:'Ungültige Anfrage.'})}
   try{return send(res,200,await createRepo(body))}catch(e){return send(res,400,{error:e.message||'Das Repository konnte nicht angelegt werden.'})}
+ }
+ if(req.url==='/api/aira/export'){
+  try {
+   const body=airaZip(JSON.parse(raw));
+   res.writeHead(200,{'Content-Type':'application/zip','Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+   return res.end(body);
+  } catch(e) { return send(res,400,{error:e instanceof Error&&e.message.startsWith('Aira-Export:')?e.message:'Aira-Export: ungültige Anfrage.'}); }
  }
  if(req.url==='/api/run/download'){
   // Übergabe: der Zielordner einer direkten Umsetzung als ZIP-Archiv
