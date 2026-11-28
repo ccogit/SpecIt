@@ -6,21 +6,21 @@ const verified = criterion => criterion?.state==='verified' && !!criterion.evide
 
 export function feedbackView({projection,manifest,requirements,importError=null}){
   const candidate=projection?.current;
-  const fresh=projection?.freshness==='current' && candidate?.feedback?.revision===manifest.revision &&
-    candidate.feedback.plan_id===manifest.plan_id;
+  const fresh=!!(projection?.freshness==='current' && candidate?.feedback?.revision===manifest.revision &&
+    candidate.feedback.plan_id===manifest.plan_id);
   const feedback=candidate?.feedback;
   const tasks=byId(feedback?.tasks),reqs=byId(feedback?.requirements),decisions=byId(feedback?.decisions);
   const refs=task=>({jira_key:task?.jira_key??null,pr_number:task?.pr_number??null,merge_sha:task?.merge_sha??null,acceptance_event_id:task?.acceptance_event_id??null});
   const criteria=requirements.criteria.map(c=>{
     const t=tasks.get(c.task_id),row=t?.criteria.find(x=>x.id===c.id);
-    return {id:c.id,task_id:c.task_id,state:row?.state??'unknown',reported:known(row?['reported','verified','failed'].includes(row.state):null),
-      verified:known(row?verified(row):null),merged:known(t?mergeConfirmed(t):null),
+    return {id:c.id,task_id:c.task_id,state:row?.state??'unknown',reported:known(row&&row.state!=='unknown'?['reported','verified','failed'].includes(row.state):null),
+      verified:known(row&&row.state!=='unknown'?verified(row):null),merged:known(t&&t.state!=='unknown'?mergeConfirmed(t):null),
       fulfilled:fresh&&verified(row)&&mergeConfirmed(t),evidence_ref:row?.evidence_ref??null,...refs(t)};
   });
   const taskRows=manifest.plan.tasks.map(t=>{
     const row=tasks.get(t.id),related=criteria.filter(c=>c.task_id===t.id);
-    return {id:t.id,state:row?.state??'unknown',reported:known(row?['reported','verified','merge_confirmed','done','failed'].includes(row.state):null),
-      verified:known(row?related.length>0&&related.every(c=>c.verified==='yes'):null),merged:known(row?mergeConfirmed(row):null),reason:row?.reason??null,...refs(row)};
+    return {id:t.id,state:row?.state??'unknown',reported:known(row&&row.state!=='unknown'?['reported','verified','merge_confirmed','done','failed'].includes(row.state):null),
+      verified:known(row&&row.state!=='unknown'?related.length>0&&related.every(c=>c.verified==='yes'):null),merged:known(row&&row.state!=='unknown'?mergeConfirmed(row):null),reason:row?.reason??null,...refs(row)};
   });
   const requirementRows=requirements.requirements.map(r=>{
     const row=reqs.get(r.id),related=criteria.filter(c=>requirements.criteria.find(x=>x.id===c.id).requirement_ids.includes(r.id));
